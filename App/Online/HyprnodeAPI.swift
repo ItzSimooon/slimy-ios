@@ -113,6 +113,8 @@ struct HyprnodeAPI {
 
     private struct Empty: Codable {}
 
+    private struct ServerError: Decodable { var error: String }
+
     struct Registration: Codable {
         var deviceId: String
         var token: String
@@ -197,7 +199,6 @@ struct HyprnodeAPI {
 
         let status = (response as? HTTPURLResponse)?.statusCode ?? 0
         guard (200..<300).contains(status) else {
-            struct ServerError: Decodable { var error: String }
             let message = try? Self.decoder.decode(ServerError.self, from: data).error
             if status == 404, message == nil { throw APIError.notReady }
             throw APIError.server(status: status, message: message)

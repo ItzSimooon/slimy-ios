@@ -164,7 +164,7 @@ private struct MudBlob: Shape {
         for i in 0...n {
             let a = Double(i) / Double(n) * .pi * 2
             let r = 0.36 + rng.next() * 0.14
-            let p = CGPoint(x: c.x + cos(a) * rect.width * r, y: c.y + sin(a) * rect.height * r)
+            let p = CGPoint(x: c.x + CGFloat(cos(a)) * rect.width * r, y: c.y + CGFloat(sin(a)) * rect.height * r)
             if i == 0 { path.move(to: p) } else { path.addLine(to: p) }
         }
         path.closeSubpath()
