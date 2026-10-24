@@ -28,6 +28,7 @@ final class SlimeStore: ObservableObject {
     }
 
     init() {
+        let defaults = UserDefaults.standard
         if let data = defaults.data(forKey: Keys.state),
            let saved = try? JSONDecoder().decode(SlimeState.self, from: data) {
             state = saved

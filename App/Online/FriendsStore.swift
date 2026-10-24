@@ -53,6 +53,7 @@ final class FriendsStore: ObservableObject {
     }
 
     init() {
+        let defaults = UserDefaults.standard
         ownerName = defaults.string(forKey: Keys.owner) ?? ""
         partnerID = defaults.string(forKey: Keys.partner)
         demoEnabled = defaults.bool(forKey: Keys.demo)
