@@ -1,0 +1,76 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  art:
+    name: Check slime fonts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install fonttools uharfbuzz pillow
+      - name: Rebuild sprites and fonts
+        run: python tools/make_slime.py
+      - name: Every timer string must become exactly one frame
+        run: python tools/verify_fonts.py
+
+  ipa:
+    name: Build unsigned IPA
+    needs: art
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+      - name: Generate Xcode project
+        run: |
+          brew install xcodegen
+          xcodegen generate
+      - name: Build
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -project Slimy.xcodeproj \
+            -scheme Slimy \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            build | tee xcodebuild.log | grep -E "error:|warning: .*Slimy|BUILD (SUCCEEDED|FAILED)" || true
+          grep -q "BUILD SUCCEEDED" xcodebuild.log
+      - name: Show errors
+        if: failure()
+        run: grep -E "error:" -A3 xcodebuild.log | head -200
+      - name: Package IPA
+        run: |
+          mkdir -p Payload
+          cp -R build/Build/Products/Release-iphoneos/Slimy.app Payload/
+          zip -qry Slimy.ipa Payload
+          ls -lh Slimy.ipa
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Slimy-ipa
+          path: Slimy.ipa
+      - name: Publish download
+        if: github.event_name != 'pull_request'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_number }}
+          name: Slimy build ${{ github.run_number }}
+          prerelease: true
+          files: Slimy.ipa
+          body: |
+            Unsigned build of ${{ github.sha }}.
+            Install it with Sideloadly and your Apple ID. See the README.
