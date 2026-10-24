@@ -50,9 +50,19 @@ jobs:
             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
             build | tee xcodebuild.log | grep -E "error:|warning: .*Slimy|BUILD (SUCCEEDED|FAILED)" || true
           grep -q "BUILD SUCCEEDED" xcodebuild.log
-      - name: Show errors
+      - name: Report errors
         if: failure()
-        run: grep -E "error:" -A3 xcodebuild.log | head -200
+        run: |
+          grep -E "error:" xcodebuild.log | sed "s#$GITHUB_WORKSPACE/##g" | sort -u | head -120 > errors.txt || true
+          cat errors.txt
+          # One annotation per error (GitHub shows the first 10), plus one with all of them.
+          head -10 errors.txt | while IFS= read -r line; do
+            if [[ "$line" =~ ^([^:]+):([0-9]+):([0-9]+):\ error:\ (.*)$ ]]; then
+              echo "::error file=${BASH_REMATCH[1]},line=${BASH_REMATCH[2]},col=${BASH_REMATCH[3]}::${BASH_REMATCH[4]}"
+            fi
+          done
+          all=$(python3 -c "import sys;print(open('errors.txt').read()[:60000].replace('%','%25').replace('\r','%0D').replace('\n','%0A'))")
+          echo "::error title=All compile errors::$all"
       - name: Package IPA
         run: |
           mkdir -p Payload
