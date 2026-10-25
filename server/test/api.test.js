@@ -132,6 +132,18 @@ describe("friend codes and requests", () => {
     assert.equal((await call("POST", "/friend-requests", { token: c.token, body: { code: code2 } })).status, 410);
   });
 
+  test("the website can show an invite without using the code", async () => {
+    const a = await device("Anna"), b = await device();
+    const code = (await call("POST", "/pair-codes", { token: a.token, body: {} })).body.code;
+    const invite = await call("GET", `/invites/${code.toLowerCase()}`);
+    assert.equal(invite.status, 200);
+    assert.equal(invite.body.ownerName, "Anna");
+    assert.equal(invite.body.slime.name, "Annas Blob");
+    assert.equal(invite.body.token, undefined);
+    assert.equal((await call("POST", "/friend-requests", { token: b.token, body: { code } })).status, 200);
+    assert.equal((await call("GET", `/invites/${code}`)).status, 404);
+  });
+
   test("your own code is refused", async () => {
     const a = await device();
     const code = (await call("POST", "/pair-codes", { token: a.token, body: {} })).body.code;

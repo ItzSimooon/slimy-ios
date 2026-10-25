@@ -205,7 +205,12 @@ final class EconomyTests: XCTestCase {
 final class DialogueTests: XCTestCase {
     func testDoesNotRepeatItselfRightAway() {
         var state = hatchedState()
-        let bank = Dialogue.lines[.pet]?.count ?? 0
+        // Only lines that fit the bond and the hour can be picked.
+        let hour = berlin.component(.hour, from: noon)
+        let bank = (Dialogue.lines[.pet] ?? []).filter {
+            Double($0.minBond) <= state.slime.bond && ($0.hours?.contains(hour) ?? true)
+        }.count
+        XCTAssertGreaterThanOrEqual(bank, 2)
         var said: [String] = []
         for i in 0..<min(5, bank) {
             let line = Dialogue.pick(.pet, state: state, at: noon.addingTimeInterval(Double(i) * 60), calendar: berlin)

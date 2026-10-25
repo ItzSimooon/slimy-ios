@@ -6,6 +6,7 @@ import WidgetKit
 struct SlimeWidgetBundle: WidgetBundle {
     var body: some Widget {
         SlimeLiveActivity()
+        SlimeHomeWidget()
         SummonSlimeControl()
         FeedSlimeControl()
     }

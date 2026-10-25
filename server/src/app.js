@@ -259,6 +259,20 @@ export function createApp({ db, clock = () => Date.now(), chat, trustProxy = fal
     });
   });
 
+  // For the website's invite page (/f/CODE): shows whose code it is
+  // without using it up. Limited per address like wrong codes.
+  route("GET", "/invites/:code", ({ params, ip }) => {
+    if (limiter.exhausted("badcode-ip", ip, 30)) fail(429, "Zu viele Versuche. Versuch es in einer Stunde nochmal.");
+    limit("invite", ip, 120, HOUR);
+    const row = q("SELECT * FROM pair_codes WHERE code = ?").get(String(params.code).toUpperCase());
+    if (!row || row.used_at || row.expires_at < clock()) {
+      limiter.hit("badcode-ip", ip, 30, HOUR);
+      fail(404, "Diesen Code gibt es nicht mehr. Frag nach einem neuen.");
+    }
+    const slime = slimeOf(row.device_id, null);
+    return { ownerName: slime.ownerName, slime: { name: slime.name, skin: slime.skin, stage: slime.stage }, expiresAt: iso(row.expires_at) };
+  }, { auth: false });
+
   route("POST", "/friend-requests", ({ me, body, ip }) => {
     // Brute-force protection: wrong codes count per device and per address.
     if (limiter.exhausted("badcode", me, 8) || limiter.exhausted("badcode-ip", ip, 30)) {

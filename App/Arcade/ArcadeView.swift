@@ -182,11 +182,11 @@ struct GameHost: View {
             .padding(.bottom, 8)
 
             if showTutorial {
-                overlay { tutorial }
+                modal { tutorial }
             } else if let summary {
-                overlay { results(summary) }
+                modal { results(summary) }
             } else if let session, session.paused {
-                overlay { pauseMenu(session) }
+                modal { pauseMenu(session) }
             }
         }
         .onAppear {
@@ -232,7 +232,7 @@ struct GameHost: View {
         .padding(.top, 4)
     }
 
-    private func overlay<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
+    private func modal<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
         ZStack {
             Color.black.opacity(0.35).ignoresSafeArea()
             content()
