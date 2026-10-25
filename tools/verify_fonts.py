@@ -12,7 +12,7 @@ import sys
 import uharfbuzz as hb
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-FRAMES = {"Slime": 24 * 50, "Emote": 9 * 100}
+FRAMES = {"Slime": 24 * 50, "Acc": 24 * 50, "Emote": 9 * 100}
 DIGITS = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine"]
 samples = [f"{m}:{s:02d}" for m in (0, 1, 9, 10, 59) for s in range(60)]
 samples += [f"{h}:{m:02d}:{s:02d}" for h in (1, 7, 11) for m in (0, 30) for s in range(0, 60, 7)]

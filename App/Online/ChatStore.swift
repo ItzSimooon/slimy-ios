@@ -36,7 +36,7 @@ final class ChatStore: ObservableObject {
         isThinking = true
         defer { isThinking = false; save() }
 
-        let slime = SlimeStore.shared.state
+        let slime = GameStore.shared.state.slime
         let history = messages.suffix(12).compactMap { m -> ChatTurn? in
             switch m.role {
             case .me: ChatTurn(role: .user, text: m.text)
@@ -45,7 +45,7 @@ final class ChatStore: ObservableObject {
             }
         }
         let context = ChatContext(
-            name: slime.name, ageDays: slime.ageDays, level: slime.level, mood: slime.mood,
+            name: slime.name, ageDays: slime.ageDays(), level: slime.level, mood: slime.mood,
             needs: slime.needs, favorite: slime.favorite,
             partnerName: FriendsStore.shared.partner?.slime.name,
             localTime: Date.now.formatted(date: .omitted, time: .shortened))
@@ -53,7 +53,9 @@ final class ChatStore: ObservableObject {
         do {
             let reply = try await HyprnodeAPI().chat(message: trimmed, history: Array(history.dropLast()), context: context)
             messages.append(ChatMessage(role: .slime, text: reply.reply))
-            if let reaction = reply.reaction { SlimeStore.shared.playReaction(reaction) }
+            if let reaction = reply.reaction {
+                GameStore.shared.update { $0.slime.react(reaction, at: .now) }
+            }
         } catch {
             try? await Task.sleep(for: .milliseconds(700))
             messages.append(ChatMessage(role: .slime, text: Self.blubs.randomElement()!))

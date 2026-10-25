@@ -55,17 +55,13 @@ private struct ExpandedTrailing: View {
     let state: IslandState
 
     var body: some View {
-        if let p = state.partner {
+        if let friends = state.friends, !friends.isEmpty {
             VStack(alignment: .trailing, spacing: 3) {
-                HStack(spacing: 2) {
-                    PixelItem(name: "heart")
-                        .frame(width: 10, height: 8)
-                        .opacity(p.inLove ? 1 : 0.4)
-                    IslandSlime(partner: p, anchor: state.anchor, height: 34, animated: state.animated)
-                }
-                Text(p.inLove ? "verliebt" : "\(p.love) % liebe")
+                FriendGroup(state: state, height: 34, limit: 2, names: false)
+                Text(caption)
                     .font(Brand.pixelFixed(11))
                     .foregroundStyle(Brand.warm)
+                    .lineLimit(1)
             }
         } else {
             VStack(alignment: .trailing, spacing: 6) {
@@ -83,6 +79,12 @@ private struct ExpandedTrailing: View {
                 }
             }
         }
+    }
+
+    private var caption: String {
+        if let moment = state.moment { return moment.line }
+        if let p = state.partner { return p.inLove ? "verliebt" : "\(p.love) % liebe" }
+        return "\(state.friends?.count ?? 0) freunde"
     }
 }
 
@@ -131,12 +133,12 @@ struct LockScreenSlime: View {
                 VStack(spacing: 0) {
                     HStack(alignment: .bottom, spacing: 2) {
                         IslandSlime(state, height: 56)
-                        if let p = state.partner {
+                        if state.friends?.isEmpty == false {
                             PixelItem(name: "heart")
                                 .frame(width: 12, height: 9)
-                                .opacity(p.inLove ? 1 : 0.4)
+                                .opacity(state.partner?.inLove == true || state.moment != nil ? 1 : 0.4)
                                 .padding(.bottom, 30)
-                            IslandSlime(partner: p, anchor: state.anchor, height: 48, animated: state.animated)
+                            FriendGroup(state: state, height: 46, limit: 2, names: false)
                         }
                     }
                     Rectangle().fill(Brand.line).frame(height: 3)

@@ -4,7 +4,7 @@ import SwiftUI
 
 @main
 struct SlimyApp: App {
-    @StateObject private var slime = SlimeStore.shared
+    @StateObject private var store = GameStore.shared
     @StateObject private var island = IslandController.shared
     @StateObject private var friends = FriendsStore.shared
     @StateObject private var chat = ChatStore.shared
@@ -17,24 +17,25 @@ struct SlimyApp: App {
     var body: some Scene {
         WindowGroup {
             RootView()
-                .environmentObject(slime)
+                .environmentObject(store)
                 .environmentObject(island)
                 .environmentObject(friends)
                 .environmentObject(chat)
-                .preferredColorScheme(.dark)
-                .tint(Brand.hypr)
+                .tint(Theme.accent)
         }
         .onChange(of: phase) { _, phase in
             switch phase {
             case .active:
-                slime.tick()
+                store.arrive()
                 PhoneMonitor.shared.start()
-                Notifier.reschedule(for: slime.state)
+                Feedback.shared.updateMusic(active: true)
+                Notifier.reschedule(for: store.state)
                 Task {
-                    if slime.hasHatched { await island.ensureRunning() }
+                    if store.state.hatched { await island.ensureRunning() }
                     await friends.refresh()
                 }
             case .background:
+                Feedback.shared.updateMusic(active: false)
                 BackgroundRefresh.schedule()
             default:
                 break
@@ -46,8 +47,9 @@ struct SlimyApp: App {
     }
 }
 
-/// Every ~30 minutes (when iOS allows it): age the slime, refresh friends,
-/// and nudge the island, popping it open if the slime just got sad.
+/// Every ~30 minutes (when iOS allows it; never guaranteed): age the slime,
+/// check friends, keep the island alive, and let the slime say once that it
+/// needs something.
 enum BackgroundRefresh {
     static let id = "de.hyprnode.slimy.refresh"
 
@@ -60,16 +62,17 @@ enum BackgroundRefresh {
     @MainActor
     static func run() async {
         schedule()
-        let store = SlimeStore.shared
-        let moodBefore = store.state.mood
+        let store = GameStore.shared
+        guard store.state.hatched else { return }
         store.tick()
         await FriendsStore.shared.refresh()
-        let s = store.state
-        if s.mood == .sad, moodBefore != .sad, let wish = s.wish {
-            await IslandController.shared.sync(alert: .init(title: "\(s.name)", body: "\(wish.wish)", sound: .default))
-        } else {
-            await IslandController.shared.ensureRunning()
+        var nudge: (need: Need, line: String)?
+        store.update { nudge = $0.nudge(now: .now) }
+        await IslandController.shared.ensureRunning()
+        if let nudge {
+            await IslandController.shared.sync(alert: .init(title: "\(store.slime.name)", body: "\(nudge.line)", sound: .default))
         }
+        Notifier.reschedule(for: store.state)
     }
 }
 
@@ -83,7 +86,7 @@ struct SlimyShortcuts: AppShortcutsProvider {
         AppShortcut(
             intent: FeedSlimeIntent(),
             phrases: ["Füttere meinen Slime in \(.applicationName)"],
-            shortTitle: "Füttern",
+            shortTitle: "Slime füttern",
             systemImageName: "fork.knife")
         AppShortcut(
             intent: PetSlimeIntent(),
@@ -98,7 +101,7 @@ struct SlimyShortcuts: AppShortcutsProvider {
         AppShortcut(
             intent: SlimeReactsIntent(),
             phrases: ["Sag es meinem Slime in \(.applicationName)"],
-            shortTitle: "Slime reagiert",
+            shortTitle: "Slime reagieren",
             systemImageName: "sparkles")
     }
 }

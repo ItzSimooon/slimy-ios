@@ -8,7 +8,7 @@ struct TimerProbe: View {
     let color: Color
 
     private var range: ClosedRange<Date> { anchor...anchor.addingTimeInterval(SlimeFont.span) }
-    private let font = "Slime-Idle-Body"
+    private let font = "Slime-Young-Idle-Body"
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -43,7 +43,7 @@ struct TimerProbe: View {
                     .background(Color.red.opacity(0.35))
             }
             row("G") {
-                AnimatedSlime(anim: .idle, anchor: anchor, skin: .lime, height: 14)
+                AnimatedSlime(stage: .young, anim: .idle, anchor: anchor, skin: .lime, height: 14)
                     .background(Color.green.opacity(0.25))
             }
                         Text("F  Schrift in Erweiterung: \(UIFont(name: font, size: 10) != nil ? "ja" : "nein")")

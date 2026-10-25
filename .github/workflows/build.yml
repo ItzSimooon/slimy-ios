@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   art:
-    name: Check slime fonts
+    name: Check slime fonts and puzzles
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -23,9 +23,54 @@ jobs:
         run: python tools/make_slime.py
       - name: Every timer string must become exactly one frame
         run: python tools/verify_fonts.py
+      - name: Every Garten-Rätsel level must be solvable
+        run: python tools/check_puzzles.py
+
+  server:
+    name: Server tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Test
+        run: |
+          if [ ! -f server/package.json ]; then echo "no server yet"; exit 0; fi
+          cd server && npm test
+
+  tests:
+    name: Unit tests (simulator)
+    needs: art
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+      - name: Generate Xcode project
+        run: |
+          brew install xcodegen
+          xcodegen generate
+      - name: Test
+        run: |
+          set -o pipefail
+          udid=$(xcrun simctl list devices available | grep -m1 -E "^\s+iPhone" | grep -oE '[0-9A-F]{8}-[0-9A-F-]{27}')
+          echo "Simulator: $udid"
+          xcodebuild test \
+            -project Slimy.xcodeproj \
+            -scheme Slimy \
+            -destination "platform=iOS Simulator,id=$udid" \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            | tee xcodebuild.log | grep -E "error:|Test Suite .* (passed|failed)|Executed [0-9]+ test|TEST (SUCCEEDED|FAILED)" || true
+          grep -q "TEST SUCCEEDED" xcodebuild.log
+      - name: Report errors
+        if: failure()
+        run: tools/ci_report.sh xcodebuild.log
 
   ipa:
-    name: Build unsigned IPA
+    name: Build IPA
     needs: art
     runs-on: macos-15
     steps:
@@ -52,27 +97,27 @@ jobs:
           grep -q "BUILD SUCCEEDED" xcodebuild.log
       - name: Report errors
         if: failure()
+        run: tools/ci_report.sh xcodebuild.log
+      - name: Package IPAs
         run: |
-          grep -E "error:" xcodebuild.log | sed "s#$GITHUB_WORKSPACE/##g" | sort -u | head -120 > errors.txt || true
-          cat errors.txt
-          # One annotation per error (GitHub shows the first 10), plus one with all of them.
-          head -10 errors.txt | while IFS= read -r line; do
-            if [[ "$line" =~ ^([^:]+):([0-9]+):([0-9]+):\ error:\ (.*)$ ]]; then
-              echo "::error file=${BASH_REMATCH[1]},line=${BASH_REMATCH[2]},col=${BASH_REMATCH[3]}::${BASH_REMATCH[4]}"
-            fi
-          done
-          all=$(python3 -c "import sys;print(open('errors.txt').read()[:60000].replace('%','%25').replace('\r','%0D').replace('\n','%0A'))")
-          echo "::error title=All compile errors::$all"
-      - name: Package IPA
-        run: |
-          mkdir -p Payload
-          cp -R build/Build/Products/Release-iphoneos/Slimy.app Payload/
+          app=build/Build/Products/Release-iphoneos/Slimy.app
+          # Plain unsigned build, as before.
+          mkdir -p plain/Payload && cp -R "$app" plain/Payload/
+          (cd plain && zip -qry ../Slimy-unsigned.ipa Payload)
+          # Ad-hoc signed with the App Group entitlement, so sideloading
+          # tools can see that app and widgets share their save.
+          codesign --force --sign - --entitlements Widget/SlimyWidgets.entitlements "$app/PlugIns/SlimyWidgets.appex"
+          codesign --force --sign - --entitlements App/Slimy.entitlements "$app"
+          codesign -d --entitlements - "$app" || true
+          mkdir -p Payload && cp -R "$app" Payload/
           zip -qry Slimy.ipa Payload
-          ls -lh Slimy.ipa
+          ls -lh Slimy.ipa Slimy-unsigned.ipa
       - uses: actions/upload-artifact@v4
         with:
           name: Slimy-ipa
-          path: Slimy.ipa
+          path: |
+            Slimy.ipa
+            Slimy-unsigned.ipa
       - name: Publish download
         if: github.event_name != 'pull_request'
         uses: softprops/action-gh-release@v2
@@ -80,7 +125,10 @@ jobs:
           tag_name: build-${{ github.run_number }}
           name: Slimy build ${{ github.run_number }}
           prerelease: true
-          files: Slimy.ipa
+          files: |
+            Slimy.ipa
+            Slimy-unsigned.ipa
           body: |
-            Unsigned build of ${{ github.sha }}.
-            Install it with Sideloadly and your Apple ID. See the README.
+            Build of ${{ github.sha }}.
+            Slimy.ipa: ad-hoc signed with the App Group entitlement (needed for the Home Screen widgets). Install it with Sideloadly and your Apple ID.
+            Slimy-unsigned.ipa: the same app without entitlements. Use it if your sideloading tool rejects the App Group; the app then keeps its save inside the app and the Home Screen widgets show a placeholder.

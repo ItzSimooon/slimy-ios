@@ -9,10 +9,7 @@ import UIKit
 final class PhoneMonitor {
     static let shared = PhoneMonitor()
 
-    var enabled: Bool {
-        get { UserDefaults.standard.object(forKey: "slimy.events.live") as? Bool ?? true }
-        set { UserDefaults.standard.set(newValue, forKey: "slimy.events.live") }
-    }
+    var enabled: Bool { GameStore.shared.state.settings.liveEvents && GameStore.shared.state.hatched }
 
     private let pathMonitor = NWPathMonitor()
     private var started = false
@@ -118,9 +115,15 @@ final class PhoneMonitor {
 
     private func fire(_ event: PhoneEvent) {
         guard enabled else { return }
-        // Don't let a flapping connection spam the slime.
-        if let last = lastFired[event], Date.now.timeIntervalSince(last) < 120 { return }
+        // Don't let a flapping connection or a charger wobble spam the slime.
+        if let last = lastFired[event], Date.now.timeIntervalSince(last) < 10 * 60 { return }
         lastFired[event] = .now
-        Task { await SlimeStore.shared.handle(event) }
+        let said = GameStore.shared.handle(event)
+        let name = GameStore.shared.slime.name
+        Task {
+            await IslandController.shared.sync(alert: event.alerts
+                ? .init(title: "\(name)", body: "\(said)", sound: .default) : nil)
+            await IslandController.shared.settle()
+        }
     }
 }

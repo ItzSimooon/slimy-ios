@@ -14,6 +14,8 @@ final class FriendsStore: ObservableObject {
     @Published private(set) var status: Status = .unknown
     @Published private(set) var pairCode: PairCode?
     @Published var lastError: String?
+    /// Something new arrived (shown as a dot on the Friends button).
+    @Published var hasNews = false
     @Published var ownerName: String {
         didSet { defaults.set(ownerName, forKey: Keys.owner) }
     }
@@ -80,10 +82,20 @@ final class FriendsStore: ObservableObject {
         return all.filter(\.inLove).max { $0.love < $1.love }
     }
 
-    var partnerSnapshot: PartnerSnapshot? {
-        guard let p = partner else { return nil }
-        return PartnerSnapshot(ownerName: p.ownerName, slimeName: p.slime.name, skin: p.slime.skin,
-                               mood: p.slime.mood, love: p.love, inLove: p.inLove)
+    /// Friends for the island, most important first: the one in love, then
+    /// by love.
+    var islandFriends: [FriendSlime] {
+        let sorted = allFriends.sorted { a, b in
+            if a.id == partnerID { return true }
+            if b.id == partnerID { return false }
+            if a.inLove != b.inLove { return a.inLove }
+            return a.love > b.love
+        }
+        return sorted.prefix(3).map { f in
+            FriendSlime(id: f.id, name: f.slime.name, owner: f.ownerName, skin: f.slime.skin,
+                        stage: Stage.forLevel(f.slime.level), mood: f.slime.mood, love: f.love, inLove: f.inLove,
+                        equipped: nil)
+        }
     }
 
     // MARK: Sync
@@ -91,7 +103,7 @@ final class FriendsStore: ObservableObject {
     func refresh() async {
         do {
             try await ensureRegistered()
-            let slime = SlimeStore.shared.state
+            let slime = GameStore.shared.state.slime
             try await api.upload(SlimeProfile(
                 ownerName: ownerName.isEmpty ? "Jemand" : ownerName,
                 name: slime.name, skin: slime.skin, level: slime.level, mood: slime.mood,
@@ -115,13 +127,16 @@ final class FriendsStore: ObservableObject {
 
     private func readInbox() async throws {
         let page = try await api.inbox(after: inboxCursor)
+        if !page.events.isEmpty { hasNews = true }
         for event in page.events {
             let who = friends.first { $0.id == event.friendId }?.slime.name ?? "Ein Freund"
             switch event.kind {
             case .gift:
-                SlimeStore.shared.receiveGift(event.food ?? .berry, from: who)
+                var line = ""
+                GameStore.shared.update { line = $0.receiveGift(event.food ?? .berry, from: who, now: .now) }
+                GameStore.shared.toast = Toast(text: line, good: true)
             case .kiss, .hug, .visit:
-                SlimeStore.shared.toast = Toast(text: "\(who): \(event.kind.inboxLine)", good: true)
+                GameStore.shared.toast = Toast(text: "\(who): \(event.kind.inboxLine)", good: true)
             }
         }
         if let cursor = page.cursor { inboxCursor = cursor }
@@ -174,7 +189,7 @@ final class FriendsStore: ObservableObject {
     /// Returns the line to show, or nil if it failed.
     func interact(with friend: Friend, _ kind: InteractionKind, food: Food? = nil) async -> String? {
         if kind == .gift, let food {
-            guard SlimeStore.shared.state.coins >= food.price else {
+            guard GameStore.shared.state.wallet.coins >= food.price else {
                 lastError = "Zu wenig Münzen für \(food.title)."
                 return nil
             }
@@ -198,15 +213,22 @@ final class FriendsStore: ObservableObject {
             }
         }
 
-        if kind == .gift, let food { SlimeStore.shared.spend(food.price) }
+        if kind == .gift, let food { GameStore.shared.update { _ = $0.wallet.spend(food.price) } }
         let fellInLove = result.inLove && !friend.inLove
         update(friend.id) { $0.love = result.love; $0.inLove = result.inLove }
         if fellInLove { partnerID = friend.id }
-        SlimeStore.shared.loveMoment(fellInLove: fellInLove)
-        await IslandController.shared.sync()
+        let category: LineCategory = switch kind {
+        case .hug, .kiss: .friendHug
+        case .visit: .friendVisit
+        case .gift: .gift
+        }
+        var said = ""
+        GameStore.shared.update { said = $0.friendMoment(category, friend: friend.slime.name, fellInLove: fellInLove, now: .now) }
+        let moment: SharedMoment = fellInLove ? .love : (kind == .gift ? .gift : kind == .visit ? .reunion : .hug)
+        await IslandController.shared.show(moment, with: friend.id, alert: fellInLove ? said : nil)
         lastError = nil
 
-        if fellInLove { return "\(SlimeStore.shared.state.name) und \(friend.slime.name) sind verliebt" }
+        if fellInLove { return said }
         switch kind {
         case .hug: return "umarmt \(friend.slime.name). quetsch."
         case .visit: return "zu besuch bei \(friend.slime.name)"
