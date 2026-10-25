@@ -34,6 +34,16 @@ final class IslandController: ObservableObject {
         }
     }
 
+    /// Diagnostics: show the timer test strip on the Lock Screen.
+    var probe: Bool {
+        get { defaults.bool(forKey: "slimy.island.probe") }
+        set {
+            defaults.set(newValue, forKey: "slimy.island.probe")
+            objectWillChange.send()
+            Task { await sync() }
+        }
+    }
+
     private var startedAt: Date? {
         get { defaults.object(forKey: "slimy.island.startedAt") as? Date }
         set { defaults.set(newValue, forKey: "slimy.island.startedAt") }
@@ -47,7 +57,7 @@ final class IslandController: ObservableObject {
 
     private var content: ActivityContent<SlimeActivityAttributes.ContentState> {
         let state = SlimeStore.shared.state.activityState(partner: FriendsStore.shared.partnerSnapshot,
-                                                          animated: animated)
+                                                          animated: animated, probe: probe)
         return ActivityContent(state: state, staleDate: nil, relevanceScore: 100)
     }
 

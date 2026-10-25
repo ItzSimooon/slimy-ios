@@ -113,7 +113,18 @@ struct LockScreenSlime: View {
         .padding(8)
     }
 
+    @ViewBuilder
     private var full: some View {
+        if state.probe == true {
+            TimerProbe(anchor: state.anchor, color: state.skin.body)
+                .padding(12)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        } else {
+            card
+        }
+    }
+
+    private var card: some View {
         ZStack {
             SkyBackground(date: state.anchor)
                 .opacity(dimmed ? 0.35 : 1)

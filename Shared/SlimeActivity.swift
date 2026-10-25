@@ -32,6 +32,8 @@ struct SlimeActivityAttributes: ActivityAttributes {
         var partner: PartnerSnapshot?
         /// Experimental timer-font animation. Optional so older activities still decode.
         var animated: Bool?
+        /// Shows the timer test strip on the Lock Screen (diagnostics).
+        var probe: Bool?
 
         func value(_ need: Need) -> Int {
             switch need {
@@ -47,7 +49,7 @@ struct SlimeActivityAttributes: ActivityAttributes {
 
 extension SlimeState {
     func activityState(at now: Date = .now, partner: PartnerSnapshot? = nil,
-                       animated: Bool = false) -> SlimeActivityAttributes.ContentState {
+                       animated: Bool = false, probe: Bool = false) -> SlimeActivityAttributes.ContentState {
         let reaction = activeReaction(at: now)
         return .init(
             name: name,
@@ -66,7 +68,8 @@ extension SlimeState {
             line: line(at: now),
             event: recentEvent(at: now),
             partner: partner,
-            animated: animated)
+            animated: animated,
+            probe: probe)
     }
 }
 

@@ -47,6 +47,17 @@ struct DiagnosticsView: View {
                             }
                         }
                         .tint(Brand.hypr)
+                        Toggle(isOn: Binding(get: { island.probe }, set: { island.probe = $0 })) {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Test-Streifen auf dem Sperrbildschirm")
+                                    .font(Brand.display(15, .bold))
+                                    .foregroundStyle(Brand.text)
+                                Text("Zeigt statt der Slimy-Karte fünf Testzeilen A bis F. Sperr das iPhone, mach einen Screenshot und schick ihn mir. Danach wieder ausschalten.")
+                                    .font(Brand.display(12, .medium))
+                                    .foregroundStyle(Brand.muted)
+                            }
+                        }
+                        .tint(Brand.hypr)
                     }
                 }
 
