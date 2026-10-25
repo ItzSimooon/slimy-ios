@@ -80,7 +80,7 @@ struct CompactBadge: View {
     var body: some View {
         if let p = state.partner, p.inLove {
             ZStack(alignment: .topTrailing) {
-                AnimatedSlime(partner: p, anchor: state.anchor, height: 18)
+                IslandSlime(partner: p, anchor: state.anchor, height: 18, animated: state.animated)
                 Image(systemName: "heart.fill")
                     .font(.system(size: 7, weight: .black))
                     .foregroundStyle(Brand.warm)

@@ -37,25 +37,44 @@ struct PixelSlime: View {
     var effects = true
 
     var body: some View {
-        Canvas { ctx, size in
-            let cols = CGFloat(SlimeSprites.width), rows = CGFloat(SlimeSprites.height)
-            let px = min(size.width / cols, size.height / rows)
-            let ox = (size.width - px * cols) / 2
-            let oy = size.height - px * rows
-            for layer in SpriteLayer.allCases {
-                if !effects, layer == .warm || layer == .cool { continue }
-                var path = Path()
-                for (y, row) in frame.enumerated() {
-                    for (x, ch) in row.enumerated() where ch == layer.code {
-                        // A hair of overlap hides seams between neighbouring pixels.
-                        path.addRect(CGRect(x: ox + CGFloat(x) * px, y: oy + CGFloat(y) * px,
-                                            width: px + 0.4, height: px + 0.4))
-                    }
+        // Plain shapes rather than Canvas, so it renders everywhere,
+        // including Live Activities.
+        ZStack {
+            ForEach(SpriteLayer.allCases, id: \.self) { layer in
+                if effects || (layer != .warm && layer != .cool) {
+                    SpriteLayerShape(frame: frame, code: layer.code)
+                        .fill(skin.color(for: layer))
                 }
-                ctx.fill(path, with: .color(skin.color(for: layer)))
             }
         }
         .aspectRatio(CGFloat(SlimeSprites.width) / CGFloat(SlimeSprites.height), contentMode: .fit)
         .accessibilityHidden(true)
+    }
+}
+
+/// All pixels of one paint layer of a sprite frame.
+struct SpriteLayerShape: Shape {
+    let frame: [String]
+    let code: Character
+
+    func path(in rect: CGRect) -> Path {
+        let cols = CGFloat(SlimeSprites.width), rows = CGFloat(SlimeSprites.height)
+        let px = min(rect.width / cols, rect.height / rows)
+        let ox = rect.minX + (rect.width - px * cols) / 2
+        let oy = rect.maxY - px * rows
+        var path = Path()
+        for (y, row) in frame.enumerated() {
+            var x = 0
+            let chars = Array(row)
+            while x < chars.count {
+                guard chars[x] == code else { x += 1; continue }
+                let start = x
+                while x < chars.count, chars[x] == code { x += 1 }
+                // A hair of overlap hides seams between neighbouring pixels.
+                path.addRect(CGRect(x: ox + CGFloat(start) * px, y: oy + CGFloat(y) * px,
+                                    width: CGFloat(x - start) * px + 0.4, height: px + 0.4))
+            }
+        }
+        return path
     }
 }

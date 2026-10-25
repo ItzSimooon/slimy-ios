@@ -30,6 +30,8 @@ struct SlimeActivityAttributes: ActivityAttributes {
         var line: String
         var event: PhoneEvent?
         var partner: PartnerSnapshot?
+        /// Experimental timer-font animation. Optional so older activities still decode.
+        var animated: Bool?
 
         func value(_ need: Need) -> Int {
             switch need {
@@ -44,7 +46,8 @@ struct SlimeActivityAttributes: ActivityAttributes {
 }
 
 extension SlimeState {
-    func activityState(at now: Date = .now, partner: PartnerSnapshot? = nil) -> SlimeActivityAttributes.ContentState {
+    func activityState(at now: Date = .now, partner: PartnerSnapshot? = nil,
+                       animated: Bool = false) -> SlimeActivityAttributes.ContentState {
         let reaction = activeReaction(at: now)
         return .init(
             name: name,
@@ -62,7 +65,8 @@ extension SlimeState {
             coins: coins,
             line: line(at: now),
             event: recentEvent(at: now),
-            partner: partner)
+            partner: partner,
+            animated: animated)
     }
 }
 

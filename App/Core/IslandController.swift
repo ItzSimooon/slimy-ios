@@ -24,6 +24,16 @@ final class IslandController: ObservableObject {
         set { defaults.set(newValue, forKey: "slimy.island.keepAlive"); objectWillChange.send() }
     }
 
+    /// Experimental: animate the island slime with timer fonts.
+    var animated: Bool {
+        get { defaults.bool(forKey: "slimy.island.animated") }
+        set {
+            defaults.set(newValue, forKey: "slimy.island.animated")
+            objectWillChange.send()
+            Task { await sync() }
+        }
+    }
+
     private var startedAt: Date? {
         get { defaults.object(forKey: "slimy.island.startedAt") as? Date }
         set { defaults.set(newValue, forKey: "slimy.island.startedAt") }
@@ -36,7 +46,8 @@ final class IslandController: ObservableObject {
     }
 
     private var content: ActivityContent<SlimeActivityAttributes.ContentState> {
-        let state = SlimeStore.shared.state.activityState(partner: FriendsStore.shared.partnerSnapshot)
+        let state = SlimeStore.shared.state.activityState(partner: FriendsStore.shared.partnerSnapshot,
+                                                          animated: animated)
         return ActivityContent(state: state, staleDate: nil, relevanceScore: 100)
     }
 

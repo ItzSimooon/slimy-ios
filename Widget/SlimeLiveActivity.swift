@@ -13,7 +13,7 @@ struct SlimeLiveActivity: Widget {
             return DynamicIsland {
                 DynamicIslandExpandedRegion(.leading) {
                     VStack(alignment: .leading, spacing: 2) {
-                        AnimatedSlime(s, height: 44)
+                        IslandSlime(s, height: 44)
                         Text(s.name)
                             .font(Brand.display(12, .bold))
                             .foregroundStyle(Brand.text)
@@ -38,11 +38,11 @@ struct SlimeLiveActivity: Widget {
                     .padding(.top, 2)
                 }
             } compactLeading: {
-                AnimatedSlime(s, height: 22)
+                IslandSlime(s, height: 22)
             } compactTrailing: {
                 CompactBadge(state: s)
             } minimal: {
-                AnimatedSlime(s, height: 18)
+                IslandSlime(s, height: 18)
             }
             .keylineTint(s.skin == .void ? Brand.hypr : s.skin.body)
             .widgetURL(URL(string: "slimy://home"))
@@ -61,7 +61,7 @@ private struct ExpandedTrailing: View {
                     Image(systemName: p.inLove ? "heart.fill" : "heart")
                         .font(.system(size: 10, weight: .black))
                         .foregroundStyle(Brand.warm)
-                    AnimatedSlime(partner: p, anchor: state.anchor, height: 34)
+                    IslandSlime(partner: p, anchor: state.anchor, height: 34, animated: state.animated)
                 }
                 Text(p.inLove ? "in love" : "\(p.love)% love")
                     .font(Brand.mono(10, .bold))
@@ -103,7 +103,7 @@ struct LockScreenSlime: View {
 
     private var watch: some View {
         HStack(spacing: 6) {
-            AnimatedSlime(state, height: 30)
+            IslandSlime(state, height: 30)
             VStack(alignment: .leading, spacing: 2) {
                 Text(state.name).font(Brand.display(13, .bold)).foregroundStyle(Brand.text)
                 Text(state.line).font(Brand.display(11, .medium)).foregroundStyle(Brand.muted).lineLimit(2)
@@ -120,14 +120,14 @@ struct LockScreenSlime: View {
             VStack(spacing: 10) {
                 HStack(alignment: .bottom, spacing: 10) {
                     HStack(alignment: .bottom, spacing: 0) {
-                        AnimatedSlime(state, height: 60)
+                        IslandSlime(state, height: 60)
                         if let p = state.partner {
                             Image(systemName: "heart.fill")
                                 .font(.system(size: 12, weight: .black))
                                 .foregroundStyle(Brand.warm)
                                 .opacity(p.inLove ? 1 : 0.45)
                                 .padding(.bottom, 30)
-                            AnimatedSlime(partner: p, anchor: state.anchor, height: 52)
+                            IslandSlime(partner: p, anchor: state.anchor, height: 52, animated: state.animated)
                         }
                     }
                     VStack(alignment: .leading, spacing: 6) {

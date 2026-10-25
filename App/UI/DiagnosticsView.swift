@@ -33,9 +33,20 @@ struct DiagnosticsView: View {
                             AnimatedSlime(anim: .play, anchor: previewStart, skin: store.state.skin, height: 56)
                             AnimatedSlime(anim: .eat, anchor: previewStart, skin: store.state.skin, height: 56)
                         }
-                        Text("So zeichnet die Insel den Slime. Bewegt er sich hier jede Sekunde, funktioniert die Animation.")
+                        Text("Das ist die Animation über die Uhr. Bewegt er sich hier jede Sekunde, klappt der Trick zumindest in der App.")
                             .font(Brand.display(13, .medium))
                             .foregroundStyle(Brand.muted)
+                        Toggle(isOn: Binding(get: { island.animated }, set: { island.animated = $0 })) {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Animation in der Insel (experimentell)")
+                                    .font(Brand.display(15, .bold))
+                                    .foregroundStyle(Brand.text)
+                                Text("Aus: Der Slime wird aus Pixeln gezeichnet und ist sicher sichtbar. An: Er bewegt sich jede Sekunde, falls iOS mitspielt. Ist er danach unsichtbar, schalte es wieder aus.")
+                                    .font(Brand.display(12, .medium))
+                                    .foregroundStyle(Brand.muted)
+                            }
+                        }
+                        .tint(Brand.hypr)
                     }
                 }
 
