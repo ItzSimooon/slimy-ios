@@ -66,11 +66,13 @@ iOS ends every Live Activity after about 8 hours. Push notifications could resta
 
 ## How the animation works
 
-A Live Activity can't run code, but iOS keeps `Text(timerInterval:)` ticking every second by itself. `tools/make_slime.py` draws every frame as pixel art and builds fonts in which every digit and colon is invisible. Font ligatures then turn the trailing `:SS` of the timer into one animation frame (`SS mod frameCount`). Six timers, one per color layer (body, shade, outline, shine, warm and cool effects), are stacked and tinted with the slime's skin.
+A Live Activity can't run code, but iOS keeps `Text(timerInterval:)` ticking every second by itself. `tools/make_slime.py` draws every frame as pixel art and builds fonts in which every digit **is** a whole animation frame and every glyph is exactly one frame wide. The island draws the timer right-aligned and clipped to a single glyph, so only the seconds digit shows, and the slime changes frame every second in a ten-step loop. Six timers, one per color layer (body, shade, outline, shine, warm and cool effects), are stacked and tinted with the slime's skin.
 
-Each font is a (reaction, mood) pair. During the first minute after the timer starts (`0:SS`) it plays the reaction, such as eating, bath or zap. After that it loops the mood: idle, sad or sleep. So one update gives you a one-minute reaction that turns back into idle on its own, with no second update needed.
+Each animation (idle, sad, sleep, eat, play, love, bath, melt, zap, confused, wave) has its own set of fonts. After an action, the island plays the reaction for 8 seconds, then the app sends one more update to switch back to the mood animation.
 
-`tools/verify_fonts.py` uses HarfBuzz to check that every timer string, including `H:MM:SS`, becomes exactly one frame. CI runs it on every push.
+An earlier version picked frames with font ligatures. iOS doesn't apply ligatures to timer text in the island, so the slime was invisible there; the current fonts don't use any.
+
+`tools/verify_fonts.py` uses HarfBuzz to check that every glyph is one frame wide, nothing gets substituted, and the last glyph of every timer string is the right frame. CI runs it on every push. In the app, **Settings → Diagnose** shows a live preview drawn exactly like the island.
 
 ## Project layout
 

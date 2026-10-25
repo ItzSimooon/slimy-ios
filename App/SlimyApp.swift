@@ -10,6 +10,10 @@ struct SlimyApp: App {
     @StateObject private var chat = ChatStore.shared
     @Environment(\.scenePhase) private var phase
 
+    init() {
+        IslandFonts.register()
+    }
+
     var body: some Scene {
         WindowGroup {
             RootView()

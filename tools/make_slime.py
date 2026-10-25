@@ -2,27 +2,27 @@
 """Draws Blob the slime and bakes it into everything the app needs.
 
 Outputs
-  Widget/Fonts/Slime-<Combo>-<Layer>.ttf   animation fonts for the Live Activity
+  Widget/Fonts/Slime-<Anim>-<Layer>.ttf    animation fonts for the Live Activity
   Widget/Info.plist                         widget Info.plist listing the fonts
   Shared/SlimeSprites.swift                 the same frames as data, for the app
   tools/out/sheet.png                       a contact sheet to eyeball the art
 
 How the animation works
   Live Activities can't run code, but iOS keeps `Text(timerInterval:)` ticking
-  every second on its own. Each font here hides every digit and colon, and uses
-  ligatures to swap the trailing ":SS" for frame (SS mod frameCount). One timer
-  per colour layer, all anchored to the same date, stack into a colour slime.
+  every second on its own. In these fonts every digit is a whole animation
+  frame and every glyph is exactly one frame wide. The island draws the timer
+  right-aligned and clipped to one glyph, so only the last digit (the seconds)
+  shows, and the frame changes once a second in a ten-step loop. One timer per
+  colour layer, all anchored to the same date, stack into a colour slime.
 
-  A font is a (reaction, mood) combo. During the first minute after the anchor
-  the timer reads "0:SS"; that window plays the reaction (eating, playing,
-  love). After that it falls back to the mood loop (idle, sad, sleep).
+  An earlier version used ligatures to pick frames from ":SS"; iOS doesn't
+  apply ligatures to timer text in the island, so this needs none.
 """
 import math
 import os
 import plistlib
 import sys
 
-from fontTools.feaLib.builder import addOpenTypeFeaturesFromString
 from fontTools.fontBuilder import FontBuilder
 from fontTools.pens.ttGlyphPen import TTGlyphPen
 
@@ -413,22 +413,6 @@ ANIMS = {
 for name, frames in ANIMS.items():
     assert 60 % len(frames) == 0, name
 
-MOODS = ["idle", "sad", "sleep"]
-REACTIONS = ["none", "eat", "play", "love", "bath", "melt", "zap", "confused", "wave"]
-
-
-def combos():
-    for r in REACTIONS:
-        for m in MOODS:
-            if r != "none" and m == "sleep":
-                continue  # actions wake it up, so a reaction never plays over sleep
-            yield r, m
-
-
-def combo_name(r, m):
-    return m.capitalize() if r == "none" else r.capitalize() + m.capitalize()
-
-
 # ------------------------------------------------------------------ fonts
 
 DIGITS = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine"]
@@ -461,102 +445,65 @@ def empty_glyph():
     return TTGlyphPen(None).glyph()
 
 
-def build_font(reaction, mood, layer, path):
-    mood_frames = ANIMS[mood]
-    react_frames = ANIMS[reaction] if reaction != "none" else None
-    combo = combo_name(reaction, mood)
-    ps_name = f"Slime-{combo}-{layer.capitalize()}"
+def ten_step(n):
+    """Which frame each final seconds digit 0-9 shows (a ten-second loop)."""
+    if n == 6:
+        return [0, 1, 2, 3, 0, 1, 2, 3, 4, 5]
+    if n == 4:
+        return [0, 1, 2, 3, 0, 1, 2, 3, 0, 0]
+    return [i % n for i in range(10)]
 
-    order = [".notdef", "space", "colon", "colon.hide", "zero.react"] + DIGITS
-    order += [f"m{i}" for i in range(len(mood_frames))]
-    if react_frames:
-        order += [f"r{i}" for i in range(len(react_frames))]
 
-    glyphs, metrics = {}, {}
-    for g in order:
-        glyphs[g] = empty_glyph()
-        metrics[g] = (0, 0)
-    for i, fr in enumerate(mood_frames):
-        glyphs[f"m{i}"] = frame_glyph(fr, layer)
-        metrics[f"m{i}"] = (W * PX, 0)
-    if react_frames:
-        for i, fr in enumerate(react_frames):
-            glyphs[f"r{i}"] = frame_glyph(fr, layer)
-            metrics[f"r{i}"] = (W * PX, 0)
-    metrics[".notdef"] = (0, 0)
+# Characters a timer can contain besides digits, in any locale we care about.
+BLANKS = {
+    "space": [" ", "\u00a0", "\u2007", "\u202f"],
+    "colon": [":", "\u2236"],
+    "period": ["."],
+    "comma": [","],
+}
+
+
+def build_font(anim, layer, path):
+    frames = ANIMS[anim]
+    seq = ten_step(len(frames))
+    ps_name = f"Slime-{anim.capitalize()}-{layer.capitalize()}"
+
+    order = [".notdef"] + list(BLANKS) + DIGITS
+    glyphs = {g: empty_glyph() for g in order}
+    for d, name in enumerate(DIGITS):
+        glyphs[name] = frame_glyph(frames[seq[d]], layer)
 
     fb = FontBuilder(1000, isTTF=True)
     fb.setupGlyphOrder(order)
     cmap = {ord(str(d)): DIGITS[d] for d in range(10)}
-    cmap[ord(":")] = "colon"
-    cmap[ord(" ")] = "space"
+    for glyph, chars in BLANKS.items():
+        for ch in chars:
+            cmap[ord(ch)] = glyph
     fb.setupCharacterMap(cmap)
     fb.setupGlyf(glyphs)
-    # glyf needs bounds before hmtx lsb is meaningful
     glyf = fb.font["glyf"]
     hmtx = {}
     for g in order:
         glyph = glyf[g]
         glyph.recalcBounds(glyf)
         lsb = getattr(glyph, "xMin", 0) if glyph.numberOfContours else 0
-        hmtx[g] = (metrics[g][0], lsb)
+        # Every glyph, even blanks and .notdef, is one frame wide so the
+        # last character always lands in the same visible slot.
+        hmtx[g] = (W * PX, lsb)
     fb.setupHorizontalMetrics(hmtx)
     fb.setupHorizontalHeader(ascent=H * PX, descent=0)
     fb.setupNameTable({
-        "familyName": f"Slime {combo} {layer.capitalize()}",
+        "familyName": f"Slime {anim.capitalize()} {layer.capitalize()}",
         "styleName": "Regular",
         "uniqueFontIdentifier": ps_name,
-        "fullName": f"Slime {combo} {layer.capitalize()}",
+        "fullName": f"Slime {anim.capitalize()} {layer.capitalize()}",
         "psName": ps_name,
-        "version": "Version 1.000",
+        "version": "Version 2.000",
     })
     fb.setupOS2(sTypoAscender=H * PX, sTypoDescender=0, sTypoLineGap=0,
                 usWinAscent=H * PX, usWinDescent=0, fsType=0)
     fb.setupPost()
     fb.setupHead(unitsPerEm=1000)
-
-    secs = [f"{s:02d}" for s in range(60)]
-    lig_rules = []
-    if react_frames:
-        for s in secs:
-            lig_rules.append(f"    sub zero.react colon {DIGITS[int(s[0])]} {DIGITS[int(s[1])]} by r{int(s) % len(react_frames)};")
-    for s in secs:
-        lig_rules.append(f"    sub colon {DIGITS[int(s[0])]} {DIGITS[int(s[1])]} by m{int(s) % len(mood_frames)};")
-
-    react_lookups = ""
-    react_refs = ""
-    if react_frames:
-        # "0:SS" with nothing before it is the first minute: mark that zero.
-        react_lookups = """
-lookup TOREACT { sub zero by zero.react; } TOREACT;
-lookup MARKREACT {
-    ignore sub @D zero' colon;
-    sub zero' lookup TOREACT colon @D @D;
-} MARKREACT;
-"""
-        react_refs = "    lookup MARKREACT;\n"
-
-    fea = f"""
-languagesystem DFLT dflt;
-languagesystem latn dflt;
-@D = [{' '.join(DIGITS)}];
-lookup HIDE {{ sub colon by colon.hide; }} HIDE;
-# H:MM:SS -> hide the first colon so only the seconds colon forms a frame
-lookup HIDEHOURS {{ sub colon' lookup HIDE @D @D colon; }} HIDEHOURS;
-{react_lookups}
-lookup FRAMES {{
-{chr(10).join(lig_rules)}
-}} FRAMES;
-feature liga {{
-    lookup HIDEHOURS;
-{react_refs}    lookup FRAMES;
-}} liga;
-feature calt {{
-    lookup HIDEHOURS;
-{react_refs}    lookup FRAMES;
-}} calt;
-"""
-    addOpenTypeFeaturesFromString(fb.font, fea)
     fb.font.save(path)
     return ps_name
 
@@ -636,9 +583,9 @@ def main():
         if old.endswith(".ttf"):
             os.remove(os.path.join(fonts_dir, old))
     files = []
-    for r, m in combos():
+    for anim in ANIMS:
         for layer in LAYERS:
-            ps = build_font(r, m, layer, os.path.join(fonts_dir, "tmp.ttf"))
+            ps = build_font(anim, layer, os.path.join(fonts_dir, "tmp.ttf"))
             final = os.path.join(fonts_dir, ps + ".ttf")
             os.replace(os.path.join(fonts_dir, "tmp.ttf"), final)
             files.append(ps + ".ttf")

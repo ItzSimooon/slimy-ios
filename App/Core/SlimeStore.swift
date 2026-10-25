@@ -61,6 +61,7 @@ final class SlimeStore: ObservableObject {
     func perform(_ action: SlimeAction) async -> ActionOutcome {
         let out = apply(action)
         await IslandController.shared.sync()
+        await IslandController.shared.settle()
         return out
     }
 
@@ -83,6 +84,7 @@ final class SlimeStore: ObservableObject {
             ? AlertConfiguration(title: "\(state.name)", body: "\(line)", sound: .default)
             : nil
         await IslandController.shared.sync(alert: alert)
+        await IslandController.shared.settle()
         return line
     }
 

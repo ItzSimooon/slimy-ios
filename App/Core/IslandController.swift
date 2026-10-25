@@ -13,6 +13,8 @@ final class IslandController: ObservableObject {
 
     @Published private(set) var isLive = false
     @Published var problem: String?
+    /// What happened with the island, newest last. Shown on the diagnostics screen.
+    @Published private(set) var log: [String] = []
 
     private let defaults = UserDefaults.standard
 
@@ -42,9 +44,26 @@ final class IslandController: ObservableObject {
         isLive = current != nil
     }
 
+    func note(_ line: String) {
+        let time = Date.now.formatted(date: .omitted, time: .standard)
+        log.append("\(time)  \(line)")
+        if log.count > 40 { log.removeFirst(log.count - 40) }
+    }
+
+    /// Logs every state change iOS reports for the activity (active, ended, dismissed…).
+    private func watch(_ activity: Activity<SlimeActivityAttributes>) {
+        Task { [weak self] in
+            for await state in activity.activityStateUpdates {
+                self?.note("Aktivität \(activity.id.prefix(6)): \(state)")
+                self?.refreshStatus()
+            }
+        }
+    }
+
     func start() async {
         guard ActivityAuthorizationInfo().areActivitiesEnabled else {
             problem = "Live Activities are off for Slimy. Turn them on in Settings → Slimy → Live Activities."
+            note("Start abgebrochen: Live-Aktivitäten sind ausgeschaltet")
             refreshStatus()
             return
         }
@@ -52,17 +71,21 @@ final class IslandController: ObservableObject {
             await activity.end(nil, dismissalPolicy: .immediate)
         }
         do {
-            _ = try Activity.request(attributes: SlimeActivityAttributes(), content: content, pushType: nil)
+            let activity = try Activity.request(attributes: SlimeActivityAttributes(), content: content, pushType: nil)
             startedAt = .now
             problem = nil
+            note("Gestartet: \(activity.id.prefix(6)), Zustand \(activity.activityState)")
+            watch(activity)
         } catch {
             problem = "The island didn't start: \(error.localizedDescription). Open Slimy and try again."
+            note("Start fehlgeschlagen: \(error)")
         }
         refreshStatus()
     }
 
     func stop() async {
         keepAlive = false
+        note("Beendet von dir")
         for activity in Activity<SlimeActivityAttributes>.activities {
             await activity.end(nil, dismissalPolicy: .immediate)
         }
@@ -76,6 +99,33 @@ final class IslandController: ObservableObject {
         } else {
             await activity.update(content)
         }
+        scheduleSettle()
+    }
+
+    private var settleTask: Task<Void, Never>?
+
+    /// A reaction only plays for a few seconds; send one more update to go
+    /// back to the mood animation once it's over.
+    private func scheduleSettle() {
+        settleTask?.cancel()
+        let slime = SlimeStore.shared.state
+        guard slime.activeReaction(at: .now) != .none else { return }
+        let left = SlimeState.reactionWindow - Date.now.timeIntervalSince(slime.reactionAt)
+        settleTask = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(max(0, left) + 0.3))
+            guard !Task.isCancelled else { return }
+            await self?.sync()
+        }
+    }
+
+    /// For intents: waits until the reaction has played, then settles the
+    /// island, so it doesn't get stuck mid-reaction if iOS suspends the app.
+    func settle() async {
+        let slime = SlimeStore.shared.state
+        guard slime.activeReaction(at: .now) != .none else { return }
+        let left = SlimeState.reactionWindow - Date.now.timeIntervalSince(slime.reactionAt)
+        try? await Task.sleep(for: .seconds(max(0, left) + 0.3))
+        await sync()
     }
 
     /// Makes sure the slime is in the island, restarting it before iOS's

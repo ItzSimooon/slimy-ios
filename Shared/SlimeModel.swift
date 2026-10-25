@@ -271,9 +271,12 @@ struct SlimeState: Codable, Hashable {
 
     func isUnlocked(_ skin: Skin) -> Bool { level >= skin.unlockLevel }
 
-    /// The reaction still playing, if it started less than a minute ago.
+    /// How long a reaction plays in the island before it goes back to the mood.
+    static let reactionWindow: TimeInterval = 8
+
+    /// The reaction still playing, if it started moments ago.
     func activeReaction(at now: Date) -> Reaction {
-        now.timeIntervalSince(reactionAt) < 60 ? reaction : .none
+        now.timeIntervalSince(reactionAt) < Self.reactionWindow ? reaction : .none
     }
 
     /// One line of chatter for the island and the room.

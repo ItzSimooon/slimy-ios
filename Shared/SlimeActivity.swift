@@ -71,15 +71,15 @@ enum SlimeFont {
     /// How long one animation timer runs. Longer than any Live Activity lives.
     static let span: TimeInterval = 16 * 3600
 
-    static func combo(mood: Mood, reaction: Reaction) -> String {
-        if reaction == .none || mood == .sleep { return mood.rawValue.capitalized }
-        return reaction.rawValue.capitalized + mood.rawValue.capitalized
-    }
-
-    static func name(mood: Mood, reaction: Reaction, layer: SpriteLayer) -> String {
-        "Slime-\(combo(mood: mood, reaction: reaction))-\(layer.fontKey)"
+    static func name(anim: SpriteAnim, layer: SpriteLayer) -> String {
+        "Slime-\(anim.rawValue.capitalized)-\(layer.fontKey)"
     }
 
     /// Glyphs are 24 x 20 pixels; the font is sized by height.
     static let aspect: CGFloat = 24.0 / 20.0
+}
+
+extension SlimeActivityAttributes.ContentState {
+    /// What the island plays right now: the reaction if there is one, else the mood.
+    var anim: SpriteAnim { SpriteAnim(reaction) ?? SpriteAnim(mood) }
 }

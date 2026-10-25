@@ -4,44 +4,6 @@ import WidgetKit
 
 typealias IslandState = SlimeActivityAttributes.ContentState
 
-/// The slime, animated by iOS itself: one ticking timer per colour layer,
-/// drawn in fonts whose ligatures turn the time into animation frames.
-struct AnimatedSlime: View {
-    let mood: Mood
-    let reaction: Reaction
-    let anchor: Date
-    let skin: Skin
-    let height: CGFloat
-    var mirrored = false
-
-    var body: some View {
-        ZStack {
-            ForEach(SpriteLayer.allCases, id: \.self) { layer in
-                Text(timerInterval: anchor...anchor.addingTimeInterval(SlimeFont.span), countsDown: false)
-                    .font(.custom(SlimeFont.name(mood: mood, reaction: reaction, layer: layer), fixedSize: height))
-                    .foregroundStyle(skin.color(for: layer))
-                    .multilineTextAlignment(.center)
-                    .lineLimit(1)
-            }
-        }
-        .frame(width: height * SlimeFont.aspect, height: height)
-        .scaleEffect(x: mirrored ? -1 : 1, y: 1)
-        .accessibilityElement()
-        .accessibilityLabel("Your slime")
-    }
-}
-
-extension AnimatedSlime {
-    init(_ s: IslandState, height: CGFloat) {
-        self.init(mood: s.mood, reaction: s.reaction, anchor: s.anchor, skin: s.skin, height: height)
-    }
-
-    init(partner p: PartnerSnapshot, anchor: Date, height: CGFloat) {
-        self.init(mood: p.mood, reaction: p.inLove ? .love : .none, anchor: anchor,
-                  skin: p.skin, height: height, mirrored: true)
-    }
-}
-
 /// Five slim bars, one per need.
 struct NeedsStrip: View {
     let state: IslandState

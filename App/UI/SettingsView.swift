@@ -31,6 +31,19 @@ struct SettingsView: View {
                                 }
                             }
                         }
+                        NavigationLink {
+                            DiagnosticsView()
+                        } label: {
+                            HStack {
+                                Label("Diagnose: Warum ist nichts in der Insel?", systemImage: "stethoscope")
+                                    .font(Brand.display(15, .bold))
+                                Spacer()
+                                Image(systemName: "chevron.right").foregroundStyle(Brand.muted)
+                            }
+                            .padding(14)
+                            .background(Brand.raised, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                        }
+                        .buttonStyle(.plain)
                     }
 
                     section("phone reactions") {
