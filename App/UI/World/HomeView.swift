@@ -42,6 +42,21 @@ struct HomeView: View {
                 .position(x: geo.size.width / 2, y: floorY + 20 * scale / 2 - slimeHeight * 0.55)
                 .animation(.easeOut(duration: 0.2), value: s.line(at: .now))
 
+                if let visit = friends.visitor, visit.until > .now {
+                    // A friend's slime came over for a while.
+                    VStack(spacing: 2) {
+                        Text(visit.friend.name).font(Theme.label(12)).foregroundStyle(Theme.ink)
+                            .padding(.horizontal, 6).background(Theme.paper.opacity(0.85))
+                        FriendPortrait(skin: visit.friend.skin, stage: visit.friend.stage, mood: .idle,
+                                       accessories: visit.friend.equipped ?? Accessories())
+                            .frame(width: slimeHeight * 0.55 * SlimeFont.aspect, height: slimeHeight * 0.55)
+                            .scaleEffect(x: -1, y: 1)
+                    }
+                    .position(x: geo.size.width * 0.8, y: floorY + 20 * scale / 2 - slimeHeight * 0.3)
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel("\(visit.friend.name) ist zu Besuch")
+                }
+
                 VStack(spacing: 0) {
                     topBar
                     Spacer()
@@ -69,6 +84,14 @@ struct HomeView: View {
             switch cover {
             case .arcade: ArcadeView()
             case .bath: BathView()
+            }
+        }
+        .onChange(of: friends.playChallenge?.id) { _, id in
+            guard id != nil else { return }
+            sheet = nil
+            Task {
+                try? await Task.sleep(for: .milliseconds(450))
+                cover = .arcade
             }
         }
         .task(id: phase) {

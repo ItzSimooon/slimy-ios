@@ -404,7 +404,8 @@ extension GameState {
         tick(now: now)
         slime.needs.add(.love, fellInLove ? 40 : 10)
         slime.needs.add(.fun, 5)
-        slime.xp += fellInLove ? 50 : 4
+        var levelLine = ""
+        _ = gainXP(fellInLove ? 50 : 4, now: now, line: &levelLine)
         switch category {
         case .gift: progress.stats.giftsSent += 1
         case .friendVisit: progress.stats.visits += 1

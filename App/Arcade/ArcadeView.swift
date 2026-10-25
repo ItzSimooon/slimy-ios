@@ -3,15 +3,30 @@ import SwiftUI
 /// The arcade: pick a game, then the host runs it.
 struct ArcadeView: View {
     @EnvironmentObject private var store: GameStore
+    @EnvironmentObject private var friends: FriendsStore
     @Environment(\.dismiss) private var dismiss
     @State private var playing: GameID?
+    @State private var challenge: Challenge?
 
     var body: some View {
-        if let playing {
-            GameHost(game: playing) { self.playing = nil }
+        Group {
+            if let playing {
+                GameHost(game: playing, challenge: challenge) {
+                    self.playing = nil
+                    challenge = nil
+                }
                 .transition(.opacity)
-        } else {
-            menu
+            } else {
+                menu
+            }
+        }
+        .onAppear {
+            // Opened to play a friend's challenge.
+            if let c = friends.playChallenge {
+                friends.playChallenge = nil
+                challenge = c
+                playing = c.game
+            }
         }
     }
 
@@ -29,6 +44,25 @@ struct ArcadeView: View {
                         BlockBar(value: s.slime.needs.energy / 100, color: Theme.color(for: .energy), height: 8)
                     }
                     .padding(.horizontal, 4)
+
+                    ForEach(friends.openChallenges) { c in
+                        Button {
+                            challenge = c
+                            withAnimation(.easeOut(duration: 0.15)) { playing = c.game }
+                        } label: {
+                            HStack(spacing: 10) {
+                                PixelItem(name: c.game.icon).frame(width: 26, height: 26)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("\(c.friendName) fordert dich heraus").font(Theme.label(15)).foregroundStyle(Theme.ink)
+                                    Text("\(c.game.title): schlag \(c.theirScore ?? 0) Punkte").font(Theme.text(13)).foregroundStyle(Theme.inkSoft)
+                                }
+                                Spacer()
+                            }
+                            .padding(12)
+                        }
+                        .buttonStyle(KeyStyle(fill: Color.dynamic(light: 0xFFF1C9, dark: 0x3A3220)))
+                        .disabled(!s.canPlay)
+                    }
 
                     if !s.canPlay {
                         PixelWindow(fill: Theme.paperShade) {
@@ -105,15 +139,21 @@ private struct GameCard: View {
 /// app pauses the round; the reward for a round is paid exactly once.
 struct GameHost: View {
     let game: GameID
+    /// Set when this round answers a friend's challenge: same seed, same board.
+    var challenge: Challenge? = nil
     let close: () -> Void
 
     @EnvironmentObject private var store: GameStore
+    @EnvironmentObject private var friends: FriendsStore
     @Environment(\.scenePhase) private var phase
 
     @State private var session: GameSession?
     @State private var showTutorial = false
     @State private var confirmQuit = false
     @State private var summary: RoundSummary?
+    @State private var lastSeed: UInt64 = 0
+    @State private var choosingFriend = false
+    @State private var challengeLine: String?
 
     struct RoundSummary {
         let result: GameResult
@@ -269,6 +309,24 @@ struct GameHost: View {
             } else {
                 Text(summary.line).font(Theme.text(14)).foregroundStyle(Theme.inkSoft)
             }
+            if let challenge, lastSeed == challenge.seedValue {
+                Text(summary.result.score > (challenge.theirScore ?? 0)
+                     ? "Du hast \(challenge.friendName) geschlagen: \(summary.result.score) zu \(challenge.theirScore ?? 0)."
+                     : "\(challenge.friendName) bleibt vorn: \(challenge.theirScore ?? 0) zu \(summary.result.score).")
+                    .font(Theme.label(15)).foregroundStyle(Theme.love)
+            } else if summary.result.score > 0, !friends.friends.isEmpty {
+                PixelButton(title: "Freund herausfordern", icon: "flag", kind: .secondary) { choosingFriend = true }
+                    .confirmationDialog("Wen herausfordern?", isPresented: $choosingFriend) {
+                        ForEach(friends.friends) { friend in
+                            Button(friend.slime.name) {
+                                Task { challengeLine = await friends.challenge(friend, with: summary.result, seed: lastSeed) ?? friends.lastError }
+                            }
+                        }
+                    }
+            }
+            if let challengeLine {
+                Text(challengeLine).font(Theme.text(13)).foregroundStyle(Theme.inkSoft)
+            }
             HStack(spacing: 10) {
                 PixelButton(title: "Zurück", kind: .quiet) { close() }
                 PixelButton(title: "Nochmal") { start() }
@@ -296,9 +354,14 @@ struct GameHost: View {
             close()
             return
         }
-        summary = nil
         confirmQuit = false
-        session = GameSession(game: game)
+        challengeLine = nil
+        // A challenge is played once on its seed; "Nochmal" afterwards is a normal round.
+        let seed: UInt64? = (summary == nil && challenge != nil) ? challenge?.seedValue : nil
+        summary = nil
+        let next = GameSession(game: game, seed: seed)
+        lastSeed = next.seed
+        session = next
     }
 
     private func finish() {
@@ -310,8 +373,12 @@ struct GameHost: View {
             Feedback.shared.play(.whoosh)
             return
         }
+        if let challenge, session.seed == challenge.seedValue {
+            Task { await friends.answer(challenge, score: result.score) }
+        }
         let before = store.state.record(game)
         let outcome = store.finish(result)
+        if outcome.ok { friends.contributeCoop(result) }
         let record = result.score > before.best && before.plays > 0
         summary = RoundSummary(result: result, paid: outcome.ok, record: record, line: outcome.line)
         if record { Feedback.shared.play(.levelUp) }

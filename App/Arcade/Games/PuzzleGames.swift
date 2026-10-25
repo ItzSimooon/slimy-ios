@@ -46,7 +46,7 @@ struct BubblePopView: View {
                 ForEach((0..<BubblePopEngine.rows).reversed(), id: \.self) { row in
                     HStack(spacing: 0) {
                         ForEach(0..<BubblePopEngine.columns, id: \.self) { column in
-                            bubble(column, row).frame(width: cell, height: cell)
+                            bubble(column, row, cell: cell).frame(width: cell, height: cell)
                         }
                     }
                 }
@@ -58,7 +58,7 @@ struct BubblePopView: View {
     }
 
     @ViewBuilder
-    private func bubble(_ column: Int, _ row: Int) -> some View {
+    private func bubble(_ column: Int, _ row: Int, cell: CGFloat) -> some View {
         if let color = engine.color(column, row) {
             let size = engine.group(column, row).count
             Button {

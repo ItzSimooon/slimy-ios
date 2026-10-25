@@ -51,17 +51,21 @@ final class ChatStore: ObservableObject {
             localTime: Date.now.formatted(date: .omitted, time: .shortened))
 
         do {
-            let reply = try await HyprnodeAPI().chat(message: trimmed, history: Array(history.dropLast()), context: context)
+            let api = try await FriendsStore.shared.authorizedAPI()
+            let reply = try await api.chat(message: trimmed, history: Array(history.dropLast()), context: context)
             messages.append(ChatMessage(role: .slime, text: reply.reply))
             if let reaction = reply.reaction {
                 GameStore.shared.update { $0.slime.react(reaction, at: .now) }
             }
+        } catch let error as APIError where !error.isTransient {
+            // The server answered with a reason (for example the daily limit).
+            messages.append(ChatMessage(role: .note, text: error.localizedDescription))
         } catch {
             try? await Task.sleep(for: .milliseconds(700))
             messages.append(ChatMessage(role: .slime, text: Self.blubs.randomElement()!))
             if !shownOfflineNote {
                 shownOfflineNote = true
-                messages.append(ChatMessage(role: .note, text: "Richtig reden kann er, sobald slime.hyprnode.de online ist."))
+                messages.append(ChatMessage(role: .note, text: "Richtig reden kann er, sobald slime.hyprnode.de erreichbar ist."))
             }
         }
     }
