@@ -28,6 +28,9 @@ final class PhoneMonitor {
         var online: Bool
         var wifi: Bool
         var cellular: Bool
+        /// False when the network state wasn't known yet (just launched, or a
+        /// background run that couldn't read it). Never compared against.
+        var netKnown: Bool
         var at: Date
     }
 
@@ -38,6 +41,10 @@ final class PhoneMonitor {
     private var currentPath: NWPath?
     private var started = false
     private var timer: Timer?
+    /// Right after the app opens, the first readings only set the baseline:
+    /// the network state arrives a moment later and would otherwise look
+    /// like "Wi-Fi just connected".
+    private var settleUntil = Date.distantPast
 
     private var last: Snapshot? {
         get { defaults.data(forKey: "slimy.phone.snapshot").flatMap { try? JSONDecoder().decode(Snapshot.self, from: $0) } }
@@ -52,6 +59,7 @@ final class PhoneMonitor {
 
     /// Starts live watching (called when the app becomes active).
     func start() {
+        settleUntil = .now.addingTimeInterval(5)
         guard !started else { check(); return }
         started = true
         UIDevice.current.isBatteryMonitoringEnabled = true
@@ -79,7 +87,9 @@ final class PhoneMonitor {
     /// For background runs: waits briefly for the network state, then checks.
     func checkInBackground() async {
         UIDevice.current.isBatteryMonitoringEnabled = true
-        if currentPath == nil {
+        // A path remembered from the last time the app was open may be old;
+        // read a fresh one (or none, if it doesn't come in time).
+        if UIApplication.shared.applicationState != .active {
             currentPath = await Self.networkPath()
         }
         check()
@@ -93,9 +103,19 @@ final class PhoneMonitor {
         guard enabled else { return }
 
         var events: [PhoneEvent] = []
-        if let old = previous {
-            events += powerEvents(from: old, to: snapshot)
-            events += networkEvents(from: old, to: snapshot)
+        let settling = now < settleUntil
+        if let old = previous, !settling {
+            let age = now.timeIntervalSince(old.at)
+            let background = UIApplication.shared.applicationState != .active
+            // Battery thresholds are crossings, so they are news whenever seen.
+            // Charger and power mode changes count while you watch, or in a
+            // background run (that is the reaction to charging); not hours
+            // later when you open the app.
+            events += powerEvents(from: old, to: snapshot, includeState: background || age < 30 * 60)
+            // Network changes only count when seen live, a few minutes apart.
+            if old.netKnown, snapshot.netKnown, age < 5 * 60 {
+                events += networkEvents(from: old, to: snapshot)
+            }
         }
         events += clockEvents(since: previous?.at, now: now)
 
@@ -117,9 +137,10 @@ final class PhoneMonitor {
             charging: device.batteryState == .charging || device.batteryState == .full,
             full: device.batteryState == .full,
             lowPower: ProcessInfo.processInfo.isLowPowerModeEnabled,
-            online: path?.status == .satisfied || (path == nil && last?.online == true),
+            online: path.map { $0.status == .satisfied } ?? (last?.online ?? false),
             wifi: path?.usesInterfaceType(.wifi) ?? (last?.wifi ?? false),
             cellular: path?.usesInterfaceType(.cellular) ?? (last?.cellular ?? false),
+            netKnown: path != nil,
             at: now)
     }
 
@@ -145,11 +166,15 @@ final class PhoneMonitor {
 
     // MARK: Changes
 
-    private func powerEvents(from old: Snapshot, to new: Snapshot) -> [PhoneEvent] {
+    private func powerEvents(from old: Snapshot, to new: Snapshot, includeState: Bool) -> [PhoneEvent] {
         var out: [PhoneEvent] = []
-        if !old.charging, new.charging { out.append(.chargerConnected) }
-        if old.charging, !new.charging { out.append(.chargerDisconnected) }
-        if !old.full, new.full { out.append(.batteryFull) }
+        if includeState {
+            if !old.charging, new.charging { out.append(.chargerConnected) }
+            if old.charging, !new.charging { out.append(.chargerDisconnected) }
+            if !old.full, new.full { out.append(.batteryFull) }
+            if !old.lowPower, new.lowPower { out.append(.lowPowerOn) }
+            if old.lowPower, !new.lowPower { out.append(.lowPowerOff) }
+        }
         if old.battery >= 0, new.battery >= 0, !new.charging {
             if old.battery >= 0.05, new.battery < 0.05 {
                 out.append(.batteryCritical)
@@ -157,8 +182,6 @@ final class PhoneMonitor {
                 out.append(.batteryLow)
             }
         }
-        if !old.lowPower, new.lowPower { out.append(.lowPowerOn) }
-        if old.lowPower, !new.lowPower { out.append(.lowPowerOff) }
         return out
     }
 
