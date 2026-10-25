@@ -310,6 +310,22 @@ final class IslandStateTests: XCTestCase {
         XCTAssertEqual(solo.line, state.baseLine)
     }
 
+    func testPhoneEventShowsBrieflyAndFallsBack() {
+        var game = GameState()
+        game.hatch(name: "Testi", skin: .lime, seed: 1, now: noon)
+        _ = game.handle(.wifiConnected, now: noon)
+        let fresh = SlimeActivityAttributes.ContentState(game, at: noon.addingTimeInterval(60))
+        XCTAssertEqual(fresh.event, .wifiConnected)
+        XCTAssertEqual(fresh.emote, .wifi)
+        // Once the event's window is over, it's gone from the island.
+        let later = SlimeActivityAttributes.ContentState(game, at: noon.addingTimeInterval(Slime.eventWindow + 1))
+        XCTAssertNil(later.event)
+        XCTAssertNotEqual(later.emote, .wifi)
+        // And a stale activity drops it too.
+        XCTAssertNil(fresh.solo.event)
+        XCTAssertNotEqual(fresh.solo.emote, .wifi)
+    }
+
     func testMeetFramesSlideAndCarryAccessoryOffsets() {
         for stage in Stage.allCases {
             let anchors = SlimeSprites.anchors(stage, .meet)

@@ -45,6 +45,9 @@ final class PhoneMonitor {
     /// the network state arrives a moment later and would otherwise look
     /// like "Wi-Fi just connected".
     private var settleUntil = Date.distantPast
+    /// Network changes are only checked once the path has been stable for a
+    /// few seconds; waking up, interfaces often flicker.
+    private var pendingNetworkCheck: Task<Void, Never>?
 
     private var last: Snapshot? {
         get { defaults.data(forKey: "slimy.phone.snapshot").flatMap { try? JSONDecoder().decode(Snapshot.self, from: $0) } }
@@ -59,7 +62,7 @@ final class PhoneMonitor {
 
     /// Starts live watching (called when the app becomes active).
     func start() {
-        settleUntil = .now.addingTimeInterval(5)
+        settleUntil = .now.addingTimeInterval(15)
         guard !started else { check(); return }
         started = true
         UIDevice.current.isBatteryMonitoringEnabled = true
@@ -76,8 +79,15 @@ final class PhoneMonitor {
         }
         pathMonitor.pathUpdateHandler = { path in
             Task { @MainActor in
-                PhoneMonitor.shared.currentPath = path
-                PhoneMonitor.shared.check()
+                // Only a path that held for a while becomes the one readings use.
+                let monitor = PhoneMonitor.shared
+                monitor.pendingNetworkCheck?.cancel()
+                monitor.pendingNetworkCheck = Task { @MainActor in
+                    try? await Task.sleep(for: .seconds(8))
+                    guard !Task.isCancelled else { return }
+                    PhoneMonitor.shared.currentPath = path
+                    PhoneMonitor.shared.check()
+                }
             }
         }
         pathMonitor.start(queue: .main)

@@ -247,8 +247,11 @@ struct Slime: Codable, Hashable {
     }
 
     /// The phone event it is still talking about, for 15 minutes.
+    /// How long a phone event shows in the island (emote, icon) after it happened.
+    static let eventWindow: TimeInterval = 3 * 60
+
     func recentEvent(at now: Date) -> PhoneEvent? {
-        now.timeIntervalSince(eventAt) < 15 * 60 ? lastEvent : nil
+        now.timeIntervalSince(eventAt) < Self.eventWindow ? lastEvent : nil
     }
 
     /// What it's saying, if it said something recently.

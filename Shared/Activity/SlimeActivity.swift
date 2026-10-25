@@ -120,11 +120,13 @@ struct SlimeActivityAttributes: ActivityAttributes {
             return friends?.first(where: \.inLove)
         }
 
-        /// The same state without the shared moment: what the island falls
-        /// back to once the moment's time is up (the activity goes stale).
+        /// The everyday state without the shared moment or the phone event:
+        /// what the island falls back to once their time is up (the activity
+        /// goes stale then, even if the app isn't running).
         var solo: Self {
-            guard moment != nil else { return self }
             var s = self
+            s.event = nil
+            guard moment != nil else { return s }
             s.moment = nil
             s.momentFriend = nil
             s.line = baseLine ?? line

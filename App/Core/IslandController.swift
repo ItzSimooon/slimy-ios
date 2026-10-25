@@ -64,9 +64,13 @@ final class IslandController: ObservableObject {
             friends: FriendsStore.shared.islandFriends,
             moment: moment?.kind, momentFriend: moment?.friend,
             animated: animated, probe: probe)
-        // When the moment's time is up the activity goes stale and the island
-        // draws the solo state, even if the app is suspended by then.
-        return ActivityContent(state: state, staleDate: moment?.until, relevanceScore: moment == nil ? 50 : 100)
+        // When a moment's or a phone event's time is up the activity goes
+        // stale and the island draws the everyday state, even if the app is
+        // suspended by then.
+        let slime = GameStore.shared.slime
+        let eventEnds = state.event == nil ? nil : slime.eventAt.addingTimeInterval(Slime.eventWindow)
+        let stale = [moment?.until, eventEnds].compactMap { $0 }.min()
+        return ActivityContent(state: state, staleDate: stale, relevanceScore: moment == nil ? 50 : 100)
     }
 
     func refreshStatus() {
