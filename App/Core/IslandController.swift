@@ -26,7 +26,7 @@ final class IslandController: ObservableObject {
 
     /// Experimental: animate the island slime with timer fonts.
     var animated: Bool {
-        get { defaults.bool(forKey: "slimy.island.animated") }
+        get { defaults.object(forKey: "slimy.island.animated") as? Bool ?? true }
         set {
             defaults.set(newValue, forKey: "slimy.island.animated")
             objectWillChange.send()

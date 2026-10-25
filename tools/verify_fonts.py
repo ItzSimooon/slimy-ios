@@ -12,7 +12,7 @@ import sys
 import uharfbuzz as hb
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-FRAME = 24 * 50
+FRAMES = {"Slime": 24 * 50, "Emote": 9 * 100}
 DIGITS = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine"]
 samples = [f"{m}:{s:02d}" for m in (0, 1, 9, 10, 59) for s in range(60)]
 samples += [f"{h}:{m:02d}:{s:02d}" for h in (1, 7, 11) for m in (0, 30) for s in range(0, 60, 7)]
@@ -22,6 +22,7 @@ bad = 0
 fonts = sorted(glob.glob(os.path.join(ROOT, "Widget", "Fonts", "*.ttf")))
 for path in fonts:
     font = hb.Font(hb.Face(hb.Blob.from_file_path(path)))
+    frame = FRAMES[os.path.basename(path).split("-")[0]]
     for text in samples:
         buf = hb.Buffer()
         buf.add_str(text)
@@ -29,7 +30,7 @@ for path in fonts:
         hb.shape(font, buf, {})
         names = [font.glyph_to_string(g.codepoint) for g in buf.glyph_infos]
         advances = {p.x_advance for p in buf.glyph_positions}
-        ok = (len(names) == len(text) and advances == {FRAME}
+        ok = (len(names) == len(text) and advances == {frame}
               and names[-1] == DIGITS[int(text[-1])])
         if not ok:
             bad += 1

@@ -62,12 +62,12 @@ struct IslandSlime: View {
 
 extension IslandSlime {
     init(_ s: SlimeActivityAttributes.ContentState, height: CGFloat) {
-        self.init(anim: s.anim, anchor: s.anchor, skin: s.skin, height: height, animated: s.animated ?? false)
+        self.init(anim: s.anim, anchor: s.anchor, skin: s.skin, height: height, animated: s.animated ?? true)
     }
 
     init(partner p: PartnerSnapshot, anchor: Date, height: CGFloat, animated: Bool?) {
         self.init(anim: p.inLove ? .love : SpriteAnim(p.mood), anchor: anchor,
-                  skin: p.skin, height: height, animated: animated ?? false, mirrored: true)
+                  skin: p.skin, height: height, animated: animated ?? true, mirrored: true)
     }
 }
 

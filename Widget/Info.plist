@@ -93,6 +93,20 @@
 		<string>Slime-Wave-Shine.ttf</string>
 		<string>Slime-Wave-Warm.ttf</string>
 		<string>Slime-Wave-Cool.ttf</string>
+		<string>Emote-happyA.ttf</string>
+		<string>Emote-happyB.ttf</string>
+		<string>Emote-happyC.ttf</string>
+		<string>Emote-hunger.ttf</string>
+		<string>Emote-fun.ttf</string>
+		<string>Emote-sleepy.ttf</string>
+		<string>Emote-clean.ttf</string>
+		<string>Emote-love.ttf</string>
+		<string>Emote-battery.ttf</string>
+		<string>Emote-zap.ttf</string>
+		<string>Emote-wifi.ttf</string>
+		<string>Emote-confused.ttf</string>
+		<string>Emote-morning.ttf</string>
+		<string>Emote-night.ttf</string>
 		<string>PixelifySans-Regular.ttf</string>
 		<string>PixelifySans-Bold.ttf</string>
 	</array>

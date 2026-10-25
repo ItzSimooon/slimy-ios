@@ -38,10 +38,10 @@ struct DiagnosticsView: View {
                             .foregroundStyle(Brand.muted)
                         Toggle(isOn: Binding(get: { island.animated }, set: { island.animated = $0 })) {
                             VStack(alignment: .leading, spacing: 2) {
-                                Text("Animation in der Insel (experimentell)")
+                                Text("Animation in der Insel")
                                     .font(Brand.pixel(15))
                                     .foregroundStyle(Brand.text)
-                                Text("Aus: Der Slime wird aus Pixeln gezeichnet und ist sicher sichtbar. An: Er bewegt sich jede Sekunde, falls iOS mitspielt. Ist er danach unsichtbar, schalte es wieder aus.")
+                                Text("An: Slime und Emotes bewegen sich jede Sekunde. Aus: Er wird als Standbild gezeichnet und wechselt nur bei Änderungen.")
                                     .font(Brand.body(12))
                                     .foregroundStyle(Brand.muted)
                             }

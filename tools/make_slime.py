@@ -26,6 +26,9 @@ import sys
 from fontTools.fontBuilder import FontBuilder
 from fontTools.pens.ttGlyphPen import TTGlyphPen
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from emotes import ICONS, REELS  # noqa: E402
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 W, H = 24, 20          # sprite grid in pixels
 GROUND = H - 1         # bottom row the slime sits on
@@ -606,6 +609,69 @@ def build_font(anim, layer, path):
     return ps_name
 
 
+def icon_glyph(rows, px):
+    pen = TTGlyphPen(None)
+    size = len(rows)
+    for y, row in enumerate(rows):
+        x = 0
+        while x < len(row):
+            if row[x] == "#":
+                x0 = x
+                while x < len(row) and row[x] == "#":
+                    x += 1
+                top = (size - y) * px
+                pen.moveTo((x0 * px, top - px))
+                pen.lineTo((x0 * px, top))
+                pen.lineTo((x * px, top))
+                pen.lineTo((x * px, top - px))
+                pen.closePath()
+            else:
+                x += 1
+    return pen.glyph()
+
+
+def build_emote_font(reel, path):
+    """Same layout as the slime fonts: each digit is a whole icon, one icon wide."""
+    epx = 100
+    size = 9
+    ps_name = f"Emote-{reel}"
+    order = [".notdef"] + list(BLANKS) + DIGITS
+    glyphs = {g: empty_glyph() for g in order}
+    for d, name in enumerate(DIGITS):
+        glyphs[name] = icon_glyph(ICONS[REELS[reel][d]], epx)
+    fb = FontBuilder(size * epx, isTTF=True)
+    fb.setupGlyphOrder(order)
+    cmap = {ord(str(d)): DIGITS[d] for d in range(10)}
+    for glyph, chars in BLANKS.items():
+        for ch in chars:
+            cmap[ord(ch)] = glyph
+    fb.setupCharacterMap(cmap)
+    fb.setupGlyf(glyphs)
+    glyf = fb.font["glyf"]
+    hmtx = {}
+    for g in order:
+        glyph = glyf[g]
+        glyph.recalcBounds(glyf)
+        lsb = getattr(glyph, "xMin", 0) if glyph.numberOfContours else 0
+        hmtx[g] = (size * epx, lsb)
+    fb.setupHorizontalMetrics(hmtx)
+    fb.setupHorizontalHeader(ascent=size * epx, descent=0)
+    fb.setupNameTable({
+        "familyName": f"Emote {reel}",
+        "styleName": "Regular",
+        "uniqueFontIdentifier": ps_name,
+        "fullName": f"Emote {reel}",
+        "psName": ps_name,
+        "version": "Version 1.000",
+    })
+    fb.setupOS2(sTypoAscender=size * epx, sTypoDescender=0, sTypoLineGap=0,
+                usWinAscent=size * epx, usWinDescent=0, fsType=0)
+    fb.setupPost()
+    fb.setupHead(unitsPerEm=size * epx)
+    fb.font.save(path)
+    return ps_name
+
+
 # ------------------------------------------------------------------ swift
 
 def write_swift(path):
@@ -627,6 +693,16 @@ def write_swift(path):
             lines.append("        ],")
         lines.append("    ]")
         lines.append("")
+    lines.append("    static let emoteIcons: [String: [String]] = [")
+    for name, rows in ICONS.items():
+        lines.append(f'        "{name}": [' + ", ".join(f'"{r}"' for r in rows) + "],")
+    lines.append("    ]")
+    lines.append("")
+    lines.append("    static let emoteReels: [String: [String]] = [")
+    for name, reel in REELS.items():
+        lines.append(f'        "{name}": [' + ", ".join(f'"{i}"' for i in reel) + "],")
+    lines.append("    ]")
+    lines.append("")
     lines.append("    static let items: [String: ItemSprite] = [")
     for name, (palette, rows) in ITEMS.items():
         pal = ", ".join(f'"{k}": 0x{v:06X}' for k, v in palette.items())
@@ -682,6 +758,23 @@ def write_sheet(path, scale=8):
     img.save(path)
 
 
+def write_emote_sheet(path, scale=6):
+    from PIL import Image, ImageDraw
+    cell = 9 * scale + 6
+    img = Image.new("RGB", (90 + 10 * cell, len(REELS) * cell + 6), (16, 20, 17))
+    d = ImageDraw.Draw(img)
+    for r, (name, reel) in enumerate(REELS.items()):
+        d.text((4, 6 + r * cell + 18), name, fill=(200, 210, 200))
+        for c, icon in enumerate(reel):
+            ox, oy = 90 + c * cell, 6 + r * cell
+            for y, row in enumerate(ICONS[icon]):
+                for x, ch in enumerate(row):
+                    if ch == "#":
+                        d.rectangle([ox + x * scale, oy + y * scale, ox + (x + 1) * scale - 1, oy + (y + 1) * scale - 1],
+                                    fill=(240, 122, 154))
+    img.save(path)
+
+
 def main():
     fonts_dir = os.path.join(ROOT, "Widget", "Fonts")
     os.makedirs(fonts_dir, exist_ok=True)
@@ -695,12 +788,17 @@ def main():
             final = os.path.join(fonts_dir, ps + ".ttf")
             os.replace(os.path.join(fonts_dir, "tmp.ttf"), final)
             files.append(ps + ".ttf")
+    for reel in REELS:
+        ps = build_emote_font(reel, os.path.join(fonts_dir, "tmp.ttf"))
+        os.replace(os.path.join(fonts_dir, "tmp.ttf"), os.path.join(fonts_dir, ps + ".ttf"))
+        files.append(ps + ".ttf")
     write_widget_plist(os.path.join(ROOT, "Widget", "Info.plist"), files)
     write_swift(os.path.join(ROOT, "Shared", "SlimeSprites.swift"))
     out = os.path.join(ROOT, "tools", "out")
     os.makedirs(out, exist_ok=True)
     write_sheet(os.path.join(out, "sheet.png"))
-    print(f"{len(files)} fonts, {len(ANIMS)} animations")
+    write_emote_sheet(os.path.join(out, "emotes.png"))
+    print(f"{len(files)} fonts, {len(ANIMS)} animations, {len(REELS)} emote reels")
 
 
 if __name__ == "__main__":

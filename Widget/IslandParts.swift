@@ -65,7 +65,8 @@ struct ActionRow: View {
     }
 }
 
-/// What sits on the right of the compact island.
+/// What sits on the right of the compact island: always a small animated
+/// pixel emote, or the partner's slime when the two are in love.
 struct CompactBadge: View {
     let state: IslandState
 
@@ -75,31 +76,9 @@ struct CompactBadge: View {
                 PixelItem(name: "heart").frame(width: 8, height: 7)
                 IslandSlime(partner: p, anchor: state.anchor, height: 18, animated: state.animated)
             }
-        } else if let event = state.event {
-            Image(systemName: event.symbol)
-                .font(.system(size: 14, weight: .bold))
-                .foregroundStyle(eventTint(event))
-        } else if let wish = state.wish {
-            HStack(spacing: 3) {
-                Image(systemName: wish.symbol)
-                    .font(.system(size: 11, weight: .bold))
-                Text("\(state.value(wish))")
-                    .font(Brand.pixelFixed(13))
-            }
-            .foregroundStyle(state.value(wish) < 25 ? Brand.danger : Brand.color(for: wish))
         } else {
-            Text("LV\(state.level)")
-                .font(Brand.pixelFixed(13))
-                .foregroundStyle(Brand.accent(state.skin))
-        }
-    }
-
-    private func eventTint(_ e: PhoneEvent) -> Color {
-        switch e.reaction {
-        case .melt: Brand.danger
-        case .zap: Brand.gold
-        case .confused: Brand.cool
-        default: Brand.slime
+            EmoteView(reel: state.emote, anchor: state.anchor, size: 18, animated: state.animated ?? true)
+                .padding(.trailing, 2)
         }
     }
 }
