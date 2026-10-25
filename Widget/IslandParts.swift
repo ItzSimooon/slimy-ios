@@ -50,6 +50,7 @@ struct IslandButton<I: LiveActivityIntent>: View {
     let symbol: String
     let label: String
     let tint: Color
+    var height: CGFloat = 34
 
     var body: some View {
         Button(intent: intent) {
@@ -59,7 +60,7 @@ struct IslandButton<I: LiveActivityIntent>: View {
                     .lineLimit(1).minimumScaleFactor(0.8)
             }
             .frame(maxWidth: .infinity)
-            .frame(height: 34)
+            .frame(height: height)
             .background(tint.opacity(0.2))
             .overlay(Rectangle().strokeBorder(tint.opacity(0.55), lineWidth: 1.5))
         }
@@ -69,17 +70,18 @@ struct IslandButton<I: LiveActivityIntent>: View {
 
 struct ActionRow: View {
     let state: IslandState
+    var height: CGFloat = 34
 
     var body: some View {
         HStack(spacing: 6) {
             if state.mood == .sleep {
-                IslandButton(intent: SleepSlimeIntent(), symbol: "sun.max.fill", label: "Wake", tint: Brand.color(for: .energy))
-                IslandButton(intent: PetSlimeIntent(), symbol: "hand.raised.fill", label: "Pet", tint: Brand.warm)
+                IslandButton(intent: SleepSlimeIntent(), symbol: "sun.max.fill", label: "Wake", tint: Brand.color(for: .energy), height: height)
+                IslandButton(intent: PetSlimeIntent(), symbol: "hand.raised.fill", label: "Pet", tint: Brand.warm, height: height)
             } else {
-                IslandButton(intent: FeedSlimeIntent(), symbol: "fork.knife", label: "Feed", tint: Brand.color(for: .hunger))
-                IslandButton(intent: PlaySlimeIntent(), symbol: "gamecontroller.fill", label: "Play", tint: Brand.color(for: .fun))
-                IslandButton(intent: BathSlimeIntent(), symbol: "drop.fill", label: "Bath", tint: Brand.color(for: .clean))
-                IslandButton(intent: PetSlimeIntent(), symbol: "hand.raised.fill", label: "Pet", tint: Brand.warm)
+                IslandButton(intent: FeedSlimeIntent(), symbol: "fork.knife", label: "Feed", tint: Brand.color(for: .hunger), height: height)
+                IslandButton(intent: PlaySlimeIntent(), symbol: "gamecontroller.fill", label: "Play", tint: Brand.color(for: .fun), height: height)
+                IslandButton(intent: BathSlimeIntent(), symbol: "drop.fill", label: "Bath", tint: Brand.color(for: .clean), height: height)
+                IslandButton(intent: PetSlimeIntent(), symbol: "hand.raised.fill", label: "Pet", tint: Brand.warm, height: height)
             }
         }
     }

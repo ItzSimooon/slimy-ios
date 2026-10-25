@@ -45,6 +45,10 @@ struct ArcadeView: View {
                     }
                     .padding(.horizontal, 4)
 
+                    TodayCard(playable: s.canPlay) {
+                        withAnimation(.easeOut(duration: 0.15)) { playing = .daily }
+                    }
+
                     ForEach(friends.openChallenges) { c in
                         Button {
                             challenge = c
@@ -72,7 +76,7 @@ struct ArcadeView: View {
                     }
 
                     LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)], spacing: 12) {
-                        ForEach(GameID.allCases) { game in
+                        ForEach(GameID.classics) { game in
                             GameCard(game: game,
                                      record: s.record(game),
                                      locked: s.slime.level < game.unlockLevel,
@@ -86,6 +90,84 @@ struct ArcadeView: View {
                 .padding(16)
             }
         }
+    }
+}
+
+/// The day's game, quest and story, on top of the arcade.
+struct TodayCard: View {
+    @EnvironmentObject private var daily: DailyStore
+    @EnvironmentObject private var store: GameStore
+    let playable: Bool
+    let play: () -> Void
+
+    var body: some View {
+        let plan = daily.plan
+        let game = plan.game
+        let colors = game.theme.colors
+        VStack(alignment: .leading, spacing: 0) {
+            // A little window into today's world.
+            ZStack(alignment: .bottomLeading) {
+                GameBackdrop(top: colors.top, bottom: colors.bottom)
+                Rectangle().fill(Color(hex: colors.ground)).frame(height: 14)
+                HStack(alignment: .bottom, spacing: 10) {
+                    ForEach(Array(game.entities.prefix(4).enumerated()), id: \.offset) { i, e in
+                        PixelItem(name: e.sprite)
+                            .frame(width: 22, height: 22)
+                            .offset(y: CGFloat(-10 - (i % 2) * 14))
+                    }
+                    Spacer()
+                    Text(plan.source == "ai" ? "made by AI today" : "new today")
+                        .font(Theme.label(11)).foregroundStyle(.white)
+                        .padding(.horizontal, 6).padding(.vertical, 3)
+                        .background(Color.black.opacity(0.35))
+                        .padding(.bottom, 20)
+                }
+                .padding(.horizontal, 12)
+            }
+            .frame(height: 84)
+            .clipped()
+
+            VStack(alignment: .leading, spacing: 10) {
+                Text(game.title).font(Theme.title(22)).foregroundStyle(Theme.ink)
+                Text(game.blurb).font(Theme.text(14)).foregroundStyle(Theme.inkSoft)
+                    .fixedSize(horizontal: false, vertical: true)
+                if !plan.story.isEmpty {
+                    Text("\u{201C}\(plan.story)\u{201D}").font(Theme.text(13)).italic().foregroundStyle(Theme.ink)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                questRow(plan)
+                PixelButton(title: daily.playedToday ? "Play again" : "Play today's game", icon: "starJelly", action: play)
+                    .disabled(!playable)
+            }
+            .padding(14)
+        }
+        .background(NotchedRect().fill(Theme.paper))
+        .overlay(NotchedRect().strokeBorder(Theme.border, lineWidth: Theme.px))
+        .background(NotchedRect().fill(Theme.border).offset(x: Theme.px, y: Theme.px).opacity(0.35))
+        .clipShape(NotchedRect())
+        .accessibilityElement(children: .contain)
+    }
+
+    private func questRow(_ plan: DailyPlan) -> some View {
+        let p = daily.progress
+        return HStack(spacing: 10) {
+            PixelItem(name: "flag").frame(width: 20, height: 20)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(plan.quest.title).font(Theme.label(14)).foregroundStyle(Theme.ink)
+                BlockBar(value: Double(p.value) / Double(max(1, p.target)), color: Theme.accent, blocks: 8, height: 5)
+            }
+            Spacer()
+            if daily.questClaimed {
+                Text("done").font(Theme.label(13)).foregroundStyle(Theme.accentInk)
+            } else if daily.questDone {
+                PixelButton(title: "+\(plan.quest.coins)", icon: "coin", compact: true) { daily.claimQuest() }
+            } else {
+                Text("\(p.value)/\(p.target)").font(Theme.label(13)).foregroundStyle(Theme.inkSoft)
+            }
+        }
+        .padding(10)
+        .background(Theme.paperShade)
+        .accessibilityElement(children: .combine)
     }
 }
 
@@ -145,6 +227,7 @@ struct GameHost: View {
 
     @EnvironmentObject private var store: GameStore
     @EnvironmentObject private var friends: FriendsStore
+    @EnvironmentObject private var daily: DailyStore
     @Environment(\.scenePhase) private var phase
 
     @State private var session: GameSession?
@@ -190,7 +273,7 @@ struct GameHost: View {
             }
         }
         .onAppear {
-            if store.state.record(game).tutorialSeen { start() } else { showTutorial = true }
+            if tutorialSeen { start() } else { showTutorial = true }
         }
         .onChange(of: phase) { _, phase in
             if phase != .active { session?.paused = true }
@@ -217,8 +300,9 @@ struct GameHost: View {
             .accessibilityLabel(session?.ended == false ? "Pause" : "Close")
 
             VStack(alignment: .leading, spacing: 0) {
-                Text(game.title).font(Theme.label(15)).foregroundStyle(Theme.ink)
-                Text("Record \(store.state.record(game).best)").font(Theme.text(12)).foregroundStyle(Theme.inkSoft)
+                Text(title).font(Theme.label(15)).foregroundStyle(Theme.ink)
+                Text(spec == nil ? "Record \(store.state.record(game).best)" : "Good from \(goodScore)")
+                    .font(Theme.text(12)).foregroundStyle(Theme.inkSoft)
             }
             Spacer()
             if let session {
@@ -242,13 +326,13 @@ struct GameHost: View {
     }
 
     private var tutorial: some View {
-        PixelWindow(title: game.title) {
+        PixelWindow(title: title) {
             HStack {
                 Spacer()
                 PixelItem(name: game.icon).frame(width: 44, height: 44)
                 Spacer()
             }
-            ForEach(Array(game.tutorial.enumerated()), id: \.offset) { i, line in
+            ForEach(Array(rules.enumerated()), id: \.offset) { i, line in
                 HStack(alignment: .firstTextBaseline, spacing: 10) {
                     Text("\(i + 1)").font(Theme.label(13)).foregroundStyle(.white)
                         .frame(width: 22, height: 22).background(Theme.accent)
@@ -256,11 +340,11 @@ struct GameHost: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
-            Text("Anything from \(game.goodScore) points is good.").font(Theme.text(13)).foregroundStyle(Theme.inkSoft)
+            Text("Anything from \(goodScore) points is good.").font(Theme.text(13)).foregroundStyle(Theme.inkSoft)
             HStack(spacing: 10) {
                 PixelButton(title: "Back", kind: .quiet) { close() }
                 PixelButton(title: session == nil ? "Let's go" : "Got it") {
-                    store.update { $0.markTutorialSeen(game) }
+                    markTutorialSeen()
                     showTutorial = false
                     // Opened from the pause menu: the round stays paused.
                     if session == nil { start() }
@@ -314,7 +398,7 @@ struct GameHost: View {
                      ? "You beat \(challenge.friendName): \(summary.result.score) to \(challenge.theirScore ?? 0)."
                      : "\(challenge.friendName) stays ahead: \(challenge.theirScore ?? 0) to \(summary.result.score).")
                     .font(Theme.label(15)).foregroundStyle(Theme.love)
-            } else if summary.result.score > 0, !friends.friends.isEmpty {
+            } else if summary.result.score > 0, game != .daily, !friends.friends.isEmpty {
                 PixelButton(title: "Challenge a friend", icon: "flag", kind: .secondary) { choosingFriend = true }
                     .confirmationDialog("Who do you want to challenge?", isPresented: $choosingFriend) {
                         ForEach(friends.friends) { friend in
@@ -348,6 +432,24 @@ struct GameHost: View {
 
     // MARK: Flow
 
+    // The daily game brings its own name, rules and target.
+    private var spec: GameSpec? { game == .daily ? daily.plan.game : nil }
+    private var title: String { spec?.title ?? game.title }
+    private var rules: [String] { spec?.tutorial ?? game.tutorial }
+    private var goodScore: Int { spec?.goodScore ?? game.goodScore }
+    private var tutorialSeen: Bool {
+        if let spec { return UserDefaults.standard.string(forKey: "slimy.daily.tutorial") == spec.id }
+        return store.state.record(game).tutorialSeen
+    }
+
+    private func markTutorialSeen() {
+        if let spec {
+            UserDefaults.standard.set(spec.id, forKey: "slimy.daily.tutorial")
+        } else {
+            store.update { $0.markTutorialSeen(game) }
+        }
+    }
+
     private func start() {
         guard store.state.canPlay else {
             store.toast = Toast(text: "\(store.state.slime.name) is too tired.", good: false)
@@ -359,14 +461,15 @@ struct GameHost: View {
         // A challenge is played once on its seed; "Again" afterwards is a normal round.
         let seed: UInt64? = (summary == nil && challenge != nil) ? challenge?.seedValue : nil
         summary = nil
-        let next = GameSession(game: game, seed: seed)
+        let next = GameSession(game: game, seed: seed, spec: spec)
         lastSeed = next.seed
         session = next
     }
 
     private func finish() {
         guard let session, summary == nil else { return }
-        let result = GameResult(game: game, score: session.score, session: session.id, finishedAt: .now)
+        let result = GameResult(game: game, score: session.score, session: session.id, finishedAt: .now,
+                                target: session.spec?.goodScore, day: session.spec?.id)
         guard result.score > 0 else {
             summary = RoundSummary(result: result, paid: false, record: false,
                                    line: "No points this time. It didn't cost any energy.")
@@ -401,6 +504,12 @@ private struct GameBoard: View {
         case .treasureDig: TreasureDigView(session: session)
         case .basketball: BasketballView(session: session)
         case .colorMatch: ColorMatchView(session: session)
+        case .daily:
+            if let spec = session.spec {
+                BlockGameView(session: session, spec: spec)
+            } else {
+                Color.clear.onAppear { session.end() }
+            }
         }
     }
 }

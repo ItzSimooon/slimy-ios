@@ -197,7 +197,7 @@ private struct CollectionSection: View {
                 }
             }
             PixelWindow(title: "Records") {
-                ForEach(GameID.allCases) { game in
+                ForEach(GameID.classics) { game in
                     let record = s.record(game)
                     HStack {
                         PixelItem(name: game.icon).frame(width: 20, height: 20)

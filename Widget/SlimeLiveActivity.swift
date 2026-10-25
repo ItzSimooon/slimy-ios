@@ -15,27 +15,29 @@ struct SlimeLiveActivity: Widget {
             return DynamicIsland {
                 DynamicIslandExpandedRegion(.leading) {
                     Portrait(name: s.name, alignment: .leading) {
-                        IslandSlime(s, height: 44)
+                        IslandSlime(s, height: 34)
                     }
-                    .padding(.leading, 6)
+                    .padding(.leading, 4)
                 }
                 DynamicIslandExpandedRegion(.trailing) {
                     ExpandedTrailing(state: s)
-                        .padding(.trailing, 6)
+                        .padding(.trailing, 4)
                 }
                 DynamicIslandExpandedRegion(.bottom) {
-                    VStack(spacing: 9) {
+                    // The expanded island is at most ~160 pt tall; this keeps
+                    // line, needs and buttons inside it on every iPhone.
+                    VStack(spacing: 6) {
                         Text(s.line)
                             .font(IslandType.line)
                             .foregroundStyle(Brand.text)
                             .multilineTextAlignment(.center)
-                            .lineLimit(2)
-                            .minimumScaleFactor(0.9)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
                             .frame(maxWidth: .infinity)
                         NeedsStrip(state: s)
-                        ActionRow(state: s)
+                        ActionRow(state: s, height: 28)
                     }
-                    .padding(.horizontal, 6)
+                    .padding(.horizontal, 4)
                 }
             } compactLeading: {
                 IslandSlime(s, height: 22)
@@ -75,11 +77,11 @@ private struct ExpandedTrailing: View {
         if state.moment != nil, let partner = state.partner {
             // A shared moment: the friend faces you, playing the same animation.
             Portrait(name: partner.name, alignment: .trailing) {
-                IslandSlime(friend: partner, state: state, height: 44)
+                IslandSlime(friend: partner, state: state, height: 34)
             }
         } else if let friends = state.friends, !friends.isEmpty {
             VStack(alignment: .trailing, spacing: 4) {
-                FriendGroup(state: state, height: 32, limit: 2, names: false)
+                FriendGroup(state: state, height: 28, limit: 2, names: false)
                 Text(caption)
                     .font(IslandType.small)
                     .foregroundStyle(Brand.warm)

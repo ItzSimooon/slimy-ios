@@ -213,10 +213,14 @@ extension GameState {
         if favorite { slime.bond = min(100, slime.bond + 1) }
         slime.personality.drift(.playful)
         progress.stats.plays += 1
-        if result.score >= game.goodScore { progress.stats.goodGames += 1 }
+        if result.score >= result.goodScore { progress.stats.goodGames += 1 }
+        if game == .daily, let day = result.day, progress.quest?.day == day {
+            progress.quest?.best = max(progress.quest?.best ?? 0, result.score)
+        }
 
         var record = progress.records[game] ?? GameRecord()
-        let isRecord = result.score > record.best && record.plays > 0
+        // Every day's game is different, so its scores aren't records.
+        let isRecord = game != .daily && result.score > record.best && record.plays > 0
         record.best = max(record.best, result.score)
         record.plays += 1
         record.lastPlayed = now
@@ -236,7 +240,7 @@ extension GameState {
             memory.add(MemoryEntry(kind: .highScore, at: now, detail: "\(game.rawValue):\(result.score)", keepsake: true))
             line = Dialogue.say(.highScore, in: &self, context: ctx, at: now)
             slime.react(.celebrate, at: now)
-        } else if result.score < game.goodScore / 4 {
+        } else if result.score < result.goodScore / 4 {
             line = Dialogue.say(.lowScore, in: &self, context: ctx, at: now)
             slime.react(.play, at: now)
         } else {
@@ -248,6 +252,38 @@ extension GameState {
         events += gainXP(result.xp, now: now, line: &line)
         events += checkAchievements(now: now)
         slime.say = Utterance(text: line, at: now)
+        return Outcome(ok: true, line: line, events: events)
+    }
+
+    // MARK: Daily plan
+
+    /// Starts tracking the quest of a new day's plan.
+    mutating func startQuest(_ plan: DailyPlan) {
+        guard progress.quest?.day != plan.day else { return }
+        var q = QuestState(day: plan.day)
+        if case .stat(let key, _) = plan.quest.goal { q.baseline = progress.stats[key] }
+        progress.quest = q
+    }
+
+    func questProgress(_ plan: DailyPlan) -> (value: Int, target: Int) {
+        guard let q = progress.quest, q.day == plan.day else { return (0, 1) }
+        switch plan.quest.goal {
+        case .stat(let key, let target): return (min(target, max(0, progress.stats[key] - q.baseline)), target)
+        case .dailyScore(let target): return (min(target, q.best), target)
+        }
+    }
+
+    /// Pays the quest once, when it's done.
+    mutating func claimQuest(_ plan: DailyPlan, now: Date) -> Outcome {
+        let p = questProgress(plan)
+        guard p.value >= p.target else { return Outcome(ok: false, line: "not done yet") }
+        guard wallet.claim("quest:\(plan.day)", coins: plan.quest.coins, at: now) else {
+            return Outcome(ok: false, line: "already collected")
+        }
+        progress.quest?.claimed = true
+        slime.react(.celebrate, at: now)
+        var line = "+\(plan.quest.coins) coins"
+        let events = gainXP(15, now: now, line: &line) + checkAchievements(now: now)
         return Outcome(ok: true, line: line, events: events)
     }
 

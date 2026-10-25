@@ -121,6 +121,8 @@ struct Progress: Codable, Hashable {
     var achievements: [String: Date] = [:]
     var records: [GameID: GameRecord] = [:]
     var challenges = ChallengeBoard()
+    /// Today's quest from the daily plan.
+    var quest: QuestState?
 }
 
 /// Things that happened, for dialogue and the memory book.
@@ -283,6 +285,7 @@ extension Progress {
         achievements = c.value(.achievements, d.achievements)
         records = c.value(.records, d.records)
         challenges = c.value(.challenges, d.challenges)
+        quest = c.value(.quest, d.quest)
     }
 }
 

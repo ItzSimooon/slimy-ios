@@ -7,15 +7,18 @@ final class GameSession {
     let game: GameID
     let id = UUID()
     let seed: UInt64
+    /// The day's building-block game, for `.daily`.
+    let spec: GameSpec?
     var score = 0
     /// Short text for the top bar, like the time left.
     var status = ""
     var paused = false
     private(set) var ended = false
 
-    init(game: GameID, seed: UInt64? = nil) {
+    init(game: GameID, seed: UInt64? = nil, spec: GameSpec? = nil) {
         self.game = game
         self.seed = seed ?? UInt64.random(in: 1...UInt64.max)
+        self.spec = spec
     }
 
     var running: Bool { !paused && !ended }
@@ -209,6 +212,109 @@ struct GameBackdrop: View {
             return UInt32((x + (y - x) * t).rounded()) << shift
         }
         return channel(16) | channel(8) | channel(0)
+    }
+}
+
+// MARK: - Game feel
+
+/// Particle bursts, floating score popups, screen shake and a hit flash.
+/// Purely visual; games add to it from their events and draw it on top.
+struct Juice {
+    struct Particle {
+        var x, y, vx, vy, life, maxLife, size: Double
+        var color: Color
+    }
+
+    struct Popup {
+        var text: String
+        var x, y, age: Double
+        var color: Color
+        var big: Bool
+    }
+
+    private(set) var particles: [Particle] = []
+    private(set) var popups: [Popup] = []
+    private(set) var shake = 0.0
+    private(set) var flash = 0.0
+    private(set) var squash = 0.0
+    var reduceMotion = false
+
+    mutating func burst(x: Double, y: Double, color: Color, count: Int = 10, power: Double = 60) {
+        guard !reduceMotion else { return }
+        for i in 0..<count {
+            let angle = Double(i) / Double(count) * .pi * 2 + Double.random(in: -0.3...0.3)
+            let speed = power * Double.random(in: 0.5...1.1)
+            let life = Double.random(in: 0.35...0.7)
+            particles.append(Particle(x: x, y: y, vx: cos(angle) * speed, vy: sin(angle) * speed - 20,
+                                      life: life, maxLife: life, size: Double.random(in: 1.4...2.6), color: color))
+        }
+        if particles.count > 220 { particles.removeFirst(particles.count - 220) }
+    }
+
+    mutating func popup(_ text: String, x: Double, y: Double, color: Color = .white, big: Bool = false) {
+        popups.append(Popup(text: text, x: x, y: y, age: 0, color: color, big: big))
+        if popups.count > 12 { popups.removeFirst(popups.count - 12) }
+    }
+
+    mutating func hit() {
+        shake = reduceMotion ? 0 : 0.32
+        flash = 0.25
+    }
+
+    mutating func bounce() { squash = 0.18 }
+
+    mutating func step(_ dt: Double) {
+        for i in particles.indices {
+            particles[i].x += particles[i].vx * dt
+            particles[i].y += particles[i].vy * dt
+            particles[i].vy += 140 * dt
+            particles[i].life -= dt
+        }
+        particles.removeAll { $0.life <= 0 }
+        for i in popups.indices {
+            popups[i].age += dt
+            popups[i].y -= 22 * dt
+        }
+        popups.removeAll { $0.age > 0.9 }
+        shake = max(0, shake - dt)
+        flash = max(0, flash - dt)
+        squash = max(0, squash - dt)
+    }
+
+    /// Screen offset while shaking.
+    func shakeOffset(_ time: Double) -> CGSize {
+        guard shake > 0 else { return .zero }
+        let a = shake / 0.32 * 6
+        return CGSize(width: sin(time * 90) * a, height: cos(time * 77) * a * 0.6)
+    }
+
+    /// Squash-and-stretch scale for the player, (x, y).
+    var squashScale: (CGFloat, CGFloat) {
+        let k = sin(squash / 0.18 * .pi) * 0.22
+        return (1 + k, 1 - k)
+    }
+
+    func draw(in ctx: GraphicsContext, space: BoardSpace) {
+        for p in particles {
+            let alpha = max(0, p.life / p.maxLife)
+            ctx.fill(Path(space.centered(p.x, p.y, p.size, p.size)), with: .color(p.color.opacity(alpha)))
+        }
+        for p in popups {
+            let alpha = max(0, 1 - p.age / 0.9)
+            let text = Text(p.text)
+                .font(Brand.pixel(p.big ? 22 : 15))
+                .foregroundStyle(p.color.opacity(alpha))
+            ctx.draw(text, at: space.point(p.x, p.y))
+        }
+    }
+}
+
+extension SlimeSprites {
+    /// The main colour of an item sprite, for particles.
+    static func mainColor(_ name: String) -> Color {
+        guard let sprite = items[name] else { return .white }
+        let hex = sprite.palette["a"] ?? sprite.palette.values.sorted().last ?? 0xFFFFFF
+        return Color(hex: hex)
     }
 }
 

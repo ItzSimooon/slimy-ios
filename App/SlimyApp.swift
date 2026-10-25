@@ -8,6 +8,7 @@ struct SlimyApp: App {
     @StateObject private var island = IslandController.shared
     @StateObject private var friends = FriendsStore.shared
     @StateObject private var chat = ChatStore.shared
+    @StateObject private var daily = DailyStore.shared
     @Environment(\.scenePhase) private var phase
 
     init() {
@@ -22,6 +23,7 @@ struct SlimyApp: App {
                 .environmentObject(island)
                 .environmentObject(friends)
                 .environmentObject(chat)
+                .environmentObject(daily)
                 .tint(Theme.accent)
         }
         .onChange(of: phase) { _, phase in
@@ -34,6 +36,7 @@ struct SlimyApp: App {
                 Task {
                     if store.state.hatched { await island.ensureRunning() }
                     await friends.refresh()
+                    await DailyStore.shared.refresh()
                     await island.maybeMeetup()
                 }
             case .background:

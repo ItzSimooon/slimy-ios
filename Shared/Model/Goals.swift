@@ -19,7 +19,7 @@ enum Achievements {
         .init(id: "cuddler", title: "Cuddle pro", detail: "Pet it 100 times.", coins: 40) { $0.progress.stats.pets >= 100 },
         .init(id: "sleepyhead", title: "Good night", detail: "Put it to bed 10 times.", coins: 30) { $0.progress.stats.sleeps >= 10 },
         .init(id: "arcadeRookie", title: "First game", detail: "Play a round in the arcade.", coins: 10) { $0.progress.stats.plays >= 1 },
-        .init(id: "allGames", title: "Tried them all", detail: "Play every game once.", coins: 80) { $0.progress.records.count == GameID.allCases.count },
+        .init(id: "allGames", title: "Tried them all", detail: "Play every game once.", coins: 80) { GameID.classics.allSatisfy { game in $0.progress.records[game] != nil } },
         .init(id: "arcadeFan", title: "Regular", detail: "Play 50 rounds.", coins: 60) { $0.progress.stats.plays >= 50 },
         .init(id: "arcadeStar", title: "Arcade star", detail: "Play 25 really good rounds.", coins: 100) { $0.progress.stats.goodGames >= 25 },
         .init(id: "level5", title: "Level 5", detail: "Reach level 5.", coins: 30) { $0.slime.level >= 5 },

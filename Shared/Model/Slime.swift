@@ -175,7 +175,7 @@ struct Slime: Codable, Hashable {
         s.skin = skin
         s.personality = .random(using: &rng)
         s.favorite = Food.discoverable[Int(rng.next() % UInt64(Food.discoverable.count))]
-        s.favoriteGame = GameID.allCases[Int(rng.next() % UInt64(GameID.allCases.count))]
+        s.favoriteGame = GameID.classics[Int(rng.next() % UInt64(GameID.classics.count))]
         return s
     }
 

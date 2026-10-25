@@ -364,6 +364,11 @@ struct HyprnodeAPI {
         return try await send("GET", path)
     }
 
+    /// The day's plan the server had Claude make. 404 when it has none.
+    func daily(day: String) async throws -> DailyPlan {
+        try await send("GET", "daily?day=\(day)")
+    }
+
     func chat(message: String, history: [ChatTurn], context: ChatContext) async throws -> ChatReply {
         struct Body: Codable { var message: String; var history: [ChatTurn]; var slime: ChatContext }
         return try await send("POST", "chat", body: Body(message: message, history: history, slime: context))

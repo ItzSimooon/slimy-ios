@@ -13,6 +13,7 @@ enum HomeCover: String, Identifiable {
 struct HomeView: View {
     @EnvironmentObject private var store: GameStore
     @EnvironmentObject private var friends: FriendsStore
+    @EnvironmentObject private var daily: DailyStore
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.scenePhase) private var phase
 
@@ -59,6 +60,7 @@ struct HomeView: View {
 
                 VStack(spacing: 0) {
                     topBar
+                    todayPill
                     Spacer()
                     bottomPanel
                 }
@@ -105,6 +107,29 @@ struct HomeView: View {
     }
 
     // MARK: Top
+
+    /// Points at today's new game until it's been played.
+    @ViewBuilder
+    private var todayPill: some View {
+        if !daily.playedToday {
+            Button {
+                Feedback.shared.play(.tap)
+                cover = .arcade
+            } label: {
+                HStack(spacing: 8) {
+                    PixelItem(name: "starJelly").frame(width: 16, height: 16)
+                    Text("New today: \(daily.plan.game.title)")
+                        .font(Theme.label(14)).foregroundStyle(Theme.ink).lineLimit(1)
+                    Image(systemName: "chevron.right").font(.system(size: 11, weight: .bold)).foregroundStyle(Theme.inkSoft)
+                }
+                .padding(.horizontal, 12)
+                .frame(height: 36)
+            }
+            .buttonStyle(KeyStyle(fill: Color.dynamic(light: 0xFFF1C9, dark: 0x3A3220)))
+            .padding(.top, 8)
+            .accessibilityHint("Opens the arcade")
+        }
+    }
 
     private var topBar: some View {
         let s = store.state

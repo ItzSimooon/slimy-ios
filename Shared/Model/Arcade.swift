@@ -4,8 +4,13 @@ import Foundation
 enum GameID: String, Codable, CaseIterable, Identifiable, Hashable {
     case snackCatcher, slimeJump, bubblePop, memoryGarden, slimeRacing
     case rhythmBounce, gardenPuzzle, treasureDig, basketball, colorMatch
+    /// The day's game, built from blocks (DailyPlan).
+    case daily
 
     var id: String { rawValue }
+
+    /// The ten fixed games, without the daily one.
+    static var classics: [GameID] { allCases.filter { $0 != .daily } }
 
     var title: String {
         switch self {
@@ -19,6 +24,7 @@ enum GameID: String, Codable, CaseIterable, Identifiable, Hashable {
         case .treasureDig: "Treasure Dig"
         case .basketball: "Slime Basketball"
         case .colorMatch: "Color Match"
+        case .daily: "Today's game"
         }
     }
 
@@ -34,6 +40,7 @@ enum GameID: String, Codable, CaseIterable, Identifiable, Hashable {
         case .treasureDig: "Dig for treasure with few shovels. The numbers help."
         case .basketball: "Swipe to throw. The hoop moves."
         case .colorMatch: "Does the color or the shape match? Decide fast."
+        case .daily: "A new game every day."
         }
     }
 
@@ -50,6 +57,7 @@ enum GameID: String, Codable, CaseIterable, Identifiable, Hashable {
         case .treasureDig: ["Tap a square to dig.", "Numbers show how far the nearest treasure is.", "You only have a few shovels."]
         case .basketball: ["Swipe up from the ball toward the hoop.", "A longer swipe throws farther.", "Hits in a row count double."]
         case .colorMatch: ["The rule at the top says color or shape.", "Tap Yes if the piece matches the sample, otherwise No.", "Be quick, the clock is running."]
+        case .daily: ["Every day brings a different game."]
         }
     }
 
@@ -66,6 +74,7 @@ enum GameID: String, Codable, CaseIterable, Identifiable, Hashable {
         case .treasureDig: "chest"
         case .basketball: "ball"
         case .colorMatch: "gem"
+        case .daily: "starJelly"
         }
     }
 
@@ -84,6 +93,7 @@ enum GameID: String, Codable, CaseIterable, Identifiable, Hashable {
         case .treasureDig: 60
         case .basketball: 12
         case .colorMatch: 25
+        case .daily: 100
         }
     }
 
@@ -96,6 +106,7 @@ enum GameID: String, Codable, CaseIterable, Identifiable, Hashable {
         case .rhythmBounce: 4
         case .slimeRacing: 5
         case .gardenPuzzle: 6
+        case .daily: 1
         }
     }
 }
@@ -108,18 +119,24 @@ struct GameResult: Codable, Hashable {
     /// Unique per round; the reward for a round can only be claimed once.
     var session: UUID
     var finishedAt: Date
+    /// For the daily game: the good score of that day's game and its day.
+    var target: Int? = nil
+    var day: String? = nil
+
+    /// A good round's score for this game.
+    var goodScore: Int { max(1, target ?? game.goodScore) }
 
     var coins: Int {
-        let ratio = Double(max(0, score)) / Double(game.goodScore)
+        let ratio = Double(max(0, score)) / Double(goodScore)
         return min(30, 2 + Int((ratio * 12).rounded()))
     }
 
     var xp: Int {
-        let ratio = Double(max(0, score)) / Double(game.goodScore)
+        let ratio = Double(max(0, score)) / Double(goodScore)
         return min(30, 6 + Int((ratio * 14).rounded()))
     }
 
-    var funGain: Double { 14 + min(16, Double(score) / Double(game.goodScore) * 10) }
+    var funGain: Double { 14 + min(16, Double(score) / Double(goodScore) * 10) }
 }
 
 struct GameRecord: Codable, Hashable {
