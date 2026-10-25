@@ -291,3 +291,32 @@ final class PersistenceTests: XCTestCase {
         XCTAssertNil(GameStorage.migrateV1(defaults: defaults, now: noon))
     }
 }
+
+final class IslandStateTests: XCTestCase {
+    func testMeetupFallsBackToSoloWhenStale() {
+        var game = GameState()
+        game.hatch(name: "Testi", skin: .lime, seed: 1, now: noon)
+        let friend = FriendSlime(id: "dev_a", name: "Mochi", owner: "Anna", skin: .bubblegum, stage: .baby,
+                                 mood: .idle, love: 40, inLove: false, equipped: nil)
+        let state = SlimeActivityAttributes.ContentState(game, at: noon, friends: [friend], moment: .meetup, momentFriend: "dev_a")
+        XCTAssertEqual(state.anim, .meet)
+        XCTAssertEqual(state.partner?.id, "dev_a")
+        XCTAssertTrue(state.line.hasPrefix("Mochi"))
+
+        let solo = state.solo
+        XCTAssertNil(solo.moment)
+        XCTAssertNil(solo.partner)          // not in love, so no partner once the moment ends
+        XCTAssertNotEqual(solo.anim, .meet)
+        XCTAssertEqual(solo.line, state.baseLine)
+    }
+
+    func testMeetFramesSlideAndCarryAccessoryOffsets() {
+        for stage in Stage.allCases {
+            let anchors = SlimeSprites.anchors(stage, .meet)
+            XCTAssertEqual(SlimeSprites.frames(stage, .meet).count, 10)
+            XCTAssertEqual(anchors.count, 10)
+            XCTAssertEqual(anchors.first?.count, 5)
+            XCTAssertGreaterThan(anchors.map { $0[4] }.max() ?? 0, 0, "\(stage) never slides")
+        }
+    }
+}

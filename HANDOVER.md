@@ -3,7 +3,7 @@
 For whoever takes over **slime.hyprnode.de**. The iOS app and the API server are both in this repo. What's left for you:
 
 1. **Deploy** the server in `server/` behind HTTPS at `https://slime.hyprnode.de/api/v1`.
-2. **Build the website** at `https://slime.hyprnode.de/` (German, same look as the app).
+2. **Build the website** at `https://slime.hyprnode.de/` (English, same look as the app).
 
 Read `server/README.md` first: it is the API contract, the configuration and the rules. Don't change the contract without changing `App/Online/HyprnodeAPI.swift` in the same pull request.
 
@@ -11,7 +11,7 @@ Read `server/README.md` first: it is the API contract, the configuration and the
 
 ## 1. What Slimy is
 
-- An iPhone app: a pixel-art pet slime that lives in the Dynamic Island (a Live Activity). You feed it, play ten arcade games with it, bathe it, pet it, dress it up and decorate its home. It reacts to phone events (battery, Wi-Fi and so on, through Shortcuts automations). It grows from baby to grown-up and remembers things.
+- An iPhone app: a pixel-art pet slime that lives in the Dynamic Island (a Live Activity). You feed it, play ten arcade games with it, bathe it, pet it, dress it up and decorate its home. It reacts to phone events (battery, charger, Wi-Fi and so on), detected by the app itself whenever iOS lets it run. Friends' slimes sometimes meet it in the island. It grows from baby to grown-up and remembers things.
 - Made by **hyprnode**. Home: **https://slime.hyprnode.de**.
 - Installed by sideloading an IPA from GitHub Releases (`https://github.com/ItzSimooon/slimy-ios/releases`) with Sideloadly and a free Apple ID. No App Store yet.
 - The slime itself (needs, coins, levels, items) lives **on the phone**. The server handles friends, love, gifts, visits, greetings, challenges, the co-op garden and the chat.
@@ -47,13 +47,13 @@ Then open Slimy on two iPhones: Freunde → Code holen / Verbinden. Both should 
 
 ## 3. Website (`/`)
 
-All pages German, responsive, fast, no tracking, no cookies. Pages:
+All pages English, responsive, fast, no tracking, no cookies. Pages:
 
 1. **Landing** `/`: a big animated pixel slime as the hero (draw frames from `Shared/Sprites/sprites.json` on a `<canvas>`, see section 5), one plain line about what Slimy is, what it does (Dynamic Island pet, needs, ten games, phone reactions, friends who can fall in love, talking to your slime), and a **Download** button to the newest GitHub release.
-2. **Install** `/install`: the Windows + Sideloadly steps from `README.md`, the 7-day re-signing note for free Apple IDs, and "den ganzen Tag in der Insel" (Shortcuts automations with "Slime holen"). Numbered steps. Mention both IPAs (`Slimy.ipa` with App Group for widgets, `Slimy-unsigned.ipa` as fallback).
-3. **Invite** `/f/{code}`: call `GET /api/v1/invites/{code}`. Show "Anna will mit dir Slime-Freund sein", her slime drawn from the sprites (skin and stage are in the answer), the code big and copyable, "Öffne Slimy → Freunde und gib den Code ein", plus install links. On 404: "Der Code ist abgelaufen. Frag nach einem neuen." The app's share text already contains the code; a later app update can link here.
-4. **Privacy** `/privacy`: what's stored and for how long (the Privacy section of `server/README.md`), that chat messages go to Anthropic to produce a reply and are not stored on the server, how to delete everything (in the app: Freunde → Privatsphäre → Server-Daten löschen), contact.
-5. **Support** `/support`: FAQ. The island disappeared → open the app or use "Slime holen" (iOS ends Live Activities after about 8 hours). The app won't open → re-sign in Sideloadly. Widgets stay empty → the App Group was not kept by the sideloading tool.
+2. **Install** `/install`: the Windows + Sideloadly steps from `README.md`, the 7-day re-signing note for free Apple IDs, and "keeping it in the island all day" (open the app, "Summon Slime" in Control Center or on the Action Button, Background App Refresh on). Numbered steps. Mention both IPAs (`Slimy.ipa` with App Group for widgets, `Slimy-unsigned.ipa` as fallback).
+3. **Invite** `/f/{code}`: call `GET /api/v1/invites/{code}`. Show "Anna wants to be slime friends with you", her slime drawn from the sprites (skin and stage are in the answer), the code big and copyable, "Open Slimy → Friends and enter the code", plus install links. On 404: "This code has expired. Ask for a new one." The app's share text already contains the code; a later app update can link here.
+4. **Privacy** `/privacy`: what's stored and for how long (the Privacy section of `server/README.md`), that chat messages go to Anthropic to produce a reply and are not stored on the server, how to delete everything (in the app: Friends → Privacy and blocked → Delete server data), contact.
+5. **Support** `/support`: FAQ. The island disappeared → open the app or use "Summon Slime" (iOS ends Live Activities after about 8 hours). The app won't open → re-sign in Sideloadly. Widgets stay empty → the App Group was not kept by the sideloading tool.
 
 ## 4. Brand
 
@@ -81,7 +81,7 @@ Shapes: notched corners (cut one 3px step), 3px borders, keys with a hard 3px sh
 
 Type: **Pixelify Sans** (OFL, in `Shared/Fonts` with its license) for headings, keys and numbers; a rounded system sans for running text. Wordmark: `slimy` in Pixelify Sans Bold with `by hyprnode` in violet.
 
-Voice: German. The slime speaks in short lowercase fragments ("hunger. großer hunger.", "frisch gewaschen"). The UI around it is plain German. Never guilt-trip ("Du hast mich vergessen" is wrong; "da bist du ja" is right).
+Voice: English. The slime speaks in short lowercase fragments ("hungry. very hungry.", "squeaky clean"). The UI around it is plain English. Never guilt-trip ("you forgot me" is wrong; "there you are" is right).
 
 ## 5. Sprites
 

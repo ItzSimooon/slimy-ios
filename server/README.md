@@ -21,7 +21,7 @@ PORT=8080 SLIMY_DB=data/slimy.db ANTHROPIC_API_KEY=... npm start
 |---|---|---|
 | `PORT` | `8080` | HTTP port. Put HTTPS in front (Caddy, Traefik, nginx). iOS refuses plain HTTP. |
 | `SLIMY_DB` | `data/slimy.db` | SQLite file. Back it up; WAL mode is on. |
-| `ANTHROPIC_API_KEY` | unset | Enables `/chat`. Without it `/chat` answers 503 with a German note. **Only here, never in the app.** |
+| `ANTHROPIC_API_KEY` | unset | Enables `/chat`. Without it `/chat` answers 503 with a short note. **Only here, never in the app.** |
 | `CHAT_MODEL` | `claude-opus-5-5` | Model for the chat. Set e.g. `claude-haiku-5-5` for a much cheaper chat. |
 | `TRUST_PROXY` | unset | `1` to take the client address from `X-Forwarded-For` (rate limits). Only behind your own proxy. |
 
@@ -42,10 +42,10 @@ Health check: `GET /api/v1/health` → `{"ok": true, "version": "1", "schema": 1
 
 - JSON in and out. Bodies over 32 KB → 413.
 - Dates: ISO 8601 UTC **without milliseconds** (`2026-10-25T12:00:00Z`). Swift's `.iso8601` rejects fractions.
-- Every error is `{"error": "<short German sentence>"}`. The app shows it as is. A 404 without `error` makes the app think the server is not live, so the server always sends one.
+- Every error is `{"error": "<short English sentence>"}`. The app shows it as is. A 404 without `error` makes the app think the server is not live, so the server always sends one.
 - Auth: `Authorization: Bearer <token>` on everything except `POST /devices` and `GET /health`. Tokens are 32 random bytes; only their SHA-256 is stored.
 - **Idempotency:** any write may carry `Idempotency-Key: <≤64 chars>`. A repeat with the same key returns the first answer (status and body) and does nothing else. The app's offline queue relies on this. Keys are kept for two days. Reusing a key for another path → 422.
-- Rate limits (per device unless noted) answer 429 with a German message: registration 10/h per address, pair codes 20/h, wrong codes 8/h per device and 30/h per address, joins 30/h, interactions 120/h, greetings 30/day (6 per friend), challenges 20/day, chat 8/min and 60/day, everything 1200/h.
+- Rate limits (per device unless noted) answer 429 with a short message: registration 10/h per address, pair codes 20/h, wrong codes 8/h per device and 30/h per address, joins 30/h, interactions 120/h, greetings 30/day (6 per friend), challenges 20/day, chat 8/min and 60/day, everything 1200/h.
 
 ## Endpoints
 
@@ -118,14 +118,14 @@ Health check: `GET /api/v1/health` → `{"ok": true, "version": "1", "schema": 1
 
 ## Rules the server enforces
 
-- **Love** per friendship, 0 to 100, shared by both. Per sender, friend and UTC day: hug +3 (3×), visit +5 (1×), gift +6 (3×), kiss +8 (2×, only from 50 %). Past the daily count a hug, visit or kiss still answers 200 with `gained: 0, capped: true` and a German `message`; a gift answers 429 so no coins are spent. At 100 the pair is in love for good; both get an `inLove` event and a memory.
+- **Love** per friendship, 0 to 100, shared by both. Per sender, friend and UTC day: hug +3 (3×), visit +5 (1×), gift +6 (3×), kiss +8 (2×, only from 50 %). Past the daily count a hug, visit or kiss still answers 200 with `gained: 0, capped: true` and a `message` to show; a gift answers 429 so no coins are spent. At 100 the pair is in love for good; both get an `inLove` event and a memory.
 - **Requests:** a code makes a request; the code's owner accepts or declines. If both asked each other, they become friends at once. Max 20 friends.
 - **Blocking** ends the friendship, removes requests and the blocked device's events from your inbox, closes open challenges, and makes your future codes look unknown to them (404, same message as a typo).
 - **Greetings** are presets only, so nobody can send free text through Slimy.
 - **Events never control the other phone.** The app shows a toast, an island moment, gives the food of a gift, or lists a challenge. Nothing else.
 - **Challenges** carry the game's seed; both play the same board. The answer is final.
 - **Co-op garden:** points (the app sends the round's quality, 0–150) add up per friendship and ISO week, at most 300 per call and 900 per device per day. Reaching 1000 tells both once.
-- **Chat:** the app sends what the slime knows (name, age, level, mood, needs, favourite food, partner, local time). The server builds a German in-character system prompt, asks Claude for `{reply, reaction}` as structured JSON at low effort with server-side refusal fallbacks, and turns a refusal into a gentle line. The API key never leaves the server.
+- **Chat:** the app sends what the slime knows (name, age, level, mood, needs, favourite food, partner, local time). The server builds an in-character system prompt (English), asks Claude for `{reply, reaction}` as structured JSON at low effort with server-side refusal fallbacks, and turns a refusal into a gentle line. The API key never leaves the server.
 
 ## Privacy
 
