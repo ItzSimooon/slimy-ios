@@ -25,7 +25,10 @@ enum Theme {
 
     static func title(_ size: CGFloat = 22) -> Font { Brand.pixel(size) }
     static func label(_ size: CGFloat = 15) -> Font { Brand.pixel(size) }
-    static func text(_ size: CGFloat = 15) -> Font { .system(size: size, weight: .medium, design: .rounded) }
+    /// Running text. Follows Dynamic Type (the pixel font does by itself).
+    static func text(_ size: CGFloat = 15) -> Font {
+        .system(size: UIFontMetrics(forTextStyle: .body).scaledValue(for: size), weight: .medium, design: .rounded)
+    }
 
     static func color(for need: Need) -> Color {
         switch need {

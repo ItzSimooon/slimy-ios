@@ -1,4 +1,5 @@
 import Foundation
+import UIKit
 
 /// Friends, love, greetings, challenges and the co-op garden. The server
 /// (slime.hyprnode.de) decides who is friends and how much the slimes love
@@ -203,6 +204,14 @@ final class FriendsStore: ObservableObject {
         let name = event.friendName ?? friend(event.friendId)?.slime.name ?? "Ein Slime"
         let store = GameStore.shared
         hasNews = true
+        defer {
+            // In the background (refresh), a few kinds also become a notification.
+            if UIApplication.shared.applicationState != .active,
+               ["request", "accepted", "gift", "inLove", "message", "challenge"].contains(event.kind),
+               let text = store.toast?.text {
+                Notifier.post(event.kind == "gift" ? .gifts : .friends, title: name, body: text, state: store.state)
+            }
+        }
         switch event.kind {
         case "request":
             store.toast = Toast(text: "\(name) möchte befreundet sein", good: true)
