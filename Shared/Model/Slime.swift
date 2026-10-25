@@ -186,7 +186,9 @@ struct Slime: Codable, Hashable {
 
     static func level(forXP xp: Int) -> Int {
         // 40 xp to level 2, then each level costs 40 more than the last.
-        Int((sqrt(1 + 8 * Double(max(0, xp)) / 40) - 1) / 2) + 1
+        let steps: Double = Double(max(0, xp)) / 40
+        let root: Double = (1 + 8 * steps).squareRoot()
+        return Int((root - 1) / 2) + 1
     }
 
     static func xpNeeded(for level: Int) -> Int { 40 * level * (level - 1) / 2 }

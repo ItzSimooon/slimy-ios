@@ -37,7 +37,7 @@ jobs:
       - name: Test
         run: |
           if [ ! -f server/package.json ]; then echo "no server yet"; exit 0; fi
-          cd server && npm test
+          cd server && npm ci --no-audit --no-fund && npm test
 
   tests:
     name: Unit tests (simulator)

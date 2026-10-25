@@ -1,0 +1,15 @@
+{
+  "name": "slimy-server",
+  "version": "1.0.0",
+  "private": true,
+  "description": "API for Slimy (slime.hyprnode.de): friends, love, gifts, visits, challenges, co-op and chat.",
+  "type": "module",
+  "engines": { "node": ">=22.13" },
+  "scripts": {
+    "start": "node --no-warnings src/index.js",
+    "test": "node --no-warnings --test test/*.test.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "1.3.0"
+  }
+}
