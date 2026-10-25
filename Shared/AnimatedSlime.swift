@@ -22,7 +22,11 @@ struct AnimatedSlime: View {
                     .foregroundStyle(skin.color(for: layer))
                     .lineLimit(1)
                     .multilineTextAlignment(.trailing)
-                    .fixedSize()
+                    // Lay the timer out right-aligned in a box wide enough for
+                    // "15:59:59" (tested on device: this keeps the last glyph at
+                    // the right edge; .fixedSize() did not), then show only the
+                    // last glyph.
+                    .frame(width: width * 10, height: height, alignment: .trailing)
                     .frame(width: width, height: height, alignment: .trailing)
                     .clipped()
             }

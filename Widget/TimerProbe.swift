@@ -42,7 +42,11 @@ struct TimerProbe: View {
                     .clipped()
                     .background(Color.red.opacity(0.35))
             }
-            Text("F  Schrift in Erweiterung: \(UIFont(name: font, size: 10) != nil ? "ja" : "nein")")
+            row("G") {
+                AnimatedSlime(anim: .idle, anchor: anchor, skin: .lime, height: 14)
+                    .background(Color.green.opacity(0.25))
+            }
+                        Text("F  Schrift in Erweiterung: \(UIFont(name: font, size: 10) != nil ? "ja" : "nein")")
                 .font(.system(size: 11, weight: .bold, design: .monospaced))
         }
         .foregroundStyle(color)
