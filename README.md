@@ -1,105 +1,89 @@
 # Slimy
 
-your slimy best buddy · by **hyprnode** · [slime.hyprnode.de](https://slime.hyprnode.de)
+Ein Pixel-Slime, der in der Dynamic Island deines iPhones wohnt. Von hyprnode, [slime.hyprnode.de](https://slime.hyprnode.de).
 
-Slimy is a pet slime that lives in your iPhone's Dynamic Island. Feed it, play with it, give it bubble baths, and team up with a friend so your slimes can fall in love.
+<p align="center"><img src="Resources/Assets.xcassets/AppIcon.appiconset/icon.png" width="140" alt="Slimy App-Icon"></p>
 
-<p align="center"><img src="Resources/Assets.xcassets/AppIcon.appiconset/icon.png" width="160" alt="Slimy app icon"></p>
+## Was er kann
 
-## What it does
+**In der Dynamic Island**
+- Der Slime sitzt links in der Insel. Rechts steht, was er gerade braucht, oder sein Level.
+- Gedrückt halten öffnet die große Ansicht mit Sprechblase, Bedürfnissen und den Tasten Essen, Spielen, Baden und Kraulen. Die Tasten funktionieren, ohne die App zu öffnen.
+- Auf dem Sperrbildschirm, im StandBy und auf der Apple Watch erscheint eine Karte.
+- Im Kontrollzentrum gibt es „Slime holen“ und „Slime füttern“, beides auch für den Action Button.
 
-**In the Dynamic Island**
-- The slime is animated right in the island: it breathes, blinks, bounces and sleeps. iOS does the animation, so the app doesn't need to run (see [How the animation works](#how-the-animation-works)).
-- The right side of the compact island shows what it wants (a ring for food, fun, energy, cleanliness or love), the latest phone event, or your partner's slime when the two are in love.
-- **Hold the island** for the expanded view: speech bubble, needs bars, and **Feed / Play / Bath / Pet** buttons that work without opening the app.
-- A Lock Screen card with a sky that follows the time of day. It also shows in StandBy and on the Apple Watch Smart Stack.
-- Control Center buttons: **Summon Slime** and **Feed Slime**. Either can go on the Action Button too.
+**In der App**
+- Fünf Bedürfnisse, die mit der Zeit sinken: Essen, Spaß, Energie, Sauber und Liebe. Er sagt, was ihm fehlt.
+- Füttern mit fünf Sorten Essen (eins davon ist sein Lieblingsessen), Snack-Fangen spielen für Münzen, Matsch abschrubben beim Baden, kraulen durch Reiben, anstupsen durch Tippen.
+- Mit den Levels kommen neue Farben.
+- Nachts schläft er und wacht ausgeschlafen von selbst auf.
+- Mitteilungen, kurz bevor er etwas braucht.
 
-**In the app**
-- Five needs that drain over time: Food, Fun, Energy, Clean and Love. The slime asks for whatever it wants most, and looks hungry or sad when you neglect it.
-- **Feed** it five foods (one is its secret favorite). **Play Snack Catch** to earn coins. **Scrub the mud off** in the bath. **Rub it** to pet it. **Tap it** to poke it.
-- Levels unlock new jelly colors, up to Hypr Void.
-- It sleeps at night and wakes up by itself once rested.
-- Local notifications when it's about to need something.
+**Reaktionen aufs iPhone**
 
-**Phone events.** The slime reacts to what your phone does:
-
-| Event | Reaction |
+| Ereignis | Reaktion |
 |---|---|
-| Battery low or almost empty | melts into a puddle 🫠 |
-| Charger connected, battery full | gets zapped with energy ⚡️ |
-| Wi-Fi connected | happy bounce |
-| Wi-Fi lost, mobile data, offline, Airplane Mode | confused ❓ |
-| Morning, alarm, every hour | waves 👋 |
-| Good night | love |
+| Akku niedrig oder fast leer | schmilzt |
+| Ladekabel dran, Akku voll | wird aufgeladen |
+| WLAN verbunden | hüpft |
+| WLAN weg, mobile Daten, kein Internet, Flugmodus | ist verwirrt |
+| Morgen, Wecker, volle Stunde | winkt |
+| Gute Nacht | Herzchen |
 
-While the app is open, Slimy detects these on its own. While it's closed, Shortcuts automations send them through the **Slime Reacts** action (set up under *Settings → React while the app is closed*). Important events pop the island open with a sound.
+Solange die App offen ist, merkt Slimy das selbst. Ist sie zu, schicken Kurzbefehle-Automationen die Ereignisse über die Aktion „Slime reagiert“. Die Anleitung steht in der App unter Einstellungen → „Reagieren, wenn die App zu ist“.
 
-**Friends and love** (needs the server, see [HANDOVER.md](HANDOVER.md))
-- Pair with a friend using a 6-character code.
-- Hug, visit, send gifts and (from 50% love) kiss. At 100% the slimes are **in love**: they show up together in your island and your friend's slime visits your room.
-- Until the server is live, a clearly labeled **demo friend** (Mochi) lets you try the whole flow on your own phone.
+**Freunde und Liebe** (braucht den Server, siehe [HANDOVER.md](HANDOVER.md))
+- Mit einem 6-stelligen Code verbinden, dann umarmen, besuchen, Geschenke schicken und ab 50 % küssen.
+- Bei 100 % sind die Slimes verliebt und sitzen zusammen in der Insel.
+- Bis der Server läuft, gibt es einen Test-Freund (Mochi) nur auf dem eigenen iPhone.
 
-**Chat** (needs the server). Talk to your slime. It knows its mood, needs, age, favorite food and partner. Until the server is live it only answers "blub".
+**Reden** (braucht den Server): Der Slime antwortet passend zu seiner Laune. Ohne Server sagt er nur „blub“.
 
-## Install on your iPhone (Windows, free Apple ID)
+## Installieren
 
-You don't need a Mac or a paid developer account.
+1. Unter [Releases](https://github.com/ItzSimooon/slimy-ios/releases) die neueste `Slimy.ipa` laden.
+2. Mit Sideloadly oder AltStore und deiner Apple-ID aufs iPhone bringen.
+3. Auf dem iPhone unter Einstellungen → Allgemein → VPN & Geräteverwaltung der Apple-ID vertrauen. Falls gefragt, unter Datenschutz & Sicherheit den Entwicklermodus einschalten.
+4. Slimy öffnen, das Ei ausbrüten, „In die Insel holen“ tippen.
 
-1. Open the [Releases](https://github.com/ItzSimooon/slimy-ios/releases) page and download `Slimy.ipa` from the newest build.
-2. Install [Sideloadly](https://sideloadly.io) on your PC, along with iTunes and iCloud from Apple's website (not the Microsoft Store versions).
-3. Connect your iPhone with a cable and open Sideloadly. Drag `Slimy.ipa` in, enter your Apple ID and click **Start**.
-4. On the iPhone, open **Settings → General → VPN & Device Management**, tap your Apple ID and choose **Trust**.
-5. If iOS asks, turn on **Developer Mode** under **Settings → Privacy & Security** and restart.
-6. Open Slimy, hatch your slime and tap **Put in island**.
+Mit einer kostenlosen Apple-ID muss die App alle 7 Tage neu signiert werden.
 
-A free Apple ID signs apps for 7 days. Re-sign before then (Sideloadly can do it automatically over Wi-Fi), or the app stops opening. Your slime is kept as long as you don't delete the app.
+## Den ganzen Tag in der Insel
 
-## Keep it in the island all day
+iOS beendet jede Live-Aktivität nach etwa 8 Stunden. Slimy holt den Slime zurück:
+- jedes Mal, wenn du die App öffnest,
+- mit „Slime holen“ im Kontrollzentrum oder auf dem Action Button,
+- mit Kurzbefehle-Automationen nach Tageszeit (zum Beispiel 08:00, 15:00, 22:00),
+- per Hintergrundaktualisierung, wenn iOS sie zulässt.
 
-iOS ends every Live Activity after about 8 hours. Push notifications could restart it remotely, but they need a paid developer account. Slimy restarts it in these ways instead:
+## Wie die Animation funktioniert
 
-- **Whenever you open the app.**
-- **Summon Slime** in Control Center, on the Lock Screen or on the Action Button.
-- **Shortcuts automations**, which run without asking: create *Time of Day* automations (for example 08:00, 15:00 and 22:00) that run **Summon Slime**.
-- **Background refresh**, about every 30 minutes when iOS allows it. It keeps the needs and the island up to date.
+Eine Live-Aktivität kann keinen Code ausführen, aber iOS lässt `Text(timerInterval:)` von selbst jede Sekunde weiterzählen. `tools/make_slime.py` baut Schriften, in denen jede Ziffer ein ganzes Bild des Slimes ist und jedes Zeichen genau ein Bild breit. Die Insel setzt die Uhr rechtsbündig in einen breiten Rahmen und zeigt nur das letzte Zeichen, also die Sekunden. So wechselt das Bild jede Sekunde. Sechs Uhren übereinander, eine pro Farbebene, ergeben den farbigen Slime.
 
-## How the animation works
+Standardmäßig zeichnet die Insel den Slime direkt aus seinen Pixeln (sicher sichtbar, wechselt das Bild bei jeder Änderung). Die sekündliche Animation ist unter Einstellungen → Diagnose einschaltbar. Dort gibt es auch einen Test-Streifen für den Sperrbildschirm.
 
-A Live Activity can't run code, but iOS keeps `Text(timerInterval:)` ticking every second by itself. `tools/make_slime.py` draws every frame as pixel art and builds fonts in which every digit **is** a whole animation frame and every glyph is exactly one frame wide. The island draws the timer right-aligned and clipped to a single glyph, so only the seconds digit shows, and the slime changes frame every second in a ten-step loop. Six timers, one per color layer (body, shade, outline, shine, warm and cool effects), are stacked and tinted with the slime's skin.
+`tools/verify_fonts.py` prüft mit HarfBuzz, dass jedes Zeichen ein Bild breit ist und das letzte Zeichen jeder Uhrzeit das richtige Bild ist. Die CI führt das bei jedem Push aus.
 
-Each animation (idle, sad, sleep, eat, play, love, bath, melt, zap, confused, wave) has its own set of fonts. After an action, the island plays the reaction for 8 seconds, then the app sends one more update to switch back to the mood animation.
-
-An earlier version picked frames with font ligatures. iOS doesn't apply ligatures to timer text in the island, so the slime was invisible there; the current fonts don't use any.
-
-`tools/verify_fonts.py` uses HarfBuzz to check that every glyph is one frame wide, nothing gets substituted, and the last glyph of every timer string is the right frame. CI runs it on every push. In the app, **Settings → Diagnose** shows a live preview drawn exactly like the island.
-
-## Project layout
+## Aufbau
 
 ```
-App/            the iOS app (SwiftUI)
-  Core/         SlimeStore (state), IslandController (Live Activity), PhoneMonitor, Notifier
-  Online/       HyprnodeAPI client, FriendsStore, ChatStore
-  UI/           screens: Home, Hatch, Feed, Bath, Snack Catch, Wardrobe, Friends, Chat, Settings
-Shared/         used by app and widget: model + game rules, brand, skins, intents, sprites
-Widget/         Live Activity, Control Center controls, generated animation fonts
-Resources/      asset catalog and app icon
-tools/          make_slime.py (art, fonts), verify_fonts.py, make_icon.py
-HANDOVER.md     spec for the slime.hyprnode.de server and website
+App/            die iOS-App (SwiftUI)
+  Core/         SlimeStore (Zustand), IslandController (Live-Aktivität), PhoneMonitor, Notifier
+  Online/       HyprnodeAPI, FriendsStore, ChatStore
+  UI/           Bildschirme
+Shared/         App und Widget: Spielregeln, Marke, Farben, Intents, Sprites, Pixel-Schrift
+Widget/         Live-Aktivität, Kontrollzentrum, Animationsschriften
+Resources/      Asset-Katalog und App-Icon
+tools/          make_slime.py (Pixel-Art, Schriften), verify_fonts.py, make_icon.py
+HANDOVER.md     Spezifikation für Server und Website (für die nächste KI, auf Englisch)
 ```
 
-## Building
+## Bauen
 
-- **Cloud (no Mac):** every push to `main` runs `.github/workflows/build.yml`. It checks the fonts on Linux, builds an unsigned IPA on a macOS runner, and publishes it as a release.
-- **On a Mac:** `brew install xcodegen && xcodegen generate`, open `Slimy.xcodeproj`, pick your team under *Signing & Capabilities* for both targets, and run.
-- **Changing the art:** edit `tools/make_slime.py`, then run `pip install fonttools uharfbuzz pillow`, `python3 tools/make_slime.py` and `python3 tools/verify_fonts.py`. Commit the regenerated `Widget/Fonts`, `Widget/Info.plist` and `Shared/SlimeSprites.swift`.
+- **Ohne Mac:** Jeder Push auf `main` startet `.github/workflows/build.yml`. Die Schriften werden unter Linux geprüft, ein Mac in der Cloud baut die unsignierte IPA und veröffentlicht sie als Release.
+- **Mit Mac:** `brew install xcodegen && xcodegen generate`, `Slimy.xcodeproj` öffnen, unter Signing & Capabilities für beide Targets dein Team wählen, starten.
+- **Pixel-Art ändern:** `tools/make_slime.py` bearbeiten, dann `pip install fonttools uharfbuzz pillow`, `python3 tools/make_slime.py` und `python3 tools/verify_fonts.py` ausführen und die erzeugten Dateien committen.
 
-Requires iOS 18 and an iPhone with a Dynamic Island (iPhone 14 Pro or later). On other iPhones it still works as a Lock Screen card.
+Braucht iOS 18 und ein iPhone mit Dynamic Island (ab iPhone 14 Pro, alle iPhone 15 und neuer).
 
-## Not tested on a device yet
-
-These depend on iOS behavior that only a real iPhone can confirm:
-
-- The font animation trick in the island. It's verified with HarfBuzz on Linux, not yet with iOS's own text engine.
-- Whether Summon Slime and Slime Reacts can start or update the activity from Control Center and Shortcuts automations while the app is closed.
-- The Apple Watch Smart Stack view.
+Pixel-Schrift: [Pixelify Sans](https://github.com/eifetx/Pixelify-Sans), SIL Open Font License, Lizenz in `Shared/Fonts/PixelifySans-OFL.txt`.
