@@ -17,15 +17,14 @@ struct SnackCatchView: View {
                     .ignoresSafeArea()
 
                 ForEach(game.items) { item in
-                    Text(item.kind.emoji)
-                        .font(.system(size: 34))
-                        .rotationEffect(.degrees(item.spin))
+                    PixelItem(name: item.kind.sprite)
+                        .frame(width: 36, height: 36)
                         .position(x: item.x * geo.size.width, y: item.y * geo.size.height)
                 }
 
                 ForEach(game.pops) { pop in
                     Text(pop.text)
-                        .font(Brand.display(20, .black))
+                        .font(Brand.pixel(22))
                         .foregroundStyle(pop.good ? Brand.gold : Brand.danger)
                         .position(x: pop.x * geo.size.width, y: geo.size.height * (SnackGame.playerY - 0.12) - CGFloat(pop.age) * 60)
                         .opacity(1 - pop.age / 0.8)
@@ -64,16 +63,16 @@ struct SnackCatchView: View {
         VStack {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    Eyebrow(text: "snack catch", color: Brand.hyprGlow)
+                    Eyebrow(text: "snack-fangen", color: Brand.slime)
                     Text("\(game.score)")
-                        .font(Brand.display(40, .black))
+                        .font(Brand.pixel(42))
                         .foregroundStyle(Brand.text)
                         .contentTransition(.numericText())
                         .monospacedDigit()
                 }
                 Spacer()
                 Text("\(Int(ceil(game.timeLeft)))s")
-                    .font(Brand.mono(20, .bold))
+                    .font(Brand.pixel(22))
                     .foregroundStyle(game.timeLeft < 6 ? Brand.danger : Brand.text)
                     .monospacedDigit()
                 CloseButton { dismiss() }
@@ -87,13 +86,13 @@ struct SnackCatchView: View {
     private var readyCard: some View {
         Panel(padding: 22) {
             VStack(alignment: .leading, spacing: 14) {
-                Text("Catch the snacks!")
-                    .font(Brand.display(26, .black))
+                Text("Fang das Essen")
+                    .font(Brand.pixel(28))
                     .foregroundStyle(Brand.text)
-                Text("Drag anywhere to move \(store.state.name). 🍎 🍓 🍪 give points, 🌟 gives a lot, and 🌵 hurts. You have 30 seconds.")
-                    .font(Brand.display(15, .medium))
+                Text("Wisch nach links und rechts, um \(store.state.name) zu bewegen. Apfel, Erdbeere und Keks geben Punkte, der Stern viele, der Kaktus zieht welche ab. Du hast 30 Sekunden.")
+                    .font(Brand.body(15))
                     .foregroundStyle(Brand.muted)
-                JellyButton(title: "Start", symbol: "play.fill", tint: Brand.color(for: .fun)) { game.start() }
+                PixelButton(title: "Los", symbol: "play.fill", tint: Brand.color(for: .fun)) { game.start() }
             }
         }
         .padding(24)
@@ -102,23 +101,23 @@ struct SnackCatchView: View {
     private var resultCard: some View {
         Panel(padding: 22) {
             VStack(alignment: .leading, spacing: 14) {
-                Eyebrow(text: game.score >= store.state.counters.bestScore ? "new best!" : "time's up", color: Brand.gold)
-                Text("\(game.score) points")
-                    .font(Brand.display(32, .black))
+                Eyebrow(text: game.score >= store.state.counters.bestScore ? "neuer rekord" : "zeit um", color: Brand.gold)
+                Text("\(game.score) Punkte")
+                    .font(Brand.pixel(34))
                     .foregroundStyle(Brand.text)
                 Text(game.result?.line ?? "")
-                    .font(Brand.display(15, .medium))
+                    .font(Brand.body(15))
                     .foregroundStyle(Brand.muted)
                 HStack(spacing: 10) {
                     CoinChip(coins: store.state.coins)
-                    Text("+\(2 + game.score / 5) coins")
-                        .font(Brand.mono(12, .bold))
+                    Text("+\(2 + game.score / 5) münzen")
+                        .font(Brand.pixel(14))
                         .foregroundStyle(Brand.gold)
                 }
                 HStack(spacing: 10) {
-                    JellyButton(title: "Done", tint: Brand.hypr, filled: false) { dismiss() }
+                    PixelButton(title: "Fertig", tint: Brand.text, filled: false) { dismiss() }
                     if store.state.needs.energy >= 12 {
-                        JellyButton(title: "Again", symbol: "arrow.clockwise", tint: Brand.color(for: .fun)) { game.start() }
+                        PixelButton(title: "Nochmal", symbol: "arrow.clockwise", tint: Brand.color(for: .fun)) { game.start() }
                     }
                 }
             }
@@ -134,13 +133,13 @@ final class SnackGame: ObservableObject {
     enum Kind: CaseIterable {
         case apple, berry, cookie, star, cactus
 
-        var emoji: String {
+        var sprite: String {
             switch self {
-            case .apple: "🍎"
-            case .berry: "🍓"
-            case .cookie: "🍪"
-            case .star: "🌟"
-            case .cactus: "🌵"
+            case .apple: "apple"
+            case .berry: "berry"
+            case .cookie: "cookie"
+            case .star: "starJelly"
+            case .cactus: "cactus"
             }
         }
 

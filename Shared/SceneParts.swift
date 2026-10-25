@@ -1,67 +1,75 @@
 import SwiftUI
 
-/// A small ring that fills with how happy one need is.
-struct NeedRing: View {
-    let need: Need
-    let value: Int
-    var size: CGFloat = 22
+/// A bar made of blocks, like an old handheld's battery meter.
+struct PixelBar: View {
+    let value: Int          // 0...100
+    var segments = 10
+    var color: Color
+    var height: CGFloat = 8
+    var gap: CGFloat = 2
 
     var body: some View {
-        ZStack {
-            Circle().stroke(Brand.color(for: need).opacity(0.25), lineWidth: 2.5)
-            Circle()
-                .trim(from: 0, to: CGFloat(value) / 100)
-                .stroke(Brand.color(for: need), style: StrokeStyle(lineWidth: 2.5, lineCap: .round))
-                .rotationEffect(.degrees(-90))
-            Image(systemName: need.symbol)
-                .font(.system(size: size * 0.42, weight: .bold))
-                .foregroundStyle(Brand.color(for: need))
+        let filled = Int((Double(value) / 100 * Double(segments)).rounded(.up))
+        HStack(spacing: gap) {
+            ForEach(0..<segments, id: \.self) { i in
+                Rectangle()
+                    .fill(i < filled ? color : color.opacity(0.18))
+            }
         }
-        .frame(width: size, height: size)
+        .frame(height: height)
+        .accessibilityElement()
+        .accessibilityValue("\(value) Prozent")
     }
 }
 
+/// What the slime says. Flat box with a hard border, no bubble tail.
 struct SpeechBubble: View {
     let text: String
-    var size: CGFloat = 13
+    var size: CGFloat = 14
 
     var body: some View {
         Text(text)
-            .font(Brand.display(size, .semibold))
+            .font(Brand.body(size, .medium))
             .foregroundStyle(Brand.text)
             .lineLimit(2)
-            .minimumScaleFactor(0.8)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
-            .background(Color.white.opacity(0.1), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .minimumScaleFactor(0.85)
+            .padding(.horizontal, 9)
+            .padding(.vertical, 5)
+            .background(Brand.raised)
+            .overlay(Rectangle().strokeBorder(Brand.line, lineWidth: 2))
     }
 }
 
-/// Sky behind the Lock Screen card, following the time of day.
+/// The view through the slime's window: one flat colour per time of day,
+/// pixel stars at night.
 struct SkyBackground: View {
     let date: Date
 
+    private static let stars: [(x: CGFloat, y: CGFloat)] = {
+        var rng = SeededRandom(seed: 7)
+        return (0..<22).map { _ in (rng.next(), rng.next() * 0.6) }
+    }()
+
     var body: some View {
         let hour = Calendar.current.component(.hour, from: date)
-        let colors: [Color] = switch hour {
-        case 5..<8: [Color(hex: 0x2B1E4A), Color(hex: 0xC2668A)]
-        case 8..<17: [Color(hex: 0x1B2450), Color(hex: 0x3F5FB0)]
-        case 17..<20: [Color(hex: 0x2A1640), Color(hex: 0xD9774F)]
-        default: [Color(hex: 0x07060F), Color(hex: 0x1A1533)]
+        let color: Color = switch hour {
+        case 5..<8: Color(hex: 0x3A2E3F)
+        case 8..<17: Color(hex: 0x223A4A)
+        case 17..<20: Color(hex: 0x4A3328)
+        default: Color(hex: 0x0E1316)
         }
-        ZStack(alignment: .bottom) {
-            LinearGradient(colors: colors, startPoint: .top, endPoint: .bottom)
+        ZStack(alignment: .topLeading) {
+            color
             if hour >= 20 || hour < 5 {
-                Canvas { ctx, size in
-                    var rng = SeededRandom(seed: 7)
-                    for _ in 0..<26 {
-                        let r = CGRect(x: rng.next() * size.width, y: rng.next() * size.height * 0.6,
-                                       width: 1.5, height: 1.5)
-                        ctx.fill(Path(ellipseIn: r), with: .color(.white.opacity(0.4 + rng.next() * 0.5)))
+                GeometryReader { geo in
+                    ForEach(0..<Self.stars.count, id: \.self) { i in
+                        Rectangle()
+                            .fill(Color.white.opacity(0.55))
+                            .frame(width: 2, height: 2)
+                            .position(x: Self.stars[i].x * geo.size.width, y: Self.stars[i].y * geo.size.height)
                     }
                 }
             }
-            Rectangle().fill(Color.black.opacity(0.35)).frame(height: 10)
         }
     }
 }

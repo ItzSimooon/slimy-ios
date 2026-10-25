@@ -25,11 +25,11 @@ struct LiveSlimeView: View {
             let pull = max(-0.3, min(0.3, -drag.height / 500))
 
             ZStack(alignment: .bottom) {
-                Ellipse()
+                // Flat pixel shadow under the slime.
+                Rectangle()
                     .fill(Color.black.opacity(0.35))
-                    .frame(width: height * 0.85, height: height * 0.09)
-                    .blur(radius: 4)
-                    .offset(y: height * 0.03)
+                    .frame(width: height * 0.8, height: height * 0.05)
+                    .offset(y: height * 0.025)
 
                 PixelSlime(frame: frame, skin: s.skin)
                     .frame(width: height * SlimeFont.aspect, height: height)
@@ -37,13 +37,11 @@ struct LiveSlimeView: View {
                                  y: 1 - breathe - poke * 0.16 + pull,
                                  anchor: .bottom)
                     .offset(x: drag.width * 0.18)
-                    .shadow(color: s.skin == .void ? Brand.hypr.opacity(0.6) : .clear, radius: 18)
 
                 ForEach(hearts) { heart in
                     let age = now.timeIntervalSince(heart.born)
-                    Image(systemName: "heart.fill")
-                        .font(.system(size: 18, weight: .black))
-                        .foregroundStyle(Brand.warm)
+                    PixelItem(name: "heart")
+                        .frame(width: 22, height: 17)
                         .offset(x: heart.x + CGFloat(sin(age * 5)) * 6, y: -height * 0.8 - CGFloat(age) * 60)
                         .opacity(max(0, 1 - age / 1.4))
                 }
@@ -55,9 +53,9 @@ struct LiveSlimeView: View {
         .simultaneousGesture(TapGesture().onEnded { pokeIt() }, isEnabled: interactive)
         .sensoryFeedback(.impact(flexibility: .soft, intensity: 0.8), trigger: taps)
         .accessibilityElement()
-        .accessibilityLabel("\(store.state.name), your slime")
-        .accessibilityHint("Tap to poke, rub to pet")
-        .accessibilityAction(named: "Pet") { pet() }
+        .accessibilityLabel("\(store.state.name), dein Slime")
+        .accessibilityHint("Tippen zum Anstupsen, reiben zum Kraulen")
+        .accessibilityAction(named: "Kraulen") { pet() }
     }
 
     private func animation(for s: SlimeState, at now: Date) -> SpriteAnim {

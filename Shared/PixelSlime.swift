@@ -78,3 +78,50 @@ struct SpriteLayerShape: Shape {
         return path
     }
 }
+
+/// A small multi-colour sprite (food, coin, …) from `SlimeSprites.items`.
+struct ItemSprite {
+    let palette: [Character: UInt32]
+    let rows: [String]
+}
+
+struct PixelItem: View {
+    let name: String
+
+    var body: some View {
+        if let sprite = SlimeSprites.items[name] {
+            let cols = CGFloat(sprite.rows.first?.count ?? 1), rows = CGFloat(sprite.rows.count)
+            ZStack {
+                ForEach(Array(sprite.palette.keys).sorted(), id: \.self) { key in
+                    ItemLayerShape(rows: sprite.rows, code: key)
+                        .fill(Color(hex: sprite.palette[key] ?? 0))
+                }
+            }
+            .aspectRatio(cols / rows, contentMode: .fit)
+            .accessibilityHidden(true)
+        }
+    }
+}
+
+private struct ItemLayerShape: Shape {
+    let rows: [String]
+    let code: Character
+
+    func path(in rect: CGRect) -> Path {
+        let cols = CGFloat(rows.first?.count ?? 1), count = CGFloat(rows.count)
+        let px = min(rect.width / cols, rect.height / count)
+        let ox = rect.minX + (rect.width - px * cols) / 2
+        let oy = rect.minY + (rect.height - px * count) / 2
+        var path = Path()
+        for (y, row) in rows.enumerated() {
+            for (x, ch) in row.enumerated() where ch == code {
+                path.addRect(CGRect(x: ox + CGFloat(x) * px, y: oy + CGFloat(y) * px, width: px + 0.4, height: px + 0.4))
+            }
+        }
+        return path
+    }
+}
+
+extension Food {
+    var sprite: String { rawValue }
+}

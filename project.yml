@@ -12,6 +12,7 @@ settings:
     MARKETING_VERSION: "1.0.0"
     CURRENT_PROJECT_VERSION: "1"
     CODE_SIGN_STYLE: Automatic
+    DEVELOPMENT_LANGUAGE: de
     DEVELOPMENT_TEAM: ""  # Building in Xcode yourself? Pick your team under Signing & Capabilities.
 targets:
   Slimy:
@@ -25,10 +26,13 @@ targets:
       path: App/Info.plist
       properties:
         CFBundleDisplayName: Slimy
+        CFBundleDevelopmentRegion: de
+        CFBundleLocalizations: [de]
+        UIAppFonts: [PixelifySans-Regular.ttf, PixelifySans-Bold.ttf]
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         UILaunchScreen:
-          UIColorName: AccentColor
+          UIColorName: LaunchBackground
         UIUserInterfaceStyle: Dark
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
         NSSupportsLiveActivities: true

@@ -93,7 +93,7 @@ final class FriendsStore: ObservableObject {
             try await ensureRegistered()
             let slime = SlimeStore.shared.state
             try await api.upload(SlimeProfile(
-                ownerName: ownerName.isEmpty ? "Someone" : ownerName,
+                ownerName: ownerName.isEmpty ? "Jemand" : ownerName,
                 name: slime.name, skin: slime.skin, level: slime.level, mood: slime.mood,
                 happiness: Int(slime.needs.average), updatedAt: .now))
             friends = try await api.friends()
@@ -109,19 +109,19 @@ final class FriendsStore: ObservableObject {
 
     private func ensureRegistered() async throws {
         guard token == nil else { return }
-        let reg = try await HyprnodeAPI().register(ownerName: ownerName.isEmpty ? "Someone" : ownerName)
+        let reg = try await HyprnodeAPI().register(ownerName: ownerName.isEmpty ? "Jemand" : ownerName)
         token = reg.token
     }
 
     private func readInbox() async throws {
         let page = try await api.inbox(after: inboxCursor)
         for event in page.events {
-            let who = friends.first { $0.id == event.friendId }?.slime.name ?? "A friend"
+            let who = friends.first { $0.id == event.friendId }?.slime.name ?? "Ein Freund"
             switch event.kind {
             case .gift:
                 SlimeStore.shared.receiveGift(event.food ?? .berry, from: who)
             case .kiss, .hug, .visit:
-                SlimeStore.shared.toast = Toast(text: "\(who) sent a \(event.kind.rawValue) 💌", good: true)
+                SlimeStore.shared.toast = Toast(text: "\(who): \(event.kind.inboxLine)", good: true)
             }
         }
         if let cursor = page.cursor { inboxCursor = cursor }
@@ -142,7 +142,7 @@ final class FriendsStore: ObservableObject {
     func join(code: String) async -> Bool {
         let cleaned = code.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
         guard cleaned.count == 6 else {
-            lastError = "Friend codes have 6 letters and numbers."
+            lastError = "Freundes-Codes haben 6 Zeichen."
             return false
         }
         do {
@@ -175,12 +175,12 @@ final class FriendsStore: ObservableObject {
     func interact(with friend: Friend, _ kind: InteractionKind, food: Food? = nil) async -> String? {
         if kind == .gift, let food {
             guard SlimeStore.shared.state.coins >= food.price else {
-                lastError = "Not enough coins for \(food.emoji)."
+                lastError = "Zu wenig Münzen für \(food.title)."
                 return nil
             }
         }
         if kind == .kiss, friend.love < 50 {
-            lastError = "Too soon for kisses. Get to 50% love first."
+            lastError = "Für Küsse ist es zu früh. Erst ab 50 % Liebe."
             return nil
         }
 
@@ -206,12 +206,12 @@ final class FriendsStore: ObservableObject {
         await IslandController.shared.sync()
         lastError = nil
 
-        if fellInLove { return "\(SlimeStore.shared.state.name) and \(friend.slime.name) are in love!! 💞" }
+        if fellInLove { return "\(SlimeStore.shared.state.name) und \(friend.slime.name) sind verliebt" }
         switch kind {
-        case .hug: return "squishy hug with \(friend.slime.name) 🤗"
-        case .visit: return "visited \(friend.slime.name)'s room 🏠"
-        case .gift: return "sent \(food?.emoji ?? "🎁") to \(friend.slime.name)"
-        case .kiss: return "mwah 💋"
+        case .hug: return "umarmt \(friend.slime.name). quetsch."
+        case .visit: return "zu besuch bei \(friend.slime.name)"
+        case .gift: return "\((food?.title ?? "geschenk").lowercased()) an \(friend.slime.name) geschickt"
+        case .kiss: return "schmatz."
         }
     }
 
@@ -221,6 +221,18 @@ final class FriendsStore: ObservableObject {
             if let data = try? JSONEncoder().encode(demo) { defaults.set(data, forKey: Keys.demoState) }
         } else if let i = friends.firstIndex(where: { $0.id == id }) {
             change(&friends[i])
+        }
+    }
+}
+
+extension InteractionKind {
+    /// What a friend's action looks like when it arrives in your inbox.
+    var inboxLine: String {
+        switch self {
+        case .hug: "umarmung"
+        case .visit: "war zu besuch"
+        case .gift: "geschenk"
+        case .kiss: "kuss"
         }
     }
 }

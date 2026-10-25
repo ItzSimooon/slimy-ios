@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 """Draws the 1024px app icon: the slime glowing on a hyprnode night."""
 import json
-import math
 import os
 import sys
 
-from PIL import Image, ImageDraw, ImageFilter
+from PIL import Image, ImageDraw
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "tools"))
@@ -17,26 +16,14 @@ COLORS = {"b": (125, 230, 122), "s": (61, 170, 90), "k": (20, 48, 40), "w": (240
 
 
 def main():
-    img = Image.new("RGB", (SIZE, SIZE))
-    px = img.load()
-    for y in range(SIZE):
-        for x in range(SIZE):
-            # violet glow from the top, fading into the void
-            d = math.hypot(x - SIZE * 0.5, y - SIZE * 0.1) / SIZE
-            t = max(0.0, 1 - d * 1.25)
-            px[x, y] = (int(12 + 120 * t * t), int(11 + 80 * t * t), int(20 + 200 * t * t))
-
-    glow = Image.new("L", (SIZE, SIZE), 0)
-    ImageDraw.Draw(glow).ellipse([200, 380, 824, 900], fill=150)
-    glow = glow.filter(ImageFilter.GaussianBlur(90))
-    img.paste(Image.new("RGB", (SIZE, SIZE), (125, 230, 122)), (0, 0), glow.point(lambda v: v // 3))
-
-    frame = ANIMS["love"][0].rows()
-    cell = 38
-    ox = (SIZE - W * cell) // 2
-    oy = SIZE - H * cell - 90
+    # Flat moss-black, the slime on a strip of ground. No gradients.
+    img = Image.new("RGB", (SIZE, SIZE), (16, 20, 17))
     draw = ImageDraw.Draw(img)
-    draw.ellipse([ox + 120, oy + H * cell - 26, ox + W * cell - 120, oy + H * cell + 26], fill=(8, 7, 14))
+    frame = ANIMS["idle"][0].rows()
+    cell = 36
+    ox = (SIZE - W * cell) // 2
+    oy = SIZE - H * cell - 150
+    draw.rectangle([0, oy + H * cell, SIZE, oy + H * cell + 24], fill=(46, 58, 50))
     for y, row in enumerate(frame):
         for x, ch in enumerate(row):
             if ch in COLORS:
@@ -55,7 +42,13 @@ def main():
     os.makedirs(accent, exist_ok=True)
     with open(os.path.join(accent, "Contents.json"), "w") as fh:
         json.dump({"colors": [{"idiom": "universal", "color": {"color-space": "srgb", "components": {
-            "red": "0.608", "green": "0.482", "blue": "1.000", "alpha": "1.000"}}}],
+            "red": "0.490", "green": "0.902", "blue": "0.478", "alpha": "1.000"}}}],
+            "info": {"author": "xcode", "version": 1}}, fh, indent=2)
+    launch = os.path.join(ROOT, "Resources", "Assets.xcassets", "LaunchBackground.colorset")
+    os.makedirs(launch, exist_ok=True)
+    with open(os.path.join(launch, "Contents.json"), "w") as fh:
+        json.dump({"colors": [{"idiom": "universal", "color": {"color-space": "srgb", "components": {
+            "red": "0.063", "green": "0.078", "blue": "0.067", "alpha": "1.000"}}}],
             "info": {"author": "xcode", "version": 1}}, fh, indent=2)
     print("icon written")
 

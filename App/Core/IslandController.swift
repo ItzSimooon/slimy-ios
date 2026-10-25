@@ -83,7 +83,7 @@ final class IslandController: ObservableObject {
 
     func start() async {
         guard ActivityAuthorizationInfo().areActivitiesEnabled else {
-            problem = "Live Activities are off for Slimy. Turn them on in Settings → Slimy → Live Activities."
+            problem = "Live-Aktivitäten sind für Slimy aus. Schalt sie ein unter Einstellungen → Slimy → Live-Aktivitäten."
             note("Start abgebrochen: Live-Aktivitäten sind ausgeschaltet")
             refreshStatus()
             return
@@ -98,7 +98,7 @@ final class IslandController: ObservableObject {
             note("Gestartet: \(activity.id.prefix(6)), Zustand \(activity.activityState)")
             watch(activity)
         } catch {
-            problem = "The island didn't start: \(error.localizedDescription). Open Slimy and try again."
+            problem = "Die Insel ist nicht gestartet: \(error.localizedDescription). Öffne Slimy und versuch es nochmal."
             note("Start fehlgeschlagen: \(error)")
         }
         refreshStatus()

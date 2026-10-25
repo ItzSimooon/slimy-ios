@@ -18,13 +18,13 @@ struct HatchView: View {
         ZStack {
             BrandBackground()
             VStack(spacing: 24) {
-                VStack(spacing: 6) {
+                VStack(spacing: 4) {
                     Text("slimy")
-                        .font(Brand.display(44, .black))
+                        .font(Brand.pixel(48))
                         .foregroundStyle(Brand.text)
                     Text("by hyprnode")
-                        .font(Brand.mono(12, .bold))
-                        .foregroundStyle(Brand.hyprGlow)
+                        .font(Brand.pixel(13, bold: false))
+                        .foregroundStyle(Brand.hypr)
                 }
                 .padding(.top, 40)
 
@@ -32,87 +32,65 @@ struct HatchView: View {
 
                 if cracks < tapsToHatch {
                     egg
-                    Text(cracks == 0 ? "Something is wiggling in there… tap the egg." : "Keep going! \(tapsToHatch - cracks) more")
-                        .font(Brand.display(16, .semibold))
+                    Text(cracks == 0 ? "Da wackelt was. Tipp aufs Ei." : "Weiter. Noch \(tapsToHatch - cracks).")
+                        .font(Brand.pixel(17, bold: false))
                         .foregroundStyle(Brand.muted)
-                        .contentTransition(.numericText())
                 } else {
                     PixelSlime(frame: SpriteAnim.wave.frames[0], skin: skin)
-                        .frame(height: 170)
+                        .frame(height: 160)
                         .transition(.scale(scale: 0.3).combined(with: .opacity))
                     namePicker
                 }
 
                 Spacer()
             }
-            .padding(.horizontal, 24)
+            .padding(.horizontal, 22)
         }
         .sensoryFeedback(.impact(weight: .heavy), trigger: cracks)
-        .animation(.spring(response: 0.5, dampingFraction: 0.6), value: cracks)
+        .animation(.spring(response: 0.45, dampingFraction: 0.65), value: cracks)
     }
 
+    /// A pixel egg that gets more cracked with every tap.
     private var egg: some View {
         Button {
             cracks += 1
             wobble.toggle()
         } label: {
-            ZStack {
-                Ellipse()
-                    .fill(LinearGradient(colors: [Color(hex: 0xF4EEFF), Color(hex: 0xC8B8F0)], startPoint: .top, endPoint: .bottom))
-                    .frame(width: 150, height: 190)
-                    .shadow(color: Brand.hypr.opacity(0.5), radius: 30)
-                // spots
-                ForEach(0..<3) { i in
-                    Circle()
-                        .fill(Brand.hypr.opacity(0.35))
-                        .frame(width: [26, 18, 22][i], height: [26, 18, 22][i])
-                        .offset(x: [-30, 34, 8][i], y: [-40, -10, 50][i])
-                }
-                // cracks grow with every tap
-                Path { p in
-                    let points: [CGPoint] = [.init(x: -60, y: -6), .init(x: -38, y: 8), .init(x: -18, y: -10),
-                                             .init(x: 4, y: 10), .init(x: 26, y: -8), .init(x: 46, y: 8), .init(x: 64, y: -4)]
-                    let shown = Array(points.prefix(cracks + 1))
-                    guard let first = shown.first else { return }
-                    p.move(to: first)
-                    for pt in shown.dropFirst() { p.addLine(to: pt) }
-                }
-                .stroke(Color(hex: 0x3A2C66), style: StrokeStyle(lineWidth: 4, lineCap: .round, lineJoin: .round))
-                .offset(x: 75, y: 95)
+            PixelEgg(cracks: cracks)
                 .frame(width: 150, height: 190)
-            }
-            .rotationEffect(.degrees(wobble ? 6 : -6), anchor: .bottom)
-            .animation(.spring(response: 0.18, dampingFraction: 0.2), value: wobble)
+                .rotationEffect(.degrees(wobble ? 5 : -5), anchor: .bottom)
+                .animation(.spring(response: 0.15, dampingFraction: 0.25), value: wobble)
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("Egg. Tap to hatch.")
+        .accessibilityLabel("Ei. Tippen zum Ausbrüten.")
     }
 
     private var namePicker: some View {
-        VStack(spacing: 16) {
-            Text("It's a slime!")
-                .font(Brand.display(28, .black))
+        VStack(spacing: 14) {
+            Text("Ein Slime.")
+                .font(Brand.pixel(30))
                 .foregroundStyle(Brand.text)
-            TextField("Name your slime", text: $name)
-                .font(Brand.display(20, .bold))
+            TextField("Wie soll er heißen?", text: $name)
+                .font(Brand.pixel(20))
                 .multilineTextAlignment(.center)
                 .focused($naming)
                 .submitLabel(.done)
-                .padding(14)
-                .background(Brand.deep, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).strokeBorder(Brand.line))
-            HStack(spacing: 14) {
+                .padding(12)
+                .background(Brand.panel)
+                .overlay(Rectangle().strokeBorder(naming ? Brand.slime : Brand.line, lineWidth: 2))
+            HStack(spacing: 12) {
                 ForEach(starters) { option in
-                    Button { withAnimation(.spring) { skin = option } } label: {
-                        Circle()
+                    Button { skin = option } label: {
+                        Rectangle()
                             .fill(option.body)
-                            .frame(width: 44, height: 44)
-                            .overlay(Circle().strokeBorder(Brand.text, lineWidth: skin == option ? 3 : 0))
+                            .frame(width: 42, height: 42)
+                            .overlay(Rectangle().strokeBorder(skin == option ? Brand.text : Color.black.opacity(0.4),
+                                                              lineWidth: skin == option ? 3 : 2))
                     }
                     .accessibilityLabel(option.title)
                 }
             }
-            JellyButton(title: "Hello, \(name.isEmpty ? "Blob" : name)!", symbol: "sparkles", tint: Brand.hypr) {
+            PixelButton(title: "Hallo, \(name.isEmpty ? "Blob" : name)", symbol: "sparkles", tint: skin.body) {
                 store.hatch(name: name.trimmingCharacters(in: .whitespacesAndNewlines), skin: skin)
                 Task {
                     await Notifier.requestPermission()
@@ -120,5 +98,56 @@ struct HatchView: View {
                 }
             }
         }
+    }
+}
+
+/// The egg, drawn as pixels: speckled shell, cracks spreading across.
+private struct PixelEgg: View {
+    let cracks: Int
+
+    private static let shell = [
+        "....xxxx....",
+        "...xxxxxx...",
+        "..xxxxxxxx..",
+        "..xxoxxxxx..",
+        ".xxxxxxxxxx.",
+        ".xxxxxxoxxx.",
+        "xxxxxxxxxxxx",
+        "xxxoxxxxxxxx",
+        "xxxxxxxxxoxx",
+        "xxxxxxxxxxxx",
+        "xxxxxoxxxxxx",
+        ".xxxxxxxxxx.",
+        ".xxxxxxxxxx.",
+        "..xxxxxxxx..",
+        "...xxxxxx...",
+    ]
+    private static let crackPath: [(Int, Int)] = [(1, 7), (2, 6), (3, 7), (4, 6), (5, 7), (6, 6), (7, 7), (8, 6), (9, 7), (10, 6)]
+
+    var body: some View {
+        GeometryReader { geo in
+            let cols = CGFloat(Self.shell[0].count), rows = CGFloat(Self.shell.count)
+            let px = min(geo.size.width / cols, geo.size.height / rows)
+            ZStack(alignment: .topLeading) {
+                ForEach(0..<Self.shell.count, id: \.self) { y in
+                    ForEach(Array(Self.shell[y].enumerated()), id: \.offset) { x, ch in
+                        if ch != "." {
+                            Rectangle()
+                                .fill(color(ch, x: x, y: y))
+                                .frame(width: px + 0.4, height: px + 0.4)
+                                .offset(x: CGFloat(x) * px, y: CGFloat(y) * px)
+                        }
+                    }
+                }
+            }
+        }
+        .aspectRatio(12.0 / 15.0, contentMode: .fit)
+    }
+
+    private func color(_ ch: Character, x: Int, y: Int) -> Color {
+        let shown = Self.crackPath.prefix(cracks * 2)
+        if shown.contains(where: { $0.0 == x && $0.1 == y }) { return Color(hex: 0x2E3A32) }
+        if ch == "o" { return Color(hex: 0x7DE67A) }
+        return x >= 9 || y >= 13 ? Color(hex: 0xC9D3C2) : Color(hex: 0xE9F1E4)
     }
 }

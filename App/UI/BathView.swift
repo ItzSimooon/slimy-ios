@@ -76,9 +76,9 @@ struct BathView: View {
         VStack {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    Eyebrow(text: "bath time", color: Brand.cool)
+                    Eyebrow(text: "badezeit", color: Brand.cool)
                     Text(headline)
-                        .font(Brand.display(24, .black))
+                        .font(Brand.pixel(26))
                         .foregroundStyle(Brand.text)
                 }
                 Spacer()
@@ -88,7 +88,7 @@ struct BathView: View {
             .padding(.top, 60)
             Spacer()
             if finished || alreadyClean {
-                JellyButton(title: "Done", symbol: "checkmark", tint: Brand.color(for: .clean)) { dismiss() }
+                PixelButton(title: "Fertig", symbol: "checkmark", tint: Brand.color(for: .clean)) { dismiss() }
                     .padding(.horizontal, 24)
                     .padding(.bottom, 44)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
@@ -98,10 +98,10 @@ struct BathView: View {
     }
 
     private var headline: String {
-        if alreadyClean { return "Already squeaky clean ✨" }
-        if finished { return "Squeaky clean!! 🫧" }
+        if alreadyClean { return "Schon sauber" }
+        if finished { return "Blitzsauber" }
         let left = spots.filter { $0.dirt > 0.05 }.count
-        return left == 1 ? "1 mud spot left" : "Scrub off \(left) mud spots"
+        return left == 1 ? "Noch 1 Matschfleck" : "Schrubb \(left) Matschflecken weg"
     }
 
     private func makeMess() {

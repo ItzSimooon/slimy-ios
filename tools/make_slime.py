@@ -413,6 +413,104 @@ ANIMS = {
 for name, frames in ANIMS.items():
     assert 60 % len(frames) == 0, name
 
+# ------------------------------------------------------------------ items
+# Small multi-colour sprites for food, coins and the mini-game. Each has its
+# own palette; "." is empty.
+
+ITEMS = {
+    "apple": ({"r": 0xE8524A, "d": 0xA8322E, "w": 0xFFE6E0, "k": 0x6B3E1F, "g": 0x6CC65A}, [
+        ".....k....",
+        "....kgg...",
+        ".rrrkrrr..",
+        "rrwrrrrrrd",
+        "rwrrrrrrrd",
+        "rrrrrrrrrd",
+        "rrrrrrrrrd",
+        ".rrrrrrdd.",
+        ".drrrrrdd.",
+        "..dd.ddd..",
+    ]),
+    "berry": ({"r": 0xE8524A, "d": 0xA8322E, "y": 0xF6D365, "g": 0x6CC65A}, [
+        "...g..g...",
+        "..gggggg..",
+        ".rrgrrgrr.",
+        "rryrrryrrd",
+        "rrrrrrrrrd",
+        ".ryrrryrd.",
+        ".rrrrrrrd.",
+        "..ryrrrd..",
+        "...rrrd...",
+        "....dd....",
+    ]),
+    "cookie": ({"c": 0xD9A066, "b": 0x5E3A1C, "d": 0xA8743F}, [
+        "..dddddd..",
+        ".dccccccd.",
+        "dccbcccccd",
+        "dcccccbccd",
+        "dcbccccccd",
+        "dccccbcccd",
+        "dcccccccbd",
+        "dccbcccccd",
+        ".dccccccd.",
+        "..dddddd..",
+    ]),
+    "cake": ({"r": 0xE8524A, "p": 0xF49AC1, "w": 0xFFF1D6, "s": 0xE6B873, "d": 0xB8894A}, [
+        "....rr....",
+        "....rr....",
+        ".pppppppp.",
+        "pppppppppp",
+        "pwpwpwpwpp",
+        "ssssssssss",
+        "wwwwwwwwww",
+        "ssssssssss",
+        "ssssssssss",
+        "dddddddddd",
+    ]),
+    "starJelly": ({"y": 0xFFD95A, "o": 0xE8A23A, "w": 0xFFFBEA}, [
+        "....yy....",
+        "....yy....",
+        "...yyyy...",
+        "yyyywyyyyy",
+        ".yyywyyyy.",
+        "..yyyyyy..",
+        "..yyoyyy..",
+        ".yyo..oyy.",
+        ".yo....oy.",
+        "..........",
+    ]),
+    "coin": ({"y": 0xFFD166, "o": 0xC9971F, "w": 0xFFF5D6}, [
+        "..oooo..",
+        ".oyyyyo.",
+        "oyywyyyo",
+        "oyywyyyo",
+        "oyyyyyyo",
+        "oyyyyyyo",
+        ".oyyyyo.",
+        "..oooo..",
+    ]),
+    "cactus": ({"g": 0x5FB85A, "d": 0x3C7F3A, "w": 0xF2F2E6}, [
+        "....gg....",
+        "..w.gg.w..",
+        "g..gggd..g",
+        "gg.ggdd.gg",
+        ".ggggdddg.",
+        "...ggdd...",
+        "...ggdd...",
+        "...ggdd...",
+        "..dddddd..",
+        "..........",
+    ]),
+    "heart": ({"r": 0xF07A9A, "d": 0xC2547A, "w": 0xFFE3EC}, [
+        ".rr..rr.",
+        "rwrrrrrd",
+        "rrrrrrrd",
+        ".rrrrrd.",
+        "..rrrd..",
+        "...rd...",
+    ]),
+}
+
+
 # ------------------------------------------------------------------ fonts
 
 DIGITS = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine"]
@@ -529,6 +627,14 @@ def write_swift(path):
             lines.append("        ],")
         lines.append("    ]")
         lines.append("")
+    lines.append("    static let items: [String: ItemSprite] = [")
+    for name, (palette, rows) in ITEMS.items():
+        pal = ", ".join(f'"{k}": 0x{v:06X}' for k, v in palette.items())
+        lines.append(f'        "{name}": ItemSprite(palette: [{pal}], rows: [')
+        for row in rows:
+            lines.append(f'            "{row}",')
+        lines.append("        ]),")
+    lines.append("    ]")
     lines.append("}")
     with open(path, "w") as fh:
         fh.write("\n".join(lines) + "\n")
@@ -536,7 +642,7 @@ def write_swift(path):
 
 def write_widget_plist(path, font_files):
     plist = {
-        "CFBundleDevelopmentRegion": "$(DEVELOPMENT_LANGUAGE)",
+        "CFBundleDevelopmentRegion": "de",
         "CFBundleDisplayName": "Slimy",
         "CFBundleExecutable": "$(EXECUTABLE_NAME)",
         "CFBundleIdentifier": "$(PRODUCT_BUNDLE_IDENTIFIER)",
@@ -546,7 +652,7 @@ def write_widget_plist(path, font_files):
         "CFBundleShortVersionString": "$(MARKETING_VERSION)",
         "CFBundleVersion": "$(CURRENT_PROJECT_VERSION)",
         "NSExtension": {"NSExtensionPointIdentifier": "com.apple.widgetkit-extension"},
-        "UIAppFonts": font_files,
+        "UIAppFonts": font_files + ["PixelifySans-Regular.ttf", "PixelifySans-Bold.ttf"],
     }
     with open(path, "wb") as fh:
         plistlib.dump(plist, fh)

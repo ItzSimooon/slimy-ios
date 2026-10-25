@@ -12,8 +12,8 @@ struct FriendsView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 18) {
-                SheetHeader(eyebrow: "friends", title: "Slime buddies") { dismiss() }
+            VStack(alignment: .leading, spacing: 16) {
+                SheetHeader(eyebrow: "freunde", title: "Slime-Freunde") { dismiss() }
 
                 if case .unavailable(let reason) = friends.status {
                     ServerNotice(reason: reason)
@@ -26,7 +26,7 @@ struct FriendsView: View {
                 pairCard
 
                 if !friends.allFriends.isEmpty {
-                    Eyebrow(text: "your friends")
+                    Eyebrow(text: "deine freunde")
                     ForEach(friends.allFriends) { friend in
                         FriendCard(friend: friend,
                                    isPartner: friends.partner?.id == friend.id,
@@ -39,24 +39,24 @@ struct FriendsView: View {
 
                 if let lastLine {
                     Text(lastLine)
-                        .font(Brand.display(15, .bold))
+                        .font(Brand.pixel(16))
                         .foregroundStyle(Brand.warm)
                         .frame(maxWidth: .infinity)
                 }
                 if let error = friends.lastError {
                     Text(error)
-                        .font(Brand.display(13, .medium))
+                        .font(Brand.body(14, .medium))
                         .foregroundStyle(Brand.warm)
                 }
 
                 demoToggle
             }
-            .padding(20)
+            .padding(18)
         }
         .task { await friends.refresh() }
-        .confirmationDialog("Send a gift", isPresented: Binding(get: { giftFor != nil }, set: { if !$0 { giftFor = nil } })) {
+        .confirmationDialog("Geschenk schicken", isPresented: Binding(get: { giftFor != nil }, set: { if !$0 { giftFor = nil } })) {
             ForEach(Food.allCases.filter { $0.price > 0 }) { food in
-                Button("\(food.emoji) \(food.title) · \(food.price) coins") {
+                Button("\(food.title) · \(food.price) Münzen") {
                     if let friend = giftFor { act(friend, .gift, food: food) }
                 }
             }
@@ -67,15 +67,16 @@ struct FriendsView: View {
     private var nameCard: some View {
         Panel {
             VStack(alignment: .leading, spacing: 10) {
-                Eyebrow(text: "your name")
-                Text("Friends see this next to your slime.")
-                    .font(Brand.display(14, .medium))
+                Eyebrow(text: "dein name")
+                Text("Deine Freunde sehen ihn neben deinem Slime.")
+                    .font(Brand.body(14))
                     .foregroundStyle(Brand.muted)
-                TextField("Your name", text: $friends.ownerName)
-                    .font(Brand.display(17, .bold))
+                TextField("Dein Name", text: $friends.ownerName)
+                    .font(Brand.pixel(18))
                     .textInputAutocapitalization(.words)
                     .padding(12)
-                    .background(Brand.raised, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .background(Brand.raised)
+                    .overlay(Rectangle().strokeBorder(Brand.line, lineWidth: 2))
             }
         }
     }
@@ -83,46 +84,49 @@ struct FriendsView: View {
     private var pairCard: some View {
         Panel {
             VStack(alignment: .leading, spacing: 14) {
-                Eyebrow(text: "team up", color: Brand.warm)
-                Text("Pair with a friend who has Slimy. Hug, visit and send gifts, and your slimes fall in love at 100%. Then they show up together in your Dynamic Island.")
-                    .font(Brand.display(14, .medium))
+                Eyebrow(text: "zusammentun", color: Brand.warm)
+                Text("Verbinde dich mit jemandem, der auch Slimy hat. Umarmen, besuchen und Geschenke schicken füllen die Liebe auf. Bei 100 % sind eure Slimes verliebt und sitzen zusammen in der Insel.")
+                    .font(Brand.body(15))
                     .foregroundStyle(Brand.text)
 
                 if let code = friends.pairCode {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(code.code)
-                            .font(Brand.mono(34, .black))
+                            .font(Brand.pixel(36))
                             .tracking(6)
-                            .foregroundStyle(Brand.hyprGlow)
+                            .foregroundStyle(Brand.slime)
                             .textSelection(.enabled)
-                        Text("Your friend enters this in their app. Expires \(code.expiresAt.formatted(date: .omitted, time: .shortened)).")
-                            .font(Brand.display(12, .medium))
+                        Text("Dein Freund gibt den Code in seiner App ein. Gültig bis \(code.expiresAt.formatted(date: .omitted, time: .shortened)).")
+                            .font(Brand.body(13))
                             .foregroundStyle(Brand.muted)
                     }
-                    ShareLink(item: "Add my slime on Slimy! Code: \(code.code) · slime.hyprnode.de") {
-                        Label("Share code", systemImage: "square.and.arrow.up")
-                            .font(Brand.display(14, .bold))
+                    ShareLink(item: "Werd Slime-Freund mit mir in Slimy. Code: \(code.code) · slime.hyprnode.de") {
+                        Label("Code teilen", systemImage: "square.and.arrow.up")
+                            .font(Brand.pixel(15))
+                            .foregroundStyle(Brand.slime)
                     }
                 } else {
-                    JellyButton(title: busy ? "Making code…" : "Get my friend code", symbol: "qrcode", tint: Brand.hypr) {
+                    PixelButton(title: busy ? "Moment …" : "Meinen Code holen", symbol: "qrcode") {
                         busy = true
                         Task { await friends.makeCode(); busy = false }
                     }
                 }
 
                 HStack(spacing: 10) {
-                    TextField("Friend's code", text: $joinCode)
-                        .font(Brand.mono(17, .bold))
+                    TextField("Code von Freund", text: $joinCode)
+                        .font(Brand.pixel(18))
                         .textInputAutocapitalization(.characters)
                         .autocorrectionDisabled()
                         .padding(12)
-                        .background(Brand.raised, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-                    Button("Join") {
+                        .background(Brand.raised)
+                        .overlay(Rectangle().strokeBorder(Brand.line, lineWidth: 2))
+                    Button("Verbinden") {
                         Task {
                             if await friends.join(code: joinCode) { joinCode = "" }
                         }
                     }
-                    .font(Brand.display(16, .bold))
+                    .font(Brand.pixel(16))
+                    .foregroundStyle(joinCode.count < 6 ? Brand.muted : Brand.slime)
                     .disabled(joinCode.count < 6)
                 }
             }
@@ -132,11 +136,11 @@ struct FriendsView: View {
     private var demoToggle: some View {
         Toggle(isOn: $friends.demoEnabled) {
             VStack(alignment: .leading, spacing: 2) {
-                Text("Demo friend")
-                    .font(Brand.display(15, .bold))
+                Text("Test-Freund")
+                    .font(Brand.pixel(15))
                     .foregroundStyle(Brand.text)
-                Text("Adds Mochi, a pretend slime that lives only on this phone, so you can try love and the couple island before the server is live.")
-                    .font(Brand.display(12, .medium))
+                Text("Fügt Mochi hinzu, einen Übungs-Slime, den es nur auf diesem iPhone gibt. So kannst du Liebe und die Pärchen-Insel ausprobieren, bevor der Server läuft.")
+                    .font(Brand.body(13))
                     .foregroundStyle(Brand.muted)
             }
         }
@@ -147,7 +151,7 @@ struct FriendsView: View {
     private func act(_ friend: Friend, _ kind: InteractionKind, food: Food? = nil) {
         Task {
             if let line = await friends.interact(with: friend, kind, food: food) {
-                withAnimation(.spring) { lastLine = line }
+                lastLine = line
             }
         }
     }
@@ -161,12 +165,13 @@ private struct ServerNotice: View {
             Image(systemName: "antenna.radiowaves.left.and.right.slash")
                 .foregroundStyle(Brand.cool)
             Text(reason)
-                .font(Brand.display(13, .medium))
+                .font(Brand.body(14))
                 .foregroundStyle(Brand.text)
         }
         .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Brand.cool.opacity(0.1), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .background(Brand.cool.opacity(0.08))
+        .overlay(Rectangle().strokeBorder(Brand.cool.opacity(0.4), lineWidth: 2))
     }
 }
 
@@ -182,62 +187,57 @@ private struct FriendCard: View {
         Panel {
             VStack(alignment: .leading, spacing: 12) {
                 HStack(spacing: 12) {
-                    PixelSlime(frame: SpriteAnim(friend.inLove ? Mood.idle : friend.slime.mood).frames[0], skin: friend.slime.skin)
-                        .frame(height: 52)
+                    PixelSlime(frame: SpriteAnim(friend.slime.mood).frames[0], skin: friend.slime.skin)
+                        .frame(height: 48)
                     VStack(alignment: .leading, spacing: 3) {
                         HStack(spacing: 6) {
                             Text(friend.slime.name)
-                                .font(Brand.display(18, .black))
+                                .font(Brand.pixel(19))
                                 .foregroundStyle(Brand.text)
                             if friend.isDemo {
-                                Text("DEMO")
-                                    .font(Brand.mono(9, .black))
-                                    .foregroundStyle(Brand.void)
-                                    .padding(.horizontal, 5).padding(.vertical, 2)
-                                    .background(Brand.cool, in: Capsule())
+                                Text("TEST")
+                                    .font(Brand.pixel(10))
+                                    .foregroundStyle(Brand.bg)
+                                    .padding(.horizontal, 4)
+                                    .padding(.vertical, 1)
+                                    .background(Brand.cool)
                             }
                         }
-                        Text("\(friend.ownerName)'s slime · lv \(friend.slime.level)")
-                            .font(Brand.display(12, .medium))
+                        Text("Slime von \(friend.ownerName) · LV \(friend.slime.level)")
+                            .font(Brand.body(13))
                             .foregroundStyle(Brand.muted)
                     }
                     Spacer()
                     Menu {
-                        Button(isPartner ? "Shown in your island" : "Show in my island", systemImage: "capsule", action: onPartner)
+                        Button(isPartner ? "Ist in deiner Insel" : "In meiner Insel zeigen", systemImage: "capsule", action: onPartner)
                             .disabled(isPartner)
-                        Button("Remove friend", systemImage: "person.badge.minus", role: .destructive, action: onRemove)
+                        Button("Freund entfernen", systemImage: "person.badge.minus", role: .destructive, action: onRemove)
                     } label: {
                         Image(systemName: "ellipsis")
-                            .font(.system(size: 16, weight: .bold))
+                            .font(.system(size: 15, weight: .bold))
+                            .foregroundStyle(Brand.text)
                             .frame(width: 36, height: 36)
-                            .background(Brand.raised, in: Circle())
+                            .background(Brand.raised)
+                            .overlay(Rectangle().strokeBorder(Brand.line, lineWidth: 2))
                     }
+                    .accessibilityLabel("Mehr")
                 }
 
-                VStack(alignment: .leading, spacing: 6) {
-                    HStack {
-                        Eyebrow(text: friend.inLove ? "in love 💞" : "love", color: Brand.warm)
-                        Spacer()
-                        Text("\(friend.love)%")
-                            .font(Brand.mono(12, .bold))
-                            .foregroundStyle(Brand.warm)
-                    }
-                    GeometryReader { geo in
-                        ZStack(alignment: .leading) {
-                            Capsule().fill(Brand.warm.opacity(0.15))
-                            Capsule()
-                                .fill(LinearGradient(colors: [Brand.warm, Brand.hypr], startPoint: .leading, endPoint: .trailing))
-                                .frame(width: max(6, geo.size.width * CGFloat(friend.love) / 100))
-                        }
-                    }
-                    .frame(height: 8)
+                HStack(spacing: 10) {
+                    Text(friend.inLove ? "VERLIEBT" : "LIEBE")
+                        .font(Brand.pixel(12))
+                        .foregroundStyle(Brand.warm)
+                    PixelBar(value: friend.love, segments: 10, color: Brand.warm, height: 10)
+                    Text("\(friend.love) %")
+                        .font(Brand.pixel(13))
+                        .foregroundStyle(Brand.warm)
                 }
 
                 HStack(spacing: 8) {
-                    LoveButton(title: "Hug", symbol: "hands.and.sparkles.fill") { onAction(.hug) }
-                    LoveButton(title: "Visit", symbol: "house.fill") { onAction(.visit) }
-                    LoveButton(title: "Gift", symbol: "gift.fill", action: onGift)
-                    LoveButton(title: "Kiss", symbol: "heart.fill") { onAction(.kiss) }
+                    LoveButton(title: "Umarmen", symbol: "figure.2.arms.open") { onAction(.hug) }
+                    LoveButton(title: "Besuchen", symbol: "house.fill") { onAction(.visit) }
+                    LoveButton(title: "Schenken", symbol: "gift.fill", action: onGift)
+                    LoveButton(title: "Küssen", symbol: "heart.fill") { onAction(.kiss) }
                         .opacity(friend.love >= 50 ? 1 : 0.4)
                 }
             }
@@ -253,14 +253,15 @@ private struct LoveButton: View {
     var body: some View {
         Button(action: action) {
             VStack(spacing: 4) {
-                Image(systemName: symbol).font(.system(size: 15, weight: .bold))
-                Text(title).font(Brand.display(11, .bold))
+                Image(systemName: symbol).font(.system(size: 14, weight: .bold))
+                Text(title).font(Brand.pixel(11))
             }
             .foregroundStyle(Brand.warm)
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 9)
-            .background(Brand.warm.opacity(0.12), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .frame(height: 50)
+            .background(Brand.raised)
+            .overlay(Rectangle().strokeBorder(Brand.warm.opacity(0.5), lineWidth: 2))
         }
-        .buttonStyle(SquishStyle())
+        .buttonStyle(PressStyle())
     }
 }

@@ -13,18 +13,20 @@ struct ChatView: View {
                 LiveSlimeView(height: 44, interactive: false)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(store.state.name)
-                        .font(Brand.display(20, .black))
+                        .font(Brand.pixel(20))
                         .foregroundStyle(Brand.text)
-                    Eyebrow(text: chat.isThinking ? "typing…" : "talk to your slime", color: Brand.hyprGlow)
+                    Eyebrow(text: chat.isThinking ? "schreibt …" : "red mit deinem slime", color: Brand.slime)
                 }
                 Spacer()
                 Menu {
-                    Button("Clear chat", systemImage: "trash", role: .destructive) { chat.clear() }
+                    Button("Chat löschen", systemImage: "trash", role: .destructive) { chat.clear() }
                 } label: {
                     Image(systemName: "ellipsis")
-                        .font(.system(size: 16, weight: .bold))
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundStyle(Brand.text)
                         .frame(width: 36, height: 36)
-                        .background(Brand.raised, in: Circle())
+                        .background(Brand.raised)
+                        .overlay(Rectangle().strokeBorder(Brand.line, lineWidth: 2))
                 }
                 CloseButton { dismiss() }
             }
@@ -34,8 +36,8 @@ struct ChatView: View {
                 ScrollView {
                     LazyVStack(spacing: 10) {
                         if chat.messages.isEmpty {
-                            Text("Say hi to \(store.state.name)! It knows how it feels, what it ate and who its friends are.")
-                                .font(Brand.display(14, .medium))
+                            Text("Sag hallo zu \(store.state.name). Er weiß, wie es ihm geht, was er gegessen hat und wer seine Freunde sind.")
+                                .font(Brand.body(15))
                                 .foregroundStyle(Brand.muted)
                                 .multilineTextAlignment(.center)
                                 .padding(.top, 40)
@@ -64,23 +66,25 @@ struct ChatView: View {
             }
 
             HStack(spacing: 10) {
-                TextField("Message \(store.state.name)…", text: $draft, axis: .vertical)
-                    .font(Brand.display(16, .medium))
+                TextField("Nachricht an \(store.state.name)", text: $draft, axis: .vertical)
+                    .font(Brand.body(16))
                     .lineLimit(1...4)
                     .focused($typing)
                     .padding(.horizontal, 14)
                     .padding(.vertical, 11)
-                    .background(Brand.deep, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                    .background(Brand.panel)
+                    .overlay(Rectangle().strokeBorder(Brand.line, lineWidth: 2))
                     .onSubmit(send)
                 Button(action: send) {
                     Image(systemName: "arrow.up")
                         .font(.system(size: 16, weight: .black))
-                        .foregroundStyle(Brand.void)
-                        .frame(width: 42, height: 42)
-                        .background(Brand.hypr, in: Circle())
+                        .foregroundStyle(Brand.bg)
+                        .frame(width: 44, height: 44)
+                        .background(Brand.slime)
+                        .overlay(Rectangle().strokeBorder(Color.black.opacity(0.55), lineWidth: 2))
                 }
                 .disabled(draft.trimmingCharacters(in: .whitespaces).isEmpty || chat.isThinking)
-                .accessibilityLabel("Send")
+                .accessibilityLabel("Senden")
             }
             .padding(12)
         }
@@ -101,7 +105,7 @@ private struct Bubble: View {
         switch message.role {
         case .note:
             Text(message.text)
-                .font(Brand.mono(11, .semibold))
+                .font(Brand.pixel(12, bold: false))
                 .foregroundStyle(Brand.muted)
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: .infinity)
@@ -111,12 +115,12 @@ private struct Bubble: View {
             HStack {
                 if mine { Spacer(minLength: 50) }
                 Text(message.text)
-                    .font(Brand.display(15, .medium))
-                    .foregroundStyle(mine ? Brand.void : Brand.text)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 10)
-                    .background(mine ? AnyShapeStyle(Brand.hyprGradient) : AnyShapeStyle(Brand.raised),
-                                in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                    .font(Brand.body(15, .medium))
+                    .foregroundStyle(mine ? Brand.bg : Brand.text)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 9)
+                    .background(mine ? Brand.slime : Brand.raised)
+                    .overlay(Rectangle().strokeBorder(mine ? Color.black.opacity(0.4) : Brand.line, lineWidth: 2))
                 if !mine { Spacer(minLength: 50) }
             }
         }
@@ -129,15 +133,16 @@ private struct TypingDots: View {
             let t = context.date.timeIntervalSinceReferenceDate
             HStack(spacing: 5) {
                 ForEach(0..<3) { i in
-                    Circle()
+                    Rectangle()
                         .fill(Brand.muted)
-                        .frame(width: 7, height: 7)
-                        .offset(y: CGFloat(sin(t * 6 + Double(i) * 0.8)) * 3)
+                        .frame(width: 6, height: 6)
+                        .offset(y: sin(t * 6 + Double(i) * 0.8) > 0 ? -3 : 0)
                 }
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 13)
-            .background(Brand.raised, in: Capsule())
+            .background(Brand.raised)
+            .overlay(Rectangle().strokeBorder(Brand.line, lineWidth: 2))
         }
     }
 }

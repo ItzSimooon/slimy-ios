@@ -128,7 +128,7 @@ final class SlimeStore: ObservableObject {
         state.needs.add(.love, 8)
         state.react(.eat, at: .now)
         save()
-        toast = Toast(text: "\(friend) sent you \(food.emoji)!", good: true)
+        toast = Toast(text: "\(friend) hat dir \(food.title.lowercased()) geschickt", good: true)
     }
 
     func spend(_ coins: Int) {

@@ -17,12 +17,12 @@ struct DiagnosticsView: View {
             VStack(alignment: .leading, spacing: 16) {
                 HStack {
                     Button { dismiss() } label: {
-                        Label("Zurück", systemImage: "chevron.left").font(Brand.display(15, .bold))
+                        Label("Zurück", systemImage: "chevron.left").font(Brand.pixel(15))
                     }
                     Spacer()
                 }
                 Text("Diagnose")
-                    .font(Brand.display(26, .black))
+                    .font(Brand.pixel(26))
                     .foregroundStyle(Brand.text)
 
                 Panel {
@@ -34,30 +34,30 @@ struct DiagnosticsView: View {
                             AnimatedSlime(anim: .eat, anchor: previewStart, skin: store.state.skin, height: 56)
                         }
                         Text("Das ist die Animation über die Uhr. Bewegt er sich hier jede Sekunde, klappt der Trick zumindest in der App.")
-                            .font(Brand.display(13, .medium))
+                            .font(Brand.body(13))
                             .foregroundStyle(Brand.muted)
                         Toggle(isOn: Binding(get: { island.animated }, set: { island.animated = $0 })) {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text("Animation in der Insel (experimentell)")
-                                    .font(Brand.display(15, .bold))
+                                    .font(Brand.pixel(15))
                                     .foregroundStyle(Brand.text)
                                 Text("Aus: Der Slime wird aus Pixeln gezeichnet und ist sicher sichtbar. An: Er bewegt sich jede Sekunde, falls iOS mitspielt. Ist er danach unsichtbar, schalte es wieder aus.")
-                                    .font(Brand.display(12, .medium))
+                                    .font(Brand.body(12))
                                     .foregroundStyle(Brand.muted)
                             }
                         }
-                        .tint(Brand.hypr)
+                        .tint(Brand.slime)
                         Toggle(isOn: Binding(get: { island.probe }, set: { island.probe = $0 })) {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text("Test-Streifen auf dem Sperrbildschirm")
-                                    .font(Brand.display(15, .bold))
+                                    .font(Brand.pixel(15))
                                     .foregroundStyle(Brand.text)
                                 Text("Zeigt statt der Slimy-Karte fünf Testzeilen A bis F. Sperr das iPhone, mach einen Screenshot und schick ihn mir. Danach wieder ausschalten.")
-                                    .font(Brand.display(12, .medium))
+                                    .font(Brand.body(12))
                                     .foregroundStyle(Brand.muted)
                             }
                         }
-                        .tint(Brand.hypr)
+                        .tint(Brand.slime)
                     }
                 }
 
@@ -66,13 +66,13 @@ struct DiagnosticsView: View {
                         ForEach(report, id: \.0) { label, value, ok in
                             HStack(alignment: .firstTextBaseline) {
                                 Image(systemName: ok ? "checkmark.circle.fill" : "xmark.circle.fill")
-                                    .foregroundStyle(ok ? Brand.color(for: .clean) : Brand.danger)
+                                    .foregroundStyle(ok ? Brand.slime : Brand.danger)
                                 Text(label)
-                                    .font(Brand.display(14, .semibold))
+                                    .font(Brand.body(14))
                                     .foregroundStyle(Brand.text)
                                 Spacer()
                                 Text(value)
-                                    .font(Brand.mono(12, .semibold))
+                                    .font(Brand.pixel(12, bold: false))
                                     .foregroundStyle(Brand.muted)
                                     .multilineTextAlignment(.trailing)
                             }
@@ -81,14 +81,14 @@ struct DiagnosticsView: View {
                 }
 
                 HStack(spacing: 10) {
-                    JellyButton(title: "Insel neu starten", symbol: "arrow.clockwise", tint: Brand.hypr) {
+                    PixelButton(title: "Neu starten", symbol: "arrow.clockwise") {
                         Task {
                             await island.ensureRunning(restart: true)
                             refresh()
                         }
                     }
-                    JellyButton(title: copied ? "Kopiert" : "Bericht kopieren", symbol: "doc.on.doc",
-                                tint: Brand.hypr, filled: false) {
+                    PixelButton(title: copied ? "Kopiert" : "Bericht kopieren", symbol: "doc.on.doc",
+                                tint: Brand.slime, filled: false) {
                         UIPasteboard.general.string = text
                         copied = true
                     }
@@ -98,27 +98,28 @@ struct DiagnosticsView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     if island.log.isEmpty {
                         Text("Noch nichts passiert. Tipp auf „Insel neu starten“.")
-                            .font(Brand.display(13, .medium))
+                            .font(Brand.body(13))
                             .foregroundStyle(Brand.muted)
                     }
                     ForEach(Array(island.log.enumerated()), id: \.offset) { _, line in
                         Text(line)
-                            .font(Brand.mono(11, .medium))
+                            .font(Brand.pixel(11, bold: false))
                             .foregroundStyle(Brand.text)
                             .textSelection(.enabled)
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(12)
-                .background(Brand.deep, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .background(Brand.panel)
+                .overlay(Rectangle().strokeBorder(Brand.line, lineWidth: 2))
 
                 Text("Nach dem Neustart zum Home-Bildschirm wischen: Solange Slimy im Vordergrund ist, zeigt iOS die Insel nicht.")
-                    .font(Brand.display(13, .medium))
+                    .font(Brand.body(13))
                     .foregroundStyle(Brand.muted)
             }
             .padding(20)
         }
-        .background(Brand.void)
+        .background(Brand.bg)
         .toolbar(.hidden, for: .navigationBar)
         .onAppear(perform: refresh)
         .onChange(of: island.log.count) { refresh() }

@@ -9,11 +9,11 @@ enum Need: String, Codable, CaseIterable, Identifiable, Hashable {
 
     var title: String {
         switch self {
-        case .hunger: "Food"
-        case .fun: "Fun"
-        case .energy: "Energy"
-        case .clean: "Clean"
-        case .love: "Love"
+        case .hunger: "Essen"
+        case .fun: "Spaß"
+        case .energy: "Energie"
+        case .clean: "Sauber"
+        case .love: "Liebe"
         }
     }
 
@@ -30,11 +30,11 @@ enum Need: String, Codable, CaseIterable, Identifiable, Hashable {
     /// What the slime says when this is the thing it wants most.
     var wish: String {
         switch self {
-        case .hunger: "i'm sooo hungry"
-        case .fun: "play with me!!"
-        case .energy: "so... sleepy..."
-        case .clean: "i feel sticky"
-        case .love: "pet me? pls?"
+        case .hunger: "hunger. großer hunger."
+        case .fun: "mir ist langweilig"
+        case .energy: "augen. so. schwer."
+        case .clean: "ich kleb an mir selbst"
+        case .love: "kraul mich mal"
         }
     }
 
@@ -114,21 +114,11 @@ enum Food: String, Codable, CaseIterable, Identifiable, Hashable {
 
     var title: String {
         switch self {
-        case .apple: "Apple"
-        case .berry: "Berries"
-        case .cookie: "Cookie"
-        case .cake: "Cake"
-        case .starJelly: "Star Jelly"
-        }
-    }
-
-    var emoji: String {
-        switch self {
-        case .apple: "🍎"
-        case .berry: "🍓"
-        case .cookie: "🍪"
-        case .cake: "🍰"
-        case .starJelly: "🌟"
+        case .apple: "Apfel"
+        case .berry: "Erdbeere"
+        case .cookie: "Keks"
+        case .cake: "Kuchen"
+        case .starJelly: "Sternengelee"
         }
     }
 
@@ -287,15 +277,15 @@ struct SlimeState: Codable, Hashable {
 
     func line(at now: Date) -> String {
         if let eventLine, recentEvent(at: now) != nil { return eventLine }
-        if isAsleep { return "zzz… dreaming of \(favorite.title.lowercased())" }
+        if isAsleep { return "zzz … träumt von \(favorite.title.lowercased())" }
         if let wish { return wish.wish }
         let hour = Calendar.current.component(.hour, from: now)
         let content = [
-            "life is good ✨",
-            "i love you, you know",
-            "bloop.",
-            "feeling extra jiggly",
-            hour < 12 ? "good morning!!" : hour < 18 ? "nice afternoon huh" : "cozy evening vibes",
+            "alles gut hier",
+            "blub.",
+            "ich wackel so vor mich hin",
+            "hab dich gern, nur so",
+            hour < 12 ? "morgen." : hour < 18 ? "nachmittag. gemütlich." : "abend. kuschelzeit.",
         ]
         return content[(hour + counters.pets) % content.count]
     }
@@ -311,10 +301,10 @@ struct SlimeState: Codable, Hashable {
         switch action {
         case .feed(let food):
             if coins < food.price {
-                return ActionOutcome(ok: false, line: "not enough coins for \(food.emoji)")
+                return ActionOutcome(ok: false, line: "zu wenig münzen für \(food.title.lowercased())")
             }
             if needs.hunger >= 97 {
-                return ActionOutcome(ok: false, line: "i'm stuffed!! 🫃")
+                return ActionOutcome(ok: false, line: "ich platze gleich")
             }
             isAsleep = false
             coins -= food.price
@@ -328,11 +318,11 @@ struct SlimeState: Codable, Hashable {
             counters.feeds += 1
             xp += 6
             react(.eat, at: now)
-            out = ActionOutcome(ok: true, line: favorite ? "MY FAVORITE \(food.emoji)!!" : "nom nom \(food.emoji)")
+            out = ActionOutcome(ok: true, line: favorite ? "\(food.title.uppercased())! MEIN LIEBLINGSESSEN" : "mampf. \(food.title.lowercased()).")
 
         case .play(let score):
             if needs.energy < 12 {
-                return ActionOutcome(ok: false, line: "too tired to play… 💤")
+                return ActionOutcome(ok: false, line: "zu müde zum spielen")
             }
             isAsleep = false
             needs.add(.fun, 18 + Double(min(score, 40)) / 2)
@@ -344,11 +334,11 @@ struct SlimeState: Codable, Hashable {
             counters.plays += 1
             counters.bestScore = max(counters.bestScore, score)
             react(.play, at: now)
-            out = ActionOutcome(ok: true, line: score > 0 ? "wheee! \(score) points!" : "wheee!")
+            out = ActionOutcome(ok: true, line: score > 0 ? "wiii. \(score) punkte" : "wiii.")
 
         case .bath:
             if needs.clean > 95 {
-                return ActionOutcome(ok: false, line: "already squeaky clean ✨")
+                return ActionOutcome(ok: false, line: "bin schon sauber")
             }
             isAsleep = false
             needs.clean = 100
@@ -356,7 +346,7 @@ struct SlimeState: Codable, Hashable {
             xp += 6
             counters.baths += 1
             react(.bath, at: now)
-            out = ActionOutcome(ok: true, line: "bubble bath!! 🫧")
+            out = ActionOutcome(ok: true, line: "frisch gewaschen")
 
         case .pet:
             recentPets = recentPets.filter { now.timeIntervalSince($0) < 600 } + [now]
@@ -366,31 +356,31 @@ struct SlimeState: Codable, Hashable {
             if streak <= 3 { xp += 3 }
             counters.pets += 1
             if isAsleep {
-                out = ActionOutcome(ok: true, line: "*happy sleepy noises*")
+                out = ActionOutcome(ok: true, line: "*schnarcht zufrieden*")
             } else {
                 react(.love, at: now)
-                out = ActionOutcome(ok: true, line: streak > 5 ? "ok ok i get it, you love me 🥰" : "hehe that tickles ❤️")
+                out = ActionOutcome(ok: true, line: streak > 5 ? "ok ok, du magst mich. verstanden." : "hihi. kitzelt.")
             }
 
         case .sleep:
             if needs.energy > 85 {
-                return ActionOutcome(ok: false, line: "not sleepy yet!")
+                return ActionOutcome(ok: false, line: "bin noch nicht müde")
             }
             isAsleep = true
             reaction = .none
-            out = ActionOutcome(ok: true, line: "good night… 🌙")
+            out = ActionOutcome(ok: true, line: "gute nacht")
 
         case .wake:
             isAsleep = false
             if needs.energy < 50 { needs.add(.fun, -5) }
             react(.wave, at: now)
-            out = ActionOutcome(ok: true, line: needs.energy < 50 ? "five more minutes…" : "good morning!! ☀️")
+            out = ActionOutcome(ok: true, line: needs.energy < 50 ? "noch fünf minuten …" : "guten morgen")
         }
 
         if level > levelBefore {
             coins += 10 * level
             out.leveledUp = true
-            out.line = "LEVEL \(level)! +\(10 * level) coins"
+            out.line = "level \(level). +\(10 * level) münzen"
         }
         return out
     }
@@ -429,24 +419,24 @@ enum PhoneEvent: String, Codable, CaseIterable, Identifiable, Hashable {
 
     var title: String {
         switch self {
-        case .batteryLow: "Battery low"
-        case .batteryCritical: "Battery almost empty"
-        case .batteryFull: "Battery full"
-        case .chargerConnected: "Charger connected"
-        case .chargerDisconnected: "Charger disconnected"
-        case .wifiConnected: "Wi-Fi connected"
-        case .wifiDisconnected: "Wi-Fi disconnected"
-        case .cellular: "Switched to mobile data"
-        case .offline: "No internet"
-        case .backOnline: "Back online"
-        case .airplaneOn: "Airplane Mode on"
-        case .airplaneOff: "Airplane Mode off"
-        case .lowPowerOn: "Low Power Mode on"
-        case .lowPowerOff: "Low Power Mode off"
-        case .goodMorning: "Good morning"
-        case .goodNight: "Good night"
-        case .alarm: "Alarm"
-        case .newHour: "New hour"
+        case .batteryLow: "Akku niedrig"
+        case .batteryCritical: "Akku fast leer"
+        case .batteryFull: "Akku voll"
+        case .chargerConnected: "Ladekabel dran"
+        case .chargerDisconnected: "Ladekabel ab"
+        case .wifiConnected: "WLAN verbunden"
+        case .wifiDisconnected: "WLAN getrennt"
+        case .cellular: "Mobile Daten"
+        case .offline: "Kein Internet"
+        case .backOnline: "Wieder online"
+        case .airplaneOn: "Flugmodus an"
+        case .airplaneOff: "Flugmodus aus"
+        case .lowPowerOn: "Stromsparen an"
+        case .lowPowerOff: "Stromsparen aus"
+        case .goodMorning: "Guten Morgen"
+        case .goodNight: "Gute Nacht"
+        case .alarm: "Wecker"
+        case .newHour: "Neue Stunde"
         }
     }
 
@@ -474,24 +464,24 @@ enum PhoneEvent: String, Codable, CaseIterable, Identifiable, Hashable {
     /// The Shortcuts automation trigger that sends this event.
     var shortcutTrigger: String {
         switch self {
-        case .batteryLow: "Battery Level → Falls Below 20%"
-        case .batteryCritical: "Battery Level → Falls Below 5%"
-        case .batteryFull: "Battery Level → Equals 100%"
-        case .chargerConnected: "Charger → Is Connected"
-        case .chargerDisconnected: "Charger → Is Disconnected"
-        case .wifiConnected: "Wi-Fi → Joins Any Network"
-        case .wifiDisconnected: "Wi-Fi → Leaves Any Network"
-        case .cellular: "Wi-Fi → Leaves Any Network (pick this or Wi-Fi disconnected)"
-        case .offline: "Airplane Mode → Is Turned On, or detected live in the app"
-        case .backOnline: "Detected live in the app"
-        case .airplaneOn: "Airplane Mode → Is Turned On"
-        case .airplaneOff: "Airplane Mode → Is Turned Off"
-        case .lowPowerOn: "Low Power Mode → Is Turned On"
-        case .lowPowerOff: "Low Power Mode → Is Turned Off"
-        case .goodMorning: "Time of Day → Sunrise, or Sleep → Wake Up"
-        case .goodNight: "Sleep → Wind Down Begins, or Time of Day → 22:00"
-        case .alarm: "Alarm → Is Stopped"
-        case .newHour: "Time of Day → every hour you like"
+        case .batteryLow: "Batterieladung · fällt unter 20 %"
+        case .batteryCritical: "Batterieladung · fällt unter 5 %"
+        case .batteryFull: "Batterieladung · ist gleich 100 %"
+        case .chargerConnected: "Ladegerät · ist verbunden"
+        case .chargerDisconnected: "Ladegerät · ist getrennt"
+        case .wifiConnected: "WLAN · verbindet sich mit beliebigem Netzwerk"
+        case .wifiDisconnected: "WLAN · trennt sich von beliebigem Netzwerk"
+        case .cellular: "WLAN · trennt sich (statt „WLAN getrennt“)"
+        case .offline: "erkennt die App selbst, solange sie offen ist"
+        case .backOnline: "erkennt die App selbst, solange sie offen ist"
+        case .airplaneOn: "Flugmodus · wird aktiviert"
+        case .airplaneOff: "Flugmodus · wird deaktiviert"
+        case .lowPowerOn: "Stromsparmodus · wird aktiviert"
+        case .lowPowerOff: "Stromsparmodus · wird deaktiviert"
+        case .goodMorning: "Tageszeit · Sonnenaufgang"
+        case .goodNight: "Tageszeit · 22:00"
+        case .alarm: "Wecker · wird gestoppt"
+        case .newHour: "Tageszeit · zu jeder vollen Stunde, die du willst"
         }
     }
 
@@ -535,24 +525,24 @@ enum PhoneEvent: String, Codable, CaseIterable, Identifiable, Hashable {
 
     var lines: [String] {
         switch self {
-        case .batteryLow: ["i'm melting… 🪫 plug me in?", "battery's low, i feel woozy", "need… juice…"]
-        case .batteryCritical: ["HELP i'm a puddle 🫠", "5%!! this is not a drill", "tell my story… 🪫"]
-        case .batteryFull: ["100%!! i'm FULL of zap ⚡️", "fully charged & jiggly", "unplug me, i'm buzzing"]
-        case .chargerConnected: ["ooh yummy electricity ⚡️", "*slurps power*", "charging… tingly!"]
-        case .chargerDisconnected: ["bye cable 👋", "free roaming mode!", "unplugged and ready"]
-        case .wifiConnected: ["wi-fi!! 📶 zoom zoom", "ooh fast internet", "connected! hi network"]
-        case .wifiDisconnected: ["where did the wi-fi go?", "wi-fi left us… 🥲", "hello? wi-fi?"]
-        case .cellular: ["on mobile data now 📡", "switched to the air waves", "careful with the data!"]
-        case .offline: ["no internet?? 😵‍💫", "i'm lost… no signal", "the internet is gone"]
-        case .backOnline: ["we're back online!", "internet returned 🎉", "signal found!"]
-        case .airplaneOn: ["✈️ are we flying??", "airplane mode! seatbelt on", "up up and away"]
-        case .airplaneOff: ["landed! 🛬", "hello ground", "back to earth"]
-        case .lowPowerOn: ["saving energy… moving slow", "eco slime mode 🍃", "conserving jiggles"]
-        case .lowPowerOff: ["full power!!", "eco mode off, let's go", "i can wiggle again"]
-        case .goodMorning: ["good morning!! ☀️", "rise and slime!", "new day, new jiggles"]
-        case .goodNight: ["sleep well 🌙", "night night, love you", "time for slime dreams"]
-        case .alarm: ["WAKE UP WAKE UP ⏰", "the alarm! go go go", "up you get!"]
-        case .newHour: ["another hour, another bloop", "tick tock 🕐", "hourly jiggle check ✅"]
+        case .batteryLow: ["akku 20 %. ich schmelze", "mir wird ganz flüssig", "steck mich an. bitte."]
+        case .batteryCritical: ["5 %. ich bin eine pfütze", "das wars. sag allen tschüss", "akku. fast. leer."]
+        case .batteryFull: ["100 %. ich summe", "voll geladen", "das kabel kann weg"]
+        case .chargerConnected: ["strom. lecker.", "kribbelt", "*schlürft strom*"]
+        case .chargerDisconnected: ["kabel ab. frei.", "tschüss kabel", "los gehts"]
+        case .wifiConnected: ["wlan. schnell.", "hallo router", "verbunden"]
+        case .wifiDisconnected: ["wo ist das wlan hin", "wlan weg", "hallo? wlan?"]
+        case .cellular: ["jetzt mobile daten", "spar die daten", "über funk jetzt"]
+        case .offline: ["kein internet", "offline. alles still.", "wo sind alle"]
+        case .backOnline: ["wieder online", "internet ist zurück", "signal da"]
+        case .airplaneOn: ["flugmodus. fliegen wir?", "anschnallen", "wir heben ab"]
+        case .airplaneOff: ["gelandet", "boden unterm schleim", "zurück auf der erde"]
+        case .lowPowerOn: ["stromsparen. ich beweg mich langsam", "sparmodus", "nur noch kleine wackler"]
+        case .lowPowerOff: ["volle kraft", "sparmodus aus", "ich darf wieder wackeln"]
+        case .goodMorning: ["guten morgen", "aufstehen", "neuer tag. neuer schleim."]
+        case .goodNight: ["schlaf gut", "gute nacht", "zeit für schleimträume"]
+        case .alarm: ["WECKER. AUFSTEHEN.", "der wecker. los.", "hoch mit dir"]
+        case .newHour: ["schon wieder eine stunde", "tick. tack.", "stündlicher wackel-check"]
         }
     }
 }

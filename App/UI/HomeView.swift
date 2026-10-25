@@ -12,7 +12,6 @@ enum HomeCover: String, Identifiable {
 
 struct HomeView: View {
     @EnvironmentObject private var store: SlimeStore
-    @EnvironmentObject private var island: IslandController
     @EnvironmentObject private var friends: FriendsStore
 
     @State private var sheet: HomeSheet?
@@ -22,14 +21,14 @@ struct HomeView: View {
         ZStack {
             BrandBackground()
             ScrollView {
-                VStack(spacing: 16) {
+                VStack(spacing: 14) {
                     topBar
                     RoomCard(onFriends: { sheet = .friends })
                     NeedsPanel()
                     actionDock
                     IslandCard()
                 }
-                .padding(.horizontal, 18)
+                .padding(.horizontal, 16)
                 .padding(.bottom, 28)
             }
             .scrollIndicators(.hidden)
@@ -44,8 +43,8 @@ struct HomeView: View {
                 case .settings: SettingsView()
                 }
             }
-            .presentationBackground(Brand.void)
-            .presentationCornerRadius(32)
+            .presentationBackground(Brand.bg)
+            .presentationCornerRadius(0)
         }
         .fullScreenCover(item: $cover) { cover in
             switch cover {
@@ -56,44 +55,44 @@ struct HomeView: View {
     }
 
     private var topBar: some View {
-        HStack(alignment: .center, spacing: 10) {
+        HStack(alignment: .center, spacing: 8) {
             VStack(alignment: .leading, spacing: 0) {
                 Text("slimy")
-                    .font(Brand.display(30, .black))
+                    .font(Brand.pixel(30))
                     .foregroundStyle(Brand.text)
-                Text(".hyprnode")
-                    .font(Brand.mono(11, .bold))
-                    .foregroundStyle(Brand.hyprGlow)
+                Text("by hyprnode")
+                    .font(Brand.pixel(11, bold: false))
+                    .foregroundStyle(Brand.hypr)
             }
             Spacer()
             CoinChip(coins: store.state.coins)
-            IconButton(symbol: "bubble.left.and.text.bubble.right.fill") { sheet = .chat }
-            IconButton(symbol: "person.2.fill", badge: friends.partner?.inLove == true) { sheet = .friends }
-            IconButton(symbol: "gearshape.fill") { sheet = .settings }
+            IconButton(symbol: "text.bubble.fill", label: "Reden") { sheet = .chat }
+            IconButton(symbol: "person.2.fill", label: "Freunde", badge: friends.partner?.inLove == true) { sheet = .friends }
+            IconButton(symbol: "gearshape.fill", label: "Einstellungen") { sheet = .settings }
         }
         .padding(.top, 6)
     }
 
     private var actionDock: some View {
         let s = store.state
-        return HStack(spacing: 10) {
-            DockButton(title: "Feed", symbol: "fork.knife", tint: Brand.color(for: .hunger),
+        return HStack(spacing: 8) {
+            DockButton(title: "Essen", symbol: "fork.knife", tint: Brand.color(for: .hunger),
                        urgent: s.wish == .hunger) { sheet = .feed }
-            DockButton(title: "Play", symbol: "gamecontroller.fill", tint: Brand.color(for: .fun),
+            DockButton(title: "Spielen", symbol: "gamecontroller.fill", tint: Brand.color(for: .fun),
                        urgent: s.wish == .fun) {
                 if s.needs.energy < 12 {
-                    store.toast = Toast(text: "too tired to play… 💤", good: false)
+                    store.toast = Toast(text: "zu müde zum spielen", good: false)
                 } else {
                     cover = .play
                 }
             }
-            DockButton(title: "Bath", symbol: "bubbles.and.sparkles.fill", tint: Brand.color(for: .clean),
+            DockButton(title: "Baden", symbol: "bubbles.and.sparkles.fill", tint: Brand.color(for: .clean),
                        urgent: s.wish == .clean) { cover = .bath }
-            DockButton(title: s.isAsleep ? "Wake" : "Bed", symbol: s.isAsleep ? "sun.max.fill" : "moon.fill",
+            DockButton(title: s.isAsleep ? "Wecken" : "Bett", symbol: s.isAsleep ? "sun.max.fill" : "moon.fill",
                        tint: Brand.color(for: .energy), urgent: s.wish == .energy) {
                 store.act(s.isAsleep ? .wake : .sleep)
             }
-            DockButton(title: "Style", symbol: "paintpalette.fill", tint: Brand.hyprGlow, urgent: false) {
+            DockButton(title: "Farbe", symbol: "paintpalette.fill", tint: Brand.accent(s.skin), urgent: false) {
                 sheet = .wardrobe
             }
         }
@@ -109,30 +108,24 @@ private struct DockButton: View {
 
     var body: some View {
         Button(action: action) {
-            VStack(spacing: 7) {
+            VStack(spacing: 6) {
                 Image(systemName: symbol)
-                    .font(.system(size: 20, weight: .bold))
-                    .foregroundStyle(tint)
-                    .frame(width: 54, height: 54)
-                    .background(tint.opacity(0.14), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 18, style: .continuous)
-                            .strokeBorder(tint, lineWidth: urgent ? 2 : 0)
-                    )
-                    .phaseAnimator([false, true]) { view, phase in
-                        view.scaleEffect(urgent && phase ? 1.06 : 1)
-                    } animation: { _ in .easeInOut(duration: 0.7) }
+                    .font(.system(size: 18, weight: .bold))
                 Text(title)
-                    .font(Brand.display(12, .bold))
-                    .foregroundStyle(urgent ? tint : Brand.muted)
+                    .font(Brand.pixel(13))
             }
+            .foregroundStyle(urgent ? Brand.bg : tint)
             .frame(maxWidth: .infinity)
+            .frame(height: 66)
+            .background(urgent ? tint : Brand.panel)
+            .overlay(Rectangle().strokeBorder(urgent ? Color.black.opacity(0.55) : tint.opacity(0.6), lineWidth: 2))
         }
-        .buttonStyle(SquishStyle())
+        .buttonStyle(PressStyle())
+        .accessibilityHint(urgent ? "Dein Slime braucht das gerade" : "")
     }
 }
 
-/// The slime's room: sky through the window, the slime, its wish.
+/// The slime's room: a window with the sky, the floor, the slime and what it says.
 private struct RoomCard: View {
     @EnvironmentObject private var store: SlimeStore
     @EnvironmentObject private var friends: FriendsStore
@@ -141,44 +134,60 @@ private struct RoomCard: View {
     var body: some View {
         let s = store.state
         ZStack(alignment: .bottom) {
+            Brand.panel
+
+            // Window
             SkyBackground(date: .now)
+                .frame(width: 110, height: 80)
+                .overlay(Rectangle().strokeBorder(Brand.line, lineWidth: 4))
+                .overlay(Rectangle().fill(Brand.line).frame(width: 4))
+                .overlay(Rectangle().fill(Brand.line).frame(height: 4))
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+                .padding(.top, 16)
+                .padding(.trailing, 16)
+
             if s.isAsleep {
                 Color.black.opacity(0.45)
             }
-            // Floor
-            LinearGradient(colors: [Brand.raised, Brand.deep], startPoint: .top, endPoint: .bottom)
-                .frame(height: 70)
 
-            HStack(alignment: .bottom, spacing: -10) {
-                LiveSlimeView(height: 150)
+            // Floor
+            Rectangle().fill(Brand.raised).frame(height: 64)
+                .overlay(alignment: .top) { Rectangle().fill(Brand.line).frame(height: 3) }
+
+            HStack(alignment: .bottom, spacing: -6) {
+                LiveSlimeView(height: 140)
                 if let partner = friends.partner, partner.inLove {
                     VisitingPartner(friend: partner)
                         .onTapGesture(perform: onFriends)
                 }
             }
-            .padding(.bottom, 34)
+            .padding(.bottom, 40)
 
-            VStack {
-                HStack(alignment: .top) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(s.name)
-                            .font(Brand.display(22, .black))
-                            .foregroundStyle(Brand.text)
-                        Eyebrow(text: "lv \(s.level) · day \(s.ageDays + 1)", color: Brand.hyprGlow)
-                        LevelBar(progress: s.levelProgress)
-                            .frame(width: 90)
-                    }
-                    Spacer()
-                    SpeechBubble(text: s.line(at: .now), size: 13)
-                        .frame(maxWidth: 170, alignment: .trailing)
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text(s.name)
+                        .font(Brand.pixel(24))
+                        .foregroundStyle(Brand.text)
+                    Text("LV \(s.level)")
+                        .font(Brand.pixel(14))
+                        .foregroundStyle(Brand.accent(s.skin))
                 }
+                PixelBar(value: Int(s.levelProgress * 100), segments: 12, color: Brand.accent(s.skin), height: 6, gap: 2)
+                    .frame(width: 110)
+                Text("tag \(s.ageDays + 1)")
+                    .font(Brand.pixel(12, bold: false))
+                    .foregroundStyle(Brand.muted)
+                SpeechBubble(text: s.line(at: .now), size: 14)
+                    .frame(maxWidth: 200, alignment: .leading)
+                    .padding(.top, 4)
                 Spacer()
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
             .padding(16)
         }
-        .frame(height: 330)
-        .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 28, style: .continuous).strokeBorder(Brand.line, lineWidth: 1))
+        .frame(height: 340)
+        .clipped()
+        .overlay(Rectangle().strokeBorder(Brand.line, lineWidth: 2))
     }
 }
 
@@ -190,25 +199,10 @@ private struct VisitingPartner: View {
             let frames = SpriteAnim.love.frames
             let i = Int(context.date.timeIntervalSinceReferenceDate * 2.5) % frames.count
             PixelSlime(frame: frames[i], skin: friend.slime.skin)
-                .frame(width: 96 * SlimeFont.aspect, height: 96)
+                .frame(width: 92 * SlimeFont.aspect, height: 92)
                 .scaleEffect(x: -1, y: 1)
         }
-        .accessibilityLabel("\(friend.slime.name) is visiting")
-    }
-}
-
-struct LevelBar: View {
-    let progress: Double
-
-    var body: some View {
-        GeometryReader { geo in
-            ZStack(alignment: .leading) {
-                Capsule().fill(Color.white.opacity(0.14))
-                Capsule().fill(Brand.hyprGradient)
-                    .frame(width: max(4, geo.size.width * progress))
-            }
-        }
-        .frame(height: 5)
+        .accessibilityLabel("\(friend.slime.name) ist zu Besuch")
     }
 }
 
@@ -216,26 +210,10 @@ private struct NeedsPanel: View {
     @EnvironmentObject private var store: SlimeStore
 
     var body: some View {
-        Panel(padding: 14) {
-            HStack(spacing: 0) {
+        Panel {
+            VStack(spacing: 10) {
                 ForEach(Need.allCases) { need in
-                    let v = Int(store.state.needs[need].rounded())
-                    VStack(spacing: 6) {
-                        NeedRing(need: need, value: v, size: 46)
-                            .phaseAnimator([1.0, 1.08]) { view, scale in
-                                view.scaleEffect(v < 25 ? scale : 1)
-                            } animation: { _ in .easeInOut(duration: 0.6) }
-                        Text("\(v)%")
-                            .font(Brand.mono(11, .bold))
-                            .foregroundStyle(v < 25 ? Brand.danger : Brand.text)
-                            .monospacedDigit()
-                        Text(need.title)
-                            .font(Brand.display(11, .semibold))
-                            .foregroundStyle(Brand.muted)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .accessibilityElement(children: .ignore)
-                    .accessibilityLabel("\(need.title) \(v) percent")
+                    NeedRow(need: need, value: Int(store.state.needs[need].rounded()))
                 }
             }
         }
@@ -249,25 +227,24 @@ private struct IslandCard: View {
         Panel {
             VStack(alignment: .leading, spacing: 12) {
                 HStack(spacing: 8) {
-                    Circle()
-                        .fill(island.isLive ? Brand.color(for: .clean) : Brand.muted)
+                    Rectangle()
+                        .fill(island.isLive ? Brand.slime : Brand.muted)
                         .frame(width: 8, height: 8)
-                        .shadow(color: island.isLive ? Brand.color(for: .clean) : .clear, radius: 4)
-                    Eyebrow(text: island.isLive ? "live in your dynamic island" : "not in the island")
-                    Spacer()
+                    Eyebrow(text: island.isLive ? "in der dynamic island" : "nicht in der insel",
+                            color: island.isLive ? Brand.slime : Brand.muted)
                 }
                 Text(island.isLive
-                     ? "Hold the island to feed, play, bathe or pet without opening the app."
-                     : "Put your slime in the Dynamic Island so it's always with you.")
-                    .font(Brand.display(14, .medium))
+                     ? "Halt die Insel gedrückt, um zu füttern, zu spielen, zu baden oder zu kraulen."
+                     : "Hol deinen Slime in die Dynamic Island, dann ist er immer dabei.")
+                    .font(Brand.body(15))
                     .foregroundStyle(Brand.text)
                 if let problem = island.problem {
                     Text(problem)
-                        .font(Brand.display(13, .medium))
+                        .font(Brand.body(14, .medium))
                         .foregroundStyle(Brand.warm)
                 }
-                JellyButton(title: island.isLive ? "Refresh island" : "Put in island",
-                            symbol: "capsule.fill", tint: Brand.hypr, filled: !island.isLive) {
+                PixelButton(title: island.isLive ? "Insel neu laden" : "In die Insel holen",
+                            symbol: "capsule.fill", filled: !island.isLive) {
                     Task { await island.ensureRunning(restart: true) }
                 }
             }

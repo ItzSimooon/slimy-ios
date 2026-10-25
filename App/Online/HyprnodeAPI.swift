@@ -10,9 +10,9 @@ enum APIError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .offline: "Can't reach slime.hyprnode.de. Check your internet and try again."
-        case .server(let status, let message): message ?? "The server answered with error \(status)."
-        case .notReady: "slime.hyprnode.de isn't live yet. Friends and chat switch on once it is."
+        case .offline: "slime.hyprnode.de ist nicht erreichbar. Prüf dein Internet und versuch es nochmal."
+        case .server(let status, let message): message ?? "Der Server meldet Fehler \(status)."
+        case .notReady: "slime.hyprnode.de ist noch nicht online. Freunde und Chat gehen, sobald er läuft."
         }
     }
 }

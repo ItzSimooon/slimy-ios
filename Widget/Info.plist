@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>CFBundleDevelopmentRegion</key>
-	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<string>de</string>
 	<key>CFBundleDisplayName</key>
 	<string>Slimy</string>
 	<key>CFBundleExecutable</key>
@@ -93,6 +93,8 @@
 		<string>Slime-Wave-Shine.ttf</string>
 		<string>Slime-Wave-Warm.ttf</string>
 		<string>Slime-Wave-Cool.ttf</string>
+		<string>PixelifySans-Regular.ttf</string>
+		<string>PixelifySans-Bold.ttf</string>
 	</array>
 </dict>
 </plist>

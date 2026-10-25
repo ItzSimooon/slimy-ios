@@ -7,8 +7,8 @@ import Foundation
 // which is the only place the slime's state lives (SLIME_APP is set there).
 
 struct FeedSlimeIntent: LiveActivityIntent {
-    static let title: LocalizedStringResource = "Feed Slime"
-    static let description = IntentDescription("Feed your slime the best snack you can afford.")
+    static let title: LocalizedStringResource = "Slime füttern"
+    static let description = IntentDescription("Füttert deinen Slime mit dem besten Essen, das du dir leisten kannst.")
 
     func perform() async throws -> some IntentResult {
         #if SLIME_APP
@@ -19,8 +19,8 @@ struct FeedSlimeIntent: LiveActivityIntent {
 }
 
 struct PlaySlimeIntent: LiveActivityIntent {
-    static let title: LocalizedStringResource = "Play with Slime"
-    static let description = IntentDescription("A quick bounce session with your slime.")
+    static let title: LocalizedStringResource = "Mit Slime spielen"
+    static let description = IntentDescription("Eine kurze Hüpfrunde mit deinem Slime.")
 
     func perform() async throws -> some IntentResult {
         #if SLIME_APP
@@ -31,8 +31,8 @@ struct PlaySlimeIntent: LiveActivityIntent {
 }
 
 struct BathSlimeIntent: LiveActivityIntent {
-    static let title: LocalizedStringResource = "Give Slime a Bath"
-    static let description = IntentDescription("Bubble bath for your slime.")
+    static let title: LocalizedStringResource = "Slime baden"
+    static let description = IntentDescription("Schaumbad für deinen Slime.")
 
     func perform() async throws -> some IntentResult {
         #if SLIME_APP
@@ -43,8 +43,8 @@ struct BathSlimeIntent: LiveActivityIntent {
 }
 
 struct PetSlimeIntent: LiveActivityIntent {
-    static let title: LocalizedStringResource = "Pet Slime"
-    static let description = IntentDescription("Give your slime some love.")
+    static let title: LocalizedStringResource = "Slime kraulen"
+    static let description = IntentDescription("Ein bisschen Liebe für deinen Slime.")
 
     func perform() async throws -> some IntentResult {
         #if SLIME_APP
@@ -55,8 +55,8 @@ struct PetSlimeIntent: LiveActivityIntent {
 }
 
 struct SleepSlimeIntent: LiveActivityIntent {
-    static let title: LocalizedStringResource = "Put Slime to Bed"
-    static let description = IntentDescription("Tuck your slime in, or wake it up if it's sleeping.")
+    static let title: LocalizedStringResource = "Slime ins Bett bringen"
+    static let description = IntentDescription("Bringt deinen Slime ins Bett oder weckt ihn, wenn er schläft.")
 
     func perform() async throws -> some IntentResult {
         #if SLIME_APP
@@ -69,8 +69,8 @@ struct SleepSlimeIntent: LiveActivityIntent {
 /// Brings the slime back to the Dynamic Island. Use it from Control Center,
 /// the Action Button or a Shortcuts automation to keep it always on.
 struct SummonSlimeIntent: LiveActivityIntent {
-    static let title: LocalizedStringResource = "Summon Slime"
-    static let description = IntentDescription("Put your slime in the Dynamic Island, or give it a fresh 8 hours there.")
+    static let title: LocalizedStringResource = "Slime holen"
+    static let description = IntentDescription("Holt deinen Slime in die Dynamic Island oder gibt ihm dort wieder 8 Stunden.")
 
     func perform() async throws -> some IntentResult {
         #if SLIME_APP
@@ -83,10 +83,10 @@ struct SummonSlimeIntent: LiveActivityIntent {
 /// Sent by Shortcuts automations (battery, charger, Wi-Fi, alarms...) so the
 /// slime can react while the app is closed.
 struct SlimeReactsIntent: LiveActivityIntent {
-    static let title: LocalizedStringResource = "Slime Reacts"
-    static let description = IntentDescription("Tell your slime something happened on your phone. It reacts in the Dynamic Island and returns what it said.")
+    static let title: LocalizedStringResource = "Slime reagiert"
+    static let description = IntentDescription("Sagt deinem Slime, dass am iPhone etwas passiert ist. Er reagiert in der Dynamic Island und gibt zurück, was er gesagt hat.")
 
-    @Parameter(title: "Event")
+    @Parameter(title: "Ereignis")
     var event: PhoneEvent
 
     init() {}
@@ -96,7 +96,7 @@ struct SlimeReactsIntent: LiveActivityIntent {
     }
 
     static var parameterSummary: some ParameterSummary {
-        Summary("Slime reacts to \(\.$event)")
+        Summary("Slime reagiert auf \(\.$event)")
     }
 
     func perform() async throws -> some IntentResult & ReturnsValue<String> {
@@ -110,26 +110,26 @@ struct SlimeReactsIntent: LiveActivityIntent {
 }
 
 extension PhoneEvent: AppEnum {
-    static let typeDisplayRepresentation: TypeDisplayRepresentation = "Phone Event"
+    static let typeDisplayRepresentation: TypeDisplayRepresentation = "iPhone-Ereignis"
 
     static let caseDisplayRepresentations: [PhoneEvent: DisplayRepresentation] = [
-        .batteryLow: DisplayRepresentation(title: "Battery low", image: .init(systemName: "battery.25percent")),
-        .batteryCritical: DisplayRepresentation(title: "Battery almost empty", image: .init(systemName: "battery.0percent")),
-        .batteryFull: DisplayRepresentation(title: "Battery full", image: .init(systemName: "battery.100percent")),
-        .chargerConnected: DisplayRepresentation(title: "Charger connected", image: .init(systemName: "bolt.fill")),
-        .chargerDisconnected: DisplayRepresentation(title: "Charger disconnected", image: .init(systemName: "powerplug")),
-        .wifiConnected: DisplayRepresentation(title: "Wi-Fi connected", image: .init(systemName: "wifi")),
-        .wifiDisconnected: DisplayRepresentation(title: "Wi-Fi disconnected", image: .init(systemName: "wifi.slash")),
-        .cellular: DisplayRepresentation(title: "Switched to mobile data", image: .init(systemName: "antenna.radiowaves.left.and.right")),
-        .offline: DisplayRepresentation(title: "No internet", image: .init(systemName: "icloud.slash")),
-        .backOnline: DisplayRepresentation(title: "Back online", image: .init(systemName: "checkmark.icloud")),
-        .airplaneOn: DisplayRepresentation(title: "Airplane Mode on", image: .init(systemName: "airplane")),
-        .airplaneOff: DisplayRepresentation(title: "Airplane Mode off", image: .init(systemName: "airplane")),
-        .lowPowerOn: DisplayRepresentation(title: "Low Power Mode on", image: .init(systemName: "leaf.fill")),
-        .lowPowerOff: DisplayRepresentation(title: "Low Power Mode off", image: .init(systemName: "leaf.fill")),
-        .goodMorning: DisplayRepresentation(title: "Good morning", image: .init(systemName: "sun.max.fill")),
-        .goodNight: DisplayRepresentation(title: "Good night", image: .init(systemName: "moon.stars.fill")),
-        .alarm: DisplayRepresentation(title: "Alarm", image: .init(systemName: "alarm.fill")),
-        .newHour: DisplayRepresentation(title: "New hour", image: .init(systemName: "clock.fill")),
+        .batteryLow: DisplayRepresentation(title: "Akku niedrig", image: .init(systemName: "battery.25percent")),
+        .batteryCritical: DisplayRepresentation(title: "Akku fast leer", image: .init(systemName: "battery.0percent")),
+        .batteryFull: DisplayRepresentation(title: "Akku voll", image: .init(systemName: "battery.100percent")),
+        .chargerConnected: DisplayRepresentation(title: "Ladekabel dran", image: .init(systemName: "bolt.fill")),
+        .chargerDisconnected: DisplayRepresentation(title: "Ladekabel ab", image: .init(systemName: "powerplug")),
+        .wifiConnected: DisplayRepresentation(title: "WLAN verbunden", image: .init(systemName: "wifi")),
+        .wifiDisconnected: DisplayRepresentation(title: "WLAN getrennt", image: .init(systemName: "wifi.slash")),
+        .cellular: DisplayRepresentation(title: "Mobile Daten", image: .init(systemName: "antenna.radiowaves.left.and.right")),
+        .offline: DisplayRepresentation(title: "Kein Internet", image: .init(systemName: "icloud.slash")),
+        .backOnline: DisplayRepresentation(title: "Wieder online", image: .init(systemName: "checkmark.icloud")),
+        .airplaneOn: DisplayRepresentation(title: "Flugmodus an", image: .init(systemName: "airplane")),
+        .airplaneOff: DisplayRepresentation(title: "Flugmodus aus", image: .init(systemName: "airplane")),
+        .lowPowerOn: DisplayRepresentation(title: "Stromsparen an", image: .init(systemName: "leaf.fill")),
+        .lowPowerOff: DisplayRepresentation(title: "Stromsparen aus", image: .init(systemName: "leaf.fill")),
+        .goodMorning: DisplayRepresentation(title: "Guten Morgen", image: .init(systemName: "sun.max.fill")),
+        .goodNight: DisplayRepresentation(title: "Gute Nacht", image: .init(systemName: "moon.stars.fill")),
+        .alarm: DisplayRepresentation(title: "Wecker", image: .init(systemName: "alarm.fill")),
+        .newHour: DisplayRepresentation(title: "Neue Stunde", image: .init(systemName: "clock.fill")),
     ]
 }

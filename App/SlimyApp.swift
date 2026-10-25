@@ -77,28 +77,28 @@ struct SlimyShortcuts: AppShortcutsProvider {
     static var appShortcuts: [AppShortcut] {
         AppShortcut(
             intent: SummonSlimeIntent(),
-            phrases: ["Summon my slime in \(.applicationName)", "Bring back \(.applicationName)"],
-            shortTitle: "Summon Slime",
+            phrases: ["Hol meinen Slime in \(.applicationName)", "\(.applicationName) zurückholen"],
+            shortTitle: "Slime holen",
             systemImageName: "drop.fill")
         AppShortcut(
             intent: FeedSlimeIntent(),
-            phrases: ["Feed my slime in \(.applicationName)"],
-            shortTitle: "Feed",
+            phrases: ["Füttere meinen Slime in \(.applicationName)"],
+            shortTitle: "Füttern",
             systemImageName: "fork.knife")
         AppShortcut(
             intent: PetSlimeIntent(),
-            phrases: ["Pet my slime in \(.applicationName)"],
-            shortTitle: "Pet",
+            phrases: ["Kraul meinen Slime in \(.applicationName)"],
+            shortTitle: "Kraulen",
             systemImageName: "hand.raised.fill")
         AppShortcut(
             intent: SleepSlimeIntent(),
-            phrases: ["Put my slime to bed in \(.applicationName)"],
-            shortTitle: "Bedtime",
+            phrases: ["Bring meinen Slime ins Bett in \(.applicationName)"],
+            shortTitle: "Ins Bett",
             systemImageName: "moon.fill")
         AppShortcut(
             intent: SlimeReactsIntent(),
-            phrases: ["Tell my slime in \(.applicationName)"],
-            shortTitle: "Slime Reacts",
+            phrases: ["Sag es meinem Slime in \(.applicationName)"],
+            shortTitle: "Slime reagiert",
             systemImageName: "sparkles")
     }
 }

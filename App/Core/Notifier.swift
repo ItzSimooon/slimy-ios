@@ -30,7 +30,7 @@ enum Notifier {
                      body: need.wish,
                      after: hours * 3600)
         }
-        schedule(id: prefix + "miss", title: slime.name, body: "hey… i miss you 🥺", after: 26 * 3600)
+        schedule(id: prefix + "miss", title: slime.name, body: "hey. ich vermiss dich.", after: 26 * 3600)
     }
 
     private static func schedule(id: String, title: String, body: String, after seconds: TimeInterval) {

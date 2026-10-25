@@ -6,16 +6,16 @@ struct SlimeLiveActivity: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: SlimeActivityAttributes.self) { context in
             LockScreenSlime(state: context.state)
-                .activityBackgroundTint(Brand.void.opacity(0.92))
-                .activitySystemActionForegroundColor(Brand.hyprGlow)
+                .activityBackgroundTint(Brand.bg)
+                .activitySystemActionForegroundColor(Brand.text)
         } dynamicIsland: { context in
             let s = context.state
             return DynamicIsland {
                 DynamicIslandExpandedRegion(.leading) {
-                    VStack(alignment: .leading, spacing: 2) {
+                    VStack(alignment: .leading, spacing: 3) {
                         IslandSlime(s, height: 44)
                         Text(s.name)
-                            .font(Brand.display(12, .bold))
+                            .font(Brand.pixelFixed(13))
                             .foregroundStyle(Brand.text)
                             .lineLimit(1)
                     }
@@ -31,7 +31,7 @@ struct SlimeLiveActivity: Widget {
                 }
                 DynamicIslandExpandedRegion(.bottom) {
                     VStack(spacing: 8) {
-                        NeedsStrip(state: s, compact: true)
+                        NeedsStrip(state: s)
                         ActionRow(state: s)
                     }
                     .padding(.horizontal, 4)
@@ -44,7 +44,7 @@ struct SlimeLiveActivity: Widget {
             } minimal: {
                 IslandSlime(s, height: 18)
             }
-            .keylineTint(s.skin == .void ? Brand.hypr : s.skin.body)
+            .keylineTint(Brand.accent(s.skin))
             .widgetURL(URL(string: "slimy://home"))
         }
         .supplementalActivityFamilies([.small, .medium])
@@ -56,29 +56,29 @@ private struct ExpandedTrailing: View {
 
     var body: some View {
         if let p = state.partner {
-            VStack(alignment: .trailing, spacing: 2) {
+            VStack(alignment: .trailing, spacing: 3) {
                 HStack(spacing: 2) {
-                    Image(systemName: p.inLove ? "heart.fill" : "heart")
-                        .font(.system(size: 10, weight: .black))
-                        .foregroundStyle(Brand.warm)
+                    PixelItem(name: "heart")
+                        .frame(width: 10, height: 8)
+                        .opacity(p.inLove ? 1 : 0.4)
                     IslandSlime(partner: p, anchor: state.anchor, height: 34, animated: state.animated)
                 }
-                Text(p.inLove ? "in love" : "\(p.love)% love")
-                    .font(Brand.mono(10, .bold))
+                Text(p.inLove ? "verliebt" : "\(p.love) % liebe")
+                    .font(Brand.pixelFixed(11))
                     .foregroundStyle(Brand.warm)
             }
         } else {
-            VStack(alignment: .trailing, spacing: 4) {
+            VStack(alignment: .trailing, spacing: 6) {
                 Text("LV \(state.level)")
-                    .font(Brand.mono(11, .bold))
-                    .foregroundStyle(Brand.void)
-                    .padding(.horizontal, 7)
-                    .padding(.vertical, 3)
-                    .background(Brand.hyprGradient, in: Capsule())
-                HStack(spacing: 3) {
-                    Circle().fill(Brand.gold).frame(width: 8, height: 8)
+                    .font(Brand.pixelFixed(13))
+                    .foregroundStyle(Brand.bg)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(Brand.accent(state.skin))
+                HStack(spacing: 4) {
+                    PixelItem(name: "coin").frame(width: 10, height: 10)
                     Text("\(state.coins)")
-                        .font(Brand.mono(11, .bold))
+                        .font(Brand.pixelFixed(13))
                         .foregroundStyle(Brand.gold)
                 }
             }
@@ -105,8 +105,8 @@ struct LockScreenSlime: View {
         HStack(spacing: 6) {
             IslandSlime(state, height: 30)
             VStack(alignment: .leading, spacing: 2) {
-                Text(state.name).font(Brand.display(13, .bold)).foregroundStyle(Brand.text)
-                Text(state.line).font(Brand.display(11, .medium)).foregroundStyle(Brand.muted).lineLimit(2)
+                Text(state.name).font(Brand.pixelFixed(13)).foregroundStyle(Brand.text)
+                Text(state.line).font(Brand.body(11, .medium)).foregroundStyle(Brand.muted).lineLimit(2)
             }
             Spacer(minLength: 0)
         }
@@ -125,46 +125,47 @@ struct LockScreenSlime: View {
     }
 
     private var card: some View {
-        ZStack {
-            SkyBackground(date: state.anchor)
-                .opacity(dimmed ? 0.35 : 1)
-            VStack(spacing: 10) {
-                HStack(alignment: .bottom, spacing: 10) {
-                    HStack(alignment: .bottom, spacing: 0) {
-                        IslandSlime(state, height: 60)
+        VStack(spacing: 10) {
+            HStack(alignment: .bottom, spacing: 12) {
+                // The slime on its little patch of ground.
+                VStack(spacing: 0) {
+                    HStack(alignment: .bottom, spacing: 2) {
+                        IslandSlime(state, height: 56)
                         if let p = state.partner {
-                            Image(systemName: "heart.fill")
-                                .font(.system(size: 12, weight: .black))
-                                .foregroundStyle(Brand.warm)
-                                .opacity(p.inLove ? 1 : 0.45)
+                            PixelItem(name: "heart")
+                                .frame(width: 12, height: 9)
+                                .opacity(p.inLove ? 1 : 0.4)
                                 .padding(.bottom, 30)
-                            IslandSlime(partner: p, anchor: state.anchor, height: 52, animated: state.animated)
+                            IslandSlime(partner: p, anchor: state.anchor, height: 48, animated: state.animated)
                         }
                     }
-                    VStack(alignment: .leading, spacing: 6) {
-                        HStack(spacing: 6) {
-                            Text(state.name)
-                                .font(Brand.display(17))
-                                .foregroundStyle(Brand.text)
-                            Text("LV \(state.level)")
-                                .font(Brand.mono(10, .bold))
-                                .foregroundStyle(Brand.hyprGlow)
-                            if let event = state.event {
-                                Image(systemName: event.symbol)
-                                    .font(.system(size: 11, weight: .bold))
-                                    .foregroundStyle(Brand.cool)
-                            }
+                    Rectangle().fill(Brand.line).frame(height: 3)
+                }
+                .fixedSize()
+
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(spacing: 8) {
+                        Text(state.name)
+                            .font(Brand.pixelFixed(18))
+                            .foregroundStyle(Brand.text)
+                        Text("LV \(state.level)")
+                            .font(Brand.pixelFixed(12))
+                            .foregroundStyle(Brand.accent(state.skin))
+                        if let event = state.event {
+                            Image(systemName: event.symbol)
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundStyle(Brand.cool)
                         }
-                        SpeechBubble(text: state.line, size: 13)
                     }
-                    Spacer(minLength: 0)
+                    SpeechBubble(text: state.line, size: 13)
                 }
-                NeedsStrip(state: state)
-                if !dimmed {
-                    ActionRow(state: state)
-                }
+                Spacer(minLength: 0)
             }
-            .padding(14)
+            NeedsStrip(state: state)
+            if !dimmed {
+                ActionRow(state: state)
+            }
         }
+        .padding(14)
     }
 }
