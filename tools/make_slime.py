@@ -491,6 +491,44 @@ def anim_curious(st):
     return frames
 
 
+def slide(f, dx):
+    """Moves a whole frame sideways (toward the island's camera when dx > 0).
+    Accessories follow through the anchor's dx."""
+    f.px = {(x + dx, y): l for (x, y), l in f.px.items() if 0 <= x + dx < W}
+    f.shape = {(x + dx, y) for (x, y) in f.shape}
+    f.anchor["dx"] = dx
+    return f
+
+
+def anim_meet(st):
+    """Two friends meet in the island: each slides toward the camera cutout
+    (the friend's copy is mirrored), they bump, a heart pops, they slide back.
+    Ten frames, so one meeting per ten-second loop."""
+    reach = (W - STAGES[st][0]) // 2 + 1
+    plan = [  # (dx, dw, dh, lift, eyes, mouth, blush, heart)
+        (0, 0, 0, 0, "open", "smile", False, None),
+        (1, 0, 0, 0, "happy", "smile", False, None),
+        (2, -1, 1, 2, "big", "open", False, None),
+        (reach, 2, -2, 0, "happy", "grin", True, None),
+        (reach, 1, -1, 0, "happy", "smile", True, "small"),
+        (reach, 0, 0, 0, "happy", "grin", True, "big"),
+        (reach, 1, -1, 0, "happy", "smile", True, "big"),
+        (reach - 1, -1, 1, 1, "happy", "smile", True, None),
+        (1, 0, 0, 0, "open", "smile", False, None),
+        (0, 0, 0, 0, "blink", "smile", False, None),
+    ]
+    frames = []
+    for dx, dw, dh, lift, eyes, mouth, blush, heart in plan:
+        f, g = slime(st, dw, dh, lift=lift, eyes=eyes, mouth=mouth, look=1 if dx < reach else 0, blush=blush)
+        slide(f, dx)
+        if heart == "small":
+            f.stamp(HEART, W - 3, max(0, g["top"] - 4), "warm")
+        elif heart == "big":
+            f.stamp(BIG_HEART, W - 5, max(0, g["top"] - 6), "warm")
+        frames.append(f)
+    return frames
+
+
 def anim_blush(st):
     frames = []
     for i, dw in enumerate([1, 0, -1, 0]):
@@ -505,7 +543,7 @@ ANIM_FUNCS = {
     "idle": anim_idle, "sad": anim_sad, "sleep": anim_sleep, "eat": anim_eat, "play": anim_play,
     "love": anim_love, "bath": anim_bath, "melt": anim_melt, "zap": anim_zap, "confused": anim_confused,
     "wave": anim_wave, "celebrate": anim_celebrate, "stretch": anim_stretch, "sulk": anim_sulk,
-    "hide": anim_hide, "curious": anim_curious, "blush": anim_blush,
+    "hide": anim_hide, "curious": anim_curious, "blush": anim_blush, "meet": anim_meet,
 }
 
 ANIMS = {stage: {name: fn(stage) for name, fn in ANIM_FUNCS.items()} for stage in STAGES}
@@ -531,14 +569,14 @@ def place_accessory(item, frame):
     a = frame.anchor
     out = {}
     if kind == "hat":
-        x0 = round(CX) - len(rows[0]) // 2
+        x0 = round(CX) - len(rows[0]) // 2 + a.get("dx", 0)
         y0 = a["top"] - len(rows) + 1
         for dy, row in enumerate(rows):
             for dx, ch in enumerate(row):
                 if ch != ".":
                     out[(x0 + dx, y0 + dy)] = ch
     elif kind == "glasses":
-        x0 = round(CX) - len(rows[0]) // 2 + a["look"]
+        x0 = round(CX) - len(rows[0]) // 2 + a["look"] + a.get("dx", 0)
         y0 = a["ey"] - 1
         for dy, row in enumerate(rows):
             for dx, ch in enumerate(row):
@@ -660,7 +698,8 @@ def write_sprites_json(path):
         "height": H,
         "frames": {f"{stage}.{name}": [fr.rows() for fr in frames]
                    for stage, anims in ANIMS.items() for name, frames in anims.items()},
-        "anchors": {f"{stage}.{name}": [[fr.anchor["top"], fr.anchor["ey"], fr.anchor["neck"], fr.anchor["look"]]
+        "anchors": {f"{stage}.{name}": [[fr.anchor["top"], fr.anchor["ey"], fr.anchor["neck"], fr.anchor["look"],
+                                         fr.anchor.get("dx", 0)]
                                         for fr in frames]
                     for stage, anims in ANIMS.items() for name, frames in anims.items()},
         "accessories": {item: {"kind": kind, "palette": {k: v for k, v in palette.items()}, "rows": rows,
@@ -680,7 +719,7 @@ def write_sprites_json(path):
 
 def write_widget_plist(path, font_files):
     plist = {
-        "CFBundleDevelopmentRegion": "de",
+        "CFBundleDevelopmentRegion": "en",
         "CFBundleDisplayName": "Slimy",
         "CFBundleExecutable": "$(EXECUTABLE_NAME)",
         "CFBundleIdentifier": "$(PRODUCT_BUNDLE_IDENTIFIER)",

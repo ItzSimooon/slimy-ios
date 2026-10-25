@@ -38,12 +38,12 @@ struct OnboardingView: View {
         case .egg:
             egg
             PixelWindow {
-                Text(cracks == 0 ? "Da wackelt was. Tipp aufs Ei." : "Gleich! Noch \(tapsToHatch - cracks)-mal.")
+                Text(cracks == 0 ? "Something is wobbling. Tap the egg." : "Almost! \(tapsToHatch - cracks) more.")
                     .font(Theme.label(17)).foregroundStyle(Theme.ink).frame(maxWidth: .infinity)
             }
         case .name:
             PixelEgg(cracks: tapsToHatch).frame(width: 110, height: 140)
-            PixelWindow(title: "Wie soll es heißen?") {
+            PixelWindow(title: "What should it be called?") {
                 TextField("Name", text: $name)
                     .font(Theme.title(22))
                     .foregroundStyle(Theme.ink)
@@ -53,7 +53,7 @@ struct OnboardingView: View {
                     .padding(10)
                     .background(Theme.paperShade)
                     .overlay(Rectangle().strokeBorder(Theme.border, lineWidth: 2))
-                Text("Und welche Farbe?").font(Theme.label(15)).foregroundStyle(Theme.ink)
+                Text("And which color?").font(Theme.label(15)).foregroundStyle(Theme.ink)
                 HStack(spacing: 12) {
                     ForEach([Skin.lime, .bubblegum, .ocean], id: \.self) { option in
                         Button { skin = option } label: {
@@ -67,7 +67,7 @@ struct OnboardingView: View {
                     }
                 }
                 .frame(maxWidth: .infinity)
-                PixelButton(title: "Schlüpfen lassen") {
+                PixelButton(title: "Hatch") {
                     store.hatch(name: name, skin: skin)
                     withAnimation(.spring(response: 0.5, dampingFraction: 0.6)) { step = .meet }
                 }
@@ -75,48 +75,48 @@ struct OnboardingView: View {
         case .meet:
             let s = store.state.slime
             LiveSlimeView(height: 150)
-            PixelWindow(title: "Hallo, \(s.name)!") {
-                Text("\(s.name) ist \(s.personality.top.map(\.title).joined(separator: " und ")).")
+            PixelWindow(title: "Hi, \(s.name)!") {
+                Text("\(s.name) is \(s.personality.top.map(\.title).joined(separator: " and ")).")
                     .font(Theme.label(17)).foregroundStyle(Theme.ink)
                 Text(s.personality.dominant.blurb).font(Theme.text(15)).foregroundStyle(Theme.inkSoft)
-                Text("Tipp ihn an oder reib über ihn. Das mag er.").font(Theme.text(15)).foregroundStyle(Theme.ink)
-                PixelButton(title: "Weiter") { step = .feed }
+                Text("Tap it or rub it. It likes that.").font(Theme.text(15)).foregroundStyle(Theme.ink)
+                PixelButton(title: "Next") { step = .feed }
             }
         case .feed:
             LiveSlimeView(height: 150)
-            PixelWindow(title: "Er hat Hunger") {
-                Text("Slimes haben fünf Bedürfnisse: Essen, Spaß, Energie, Sauberkeit und Zuneigung. Fang mit einem Apfel an.")
+            PixelWindow(title: "It's hungry") {
+                Text("Slimes have five needs: food, fun, energy, cleanliness and love. Start with an apple.")
                     .font(Theme.text(15)).foregroundStyle(Theme.ink)
-                PixelButton(title: "Apfel geben", icon: "apple") {
+                PixelButton(title: "Give an apple", icon: "apple") {
                     store.feed(.apple)
                     step = .island
                 }
             }
         case .island:
             LiveSlimeView(height: 130)
-            PixelWindow(title: "Immer dabei") {
-                Text("\(store.state.slime.name) kann oben in der Dynamic Island wohnen. Dort wackelt er, sagt, was er braucht, und du kannst ihn füttern, ohne die App zu öffnen.")
+            PixelWindow(title: "Always with you") {
+                Text("\(store.state.slime.name) can live up in the Dynamic Island. It wobbles there, tells you what it needs, and you can feed it without opening the app.")
                     .font(Theme.text(15)).foregroundStyle(Theme.ink)
-                PixelButton(title: "In die Insel holen", icon: "starJelly") {
+                PixelButton(title: "Bring it to the island", icon: "starJelly") {
                     Task {
                         await island.ensureRunning(restart: true)
                         step = .done
                     }
                 }
-                PixelButton(title: "Später", kind: .quiet) { step = .done }
+                PixelButton(title: "Later", kind: .quiet) { step = .done }
             }
         case .done:
             LiveSlimeView(height: 130)
-            PixelWindow(title: "Fast fertig") {
-                Text("Soll \(store.state.slime.name) dir Bescheid sagen, wenn er etwas braucht? Höchstens ein paar Mal am Tag, nie nachts.")
+            PixelWindow(title: "Almost done") {
+                Text("Should \(store.state.slime.name) let you know when it needs something? A few times a day at most, never at night.")
                     .font(Theme.text(15)).foregroundStyle(Theme.ink)
-                PixelButton(title: "Ja, gern") {
+                PixelButton(title: "Yes, please") {
                     Task {
                         await Notifier.requestPermission()
                         finish()
                     }
                 }
-                PixelButton(title: "Nein danke", kind: .quiet) { finish() }
+                PixelButton(title: "No thanks", kind: .quiet) { finish() }
             }
         }
     }
@@ -136,7 +136,7 @@ struct OnboardingView: View {
                 .animation(.spring(response: 0.15, dampingFraction: 0.25), value: wobble)
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("Ei. Tippen zum Ausbrüten.")
+        .accessibilityLabel("Egg. Tap to hatch.")
     }
 
     private func finish() {

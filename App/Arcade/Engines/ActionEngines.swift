@@ -17,7 +17,7 @@ enum ArcadeEvent: Equatable {
     case good, great, bad, coin, miss, jump, land, tone(Int), win, lose
 }
 
-// MARK: - Snack-Fänger
+// MARK: - Snack Catcher
 
 struct SnackCatcherEngine {
     enum Kind { case food, coin, bad }
@@ -122,7 +122,7 @@ struct SnackCatcherEngine {
     }
 }
 
-// MARK: - Slime-Sprung
+// MARK: - Slime Jump
 
 struct SlimeJumpEngine {
     struct Platform: Identifiable {
@@ -233,7 +233,7 @@ struct SlimeJumpEngine {
     }
 }
 
-// MARK: - Slime-Rennen
+// MARK: - Slime Racing
 
 struct SlimeRacingEngine {
     enum Kind { case rock, puddle }
@@ -331,7 +331,7 @@ struct SlimeRacingEngine {
     }
 }
 
-// MARK: - Rhythmus-Hüpfer
+// MARK: - Rhythm Bounce
 
 struct RhythmBounceEngine {
     enum Judgement { case perfect, good, miss }
@@ -418,7 +418,7 @@ struct RhythmBounceEngine {
     }
 }
 
-// MARK: - Slime-Basketball
+// MARK: - Slime Basketball
 
 struct BasketballEngine {
     static let duration = 45.0

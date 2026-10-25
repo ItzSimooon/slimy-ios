@@ -60,9 +60,9 @@ struct LiveSlimeView: View {
         .gesture(dragGesture, isEnabled: interactive)
         .simultaneousGesture(TapGesture().onEnded { pokeIt() }, isEnabled: interactive)
         .accessibilityElement()
-        .accessibilityLabel("\((override ?? store.state.slime).name), dein Slime")
-        .accessibilityHint(interactive ? "Tippen zum Anstupsen, reiben zum Kraulen" : "")
-        .accessibilityAction(named: "Kraulen") { pet() }
+        .accessibilityLabel("\((override ?? store.state.slime).name), your slime")
+        .accessibilityHint(interactive ? "Tap to poke, rub to pet" : "")
+        .accessibilityAction(named: "Pet") { pet() }
     }
 
     private func animation(for s: Slime, at now: Date) -> SpriteAnim {

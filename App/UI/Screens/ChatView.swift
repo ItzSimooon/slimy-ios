@@ -11,7 +11,7 @@ struct ChatView: View {
         ZStack {
             MenuBackdrop()
             VStack(spacing: 10) {
-                MenuHeader(title: "Reden", subtitle: chat.isThinking ? "\(store.state.slime.name) schreibt …" : "mit \(store.state.slime.name)") {
+                MenuHeader(title: "Talk", subtitle: chat.isThinking ? "\(store.state.slime.name) is typing …" : "with \(store.state.slime.name)") {
                     dismiss()
                 }
                 .padding(.horizontal, 16)
@@ -24,7 +24,7 @@ struct ChatView: View {
                                 PixelWindow {
                                     HStack(spacing: 12) {
                                         LiveSlimeView(height: 50, interactive: false)
-                                        Text("Sag hallo. \(store.state.slime.name) weiß, wie es ihm geht, was er gegessen hat und wer seine Freunde sind.")
+                                        Text("Say hi. \(store.state.slime.name) knows how it feels, what it ate and who its friends are.")
                                             .font(Theme.text(14)).foregroundStyle(Theme.ink)
                                     }
                                 }
@@ -48,7 +48,7 @@ struct ChatView: View {
                 }
 
                 HStack(spacing: 10) {
-                    TextField("Nachricht", text: $draft, axis: .vertical)
+                    TextField("Message", text: $draft, axis: .vertical)
                         .font(Theme.text(16))
                         .foregroundStyle(Theme.ink)
                         .lineLimit(1...4)
@@ -57,7 +57,7 @@ struct ChatView: View {
                         .background(NotchedRect().fill(Theme.paper))
                         .overlay(NotchedRect().strokeBorder(Theme.border, lineWidth: Theme.px))
                         .onSubmit(send)
-                    PixelButton(title: "Senden", compact: true, action: send)
+                    PixelButton(title: "Send", compact: true, action: send)
                         .disabled(draft.trimmingCharacters(in: .whitespaces).isEmpty || chat.isThinking)
                 }
                 .padding(.horizontal, 16)

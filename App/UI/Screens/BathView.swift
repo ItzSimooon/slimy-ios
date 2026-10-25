@@ -79,13 +79,13 @@ struct BathView: View {
     private var overlay: some View {
         VStack {
             PixelWindow {
-                MenuHeader(title: headline, subtitle: "Reib den Matsch mit dem Finger weg.") { dismiss() }
+                MenuHeader(title: headline, subtitle: "Rub the mud off with your finger.") { dismiss() }
             }
             .padding(.horizontal, 16)
             .padding(.top, 56)
             Spacer()
             if finished || alreadyClean {
-                PixelButton(title: "Fertig", systemIcon: "checkmark") { dismiss() }
+                PixelButton(title: "Done", systemIcon: "checkmark") { dismiss() }
                     .padding(.horizontal, 24)
                     .padding(.bottom, 44)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
@@ -95,10 +95,10 @@ struct BathView: View {
     }
 
     private var headline: String {
-        if alreadyClean { return "Schon sauber" }
-        if finished { return "Blitzsauber" }
+        if alreadyClean { return "Already clean" }
+        if finished { return "Sparkling clean" }
         let left = spots.filter { $0.dirt > 0.05 }.count
-        return left == 1 ? "Noch 1 Matschfleck" : "Schrubb \(left) Matschflecken weg"
+        return left == 1 ? "1 mud spot left" : "Scrub off \(left) mud spots"
     }
 
     private func makeMess() {

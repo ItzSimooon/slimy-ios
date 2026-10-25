@@ -9,7 +9,7 @@ private let grass = Color(hex: 0x6FBF5A)
 private let grassEdge = Color(hex: 0x3F8F3A)
 private let soil = Color(hex: 0x8A5A3C)
 
-// MARK: - Snack-Fänger
+// MARK: - Snack Catcher
 
 struct SnackCatcherView: View {
     let session: GameSession
@@ -38,7 +38,7 @@ struct SnackCatcherView: View {
                           height: 16 * space.scale, mirrored: engine.targetX < engine.playerX - 2, time: engine.time)
                     .position(space.point(engine.playerX, 142))
                 if engine.combo >= 3 {
-                    Text("\(engine.combo)er Kombo")
+                    Text("\(engine.combo)x combo")
                         .font(Theme.label(14)).foregroundStyle(Theme.ink)
                         .padding(.horizontal, 8).padding(.vertical, 3)
                         .background(Theme.paper.opacity(0.85))
@@ -59,15 +59,15 @@ struct SnackCatcherView: View {
             if engine.isOver { session.end() }
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Spielfeld. Der Slime fängt fallendes Essen.")
-        .accessibilityValue("\(engine.score) Punkte")
+        .accessibilityLabel("Playing field. The slime catches falling food.")
+        .accessibilityValue("\(engine.score) points")
         .accessibilityAdjustableAction { direction in
             engine.targetX = max(8, min(92, engine.targetX + (direction == .increment ? 15 : -15)))
         }
     }
 }
 
-// MARK: - Slime-Sprung
+// MARK: - Slime Jump
 
 struct SlimeJumpView: View {
     let session: GameSession
@@ -116,8 +116,8 @@ struct SlimeJumpView: View {
             if engine.isOver { session.end() }
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Spielfeld. Der Slime springt von selbst, du lenkst.")
-        .accessibilityValue("\(engine.score) Punkte")
+        .accessibilityLabel("Playing field. The slime bounces by itself, you steer.")
+        .accessibilityValue("\(engine.score) points")
         .accessibilityAdjustableAction { direction in
             engine.steer = direction == .increment ? 1 : -1
             Task {
@@ -128,7 +128,7 @@ struct SlimeJumpView: View {
     }
 }
 
-// MARK: - Slime-Rennen
+// MARK: - Slime Racing
 
 struct SlimeRacingView: View {
     let session: GameSession
@@ -216,13 +216,13 @@ struct SlimeRacingView: View {
             if engine.isOver { session.end() }
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Rennstrecke mit drei Spuren")
-        .accessibilityValue("Spur \(engine.lane + 1) von 3")
+        .accessibilityLabel("Race track with three lanes")
+        .accessibilityValue("Lane \(engine.lane + 1) of 3")
         .accessibilityAdjustableAction { direction in engine.move(direction == .increment ? 1 : -1) }
     }
 }
 
-// MARK: - Rhythmus-Hüpfer
+// MARK: - Rhythm Bounce
 
 struct RhythmBounceView: View {
     let session: GameSession
@@ -262,7 +262,7 @@ struct RhythmBounceView: View {
                 }
                 if let last = engine.lastJudgement, engine.time - last.1 < 0.5 {
                     let judgement = last.0
-                    Text(judgement == .perfect ? "Perfekt" : judgement == .good ? "Gut" : "Daneben")
+                    Text(judgement == .perfect ? "Perfect" : judgement == .good ? "Good" : "Miss")
                         .font(Theme.title(20))
                         .foregroundStyle(judgement == .miss ? Color.white.opacity(0.6) : Color.white)
                         .position(space.point(50, lineY - 30))
@@ -293,11 +293,11 @@ struct RhythmBounceView: View {
             if engine.isOver { session.end() }
         }
         .accessibilityElement(children: .contain)
-        .accessibilityLabel("Drei Spuren. Tippe die Spur, wenn eine Note die Linie trifft.")
+        .accessibilityLabel("Three lanes. Tap a lane when a note hits the line.")
     }
 }
 
-// MARK: - Slime-Basketball
+// MARK: - Slime Basketball
 
 struct BasketballView: View {
     let session: GameSession
@@ -343,7 +343,7 @@ struct BasketballView: View {
                 GameSlime(anim: engine.streak >= 2 ? .celebrate : .idle, height: 12 * space.scale, time: engine.time)
                     .position(space.point(50, 152))
                 if engine.streak >= 2 {
-                    Text("\(engine.streak) in Folge")
+                    Text("\(engine.streak) in a row")
                         .font(Theme.label(14)).foregroundStyle(Theme.ink)
                         .position(space.point(50, 70))
                 }
@@ -367,7 +367,7 @@ struct BasketballView: View {
             if engine.isOver { session.end() }
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Basketballfeld. Wische nach oben, um zu werfen.")
-        .accessibilityValue("\(engine.score) Punkte, \(engine.hits) Treffer")
+        .accessibilityLabel("Basketball court. Swipe up to throw.")
+        .accessibilityValue("\(engine.score) points, \(engine.hits) hits")
     }
 }

@@ -83,7 +83,7 @@ private struct NeedRow: View {
             }
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Need.allCases.map { "\($0.title) \(Int(needs[$0].rounded())) Prozent" }.joined(separator: ", "))
+        .accessibilityLabel(Need.allCases.map { "\($0.title) \(Int(needs[$0].rounded())) percent" }.joined(separator: ", "))
     }
 
     private func iconName(_ need: Need) -> String {
@@ -98,10 +98,10 @@ private struct NeedRow: View {
 }
 
 private func statusLine(_ entry: SlimeEntry) -> String {
-    guard let s = entry.snapshot else { return "Öffne Slimy einmal." }
-    if s.isAsleep { return "schläft" }
+    guard let s = entry.snapshot else { return "Open Slimy once." }
+    if s.isAsleep { return "sleeping" }
     if let wish = entry.wish { return wish.lowHint }
-    return entry.date.timeIntervalSince(s.writtenAt) < 1800 ? s.line : "geht's dir gut?"
+    return entry.date.timeIntervalSince(s.writtenAt) < 1800 ? s.line : "how are you?"
 }
 
 struct SlimeWidgetView: View {
@@ -144,8 +144,8 @@ struct SlimeWidgetView: View {
                     Text(statusLine(entry)).font(Brand.body(13, .medium)).foregroundStyle(Brand.muted).lineLimit(2)
                     if entry.snapshot != nil { NeedRow(needs: entry.needs) }
                     HStack(spacing: 6) {
-                        Button(intent: FeedSlimeIntent()) { chip("Essen", "apple") }.buttonStyle(.plain)
-                        Button(intent: PetSlimeIntent()) { chip("Kraulen", "heart") }.buttonStyle(.plain)
+                        Button(intent: FeedSlimeIntent()) { chip("Feed", "apple") }.buttonStyle(.plain)
+                        Button(intent: PetSlimeIntent()) { chip("Pet", "heart") }.buttonStyle(.plain)
                     }
                 }
             }
@@ -182,7 +182,7 @@ struct SlimeHomeWidget: Widget {
                 .widgetURL(URL(string: "slimy://home"))
         }
         .configurationDisplayName("Slime")
-        .description("Dein Slime und was er gerade braucht.")
+        .description("Your slime and what it needs right now.")
         .supportedFamilies([.systemSmall, .systemMedium, .accessoryCircular, .accessoryRectangular, .accessoryInline])
     }
 }

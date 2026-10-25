@@ -3,7 +3,7 @@ import Foundation
 // The thinking games. Like the action engines these are plain values with
 // seeded randomness; most of them only change when you tap.
 
-// MARK: - Blasen-Platzer
+// MARK: - Bubble Pop
 
 struct BubblePopEngine {
     static let columns = 7
@@ -77,7 +77,7 @@ struct BubblePopEngine {
     }
 }
 
-// MARK: - Gedächtnisgarten
+// MARK: - Memory Garden
 
 struct MemoryGardenEngine {
     enum Phase: Equatable {
@@ -158,7 +158,7 @@ struct MemoryGardenEngine {
     }
 }
 
-// MARK: - Garten-Rätsel
+// MARK: - Garden Puzzle
 
 struct GardenPuzzleEngine {
     struct Point: Hashable {
@@ -292,7 +292,7 @@ struct GardenPuzzleEngine {
     }
 }
 
-// MARK: - Schatzsuche
+// MARK: - Treasure Dig
 
 struct TreasureDigEngine {
     enum Cell: Equatable {
@@ -347,7 +347,7 @@ struct TreasureDigEngine {
     }
 }
 
-// MARK: - Farbenspiel
+// MARK: - Color Match
 
 struct ColorMatchEngine {
     enum Rule: CaseIterable { case color, shape }
@@ -357,8 +357,8 @@ struct ColorMatchEngine {
         var shape: Int
     }
 
-    static let colorNames = ["Rot", "Blau", "Gelb", "Grün"]
-    static let shapeNames = ["Kreis", "Quadrat", "Dreieck", "Stern"]
+    static let colorNames = ["Red", "Blue", "Yellow", "Green"]
+    static let shapeNames = ["Circle", "Square", "Triangle", "Star"]
     static let duration = 40.0
     static let penalty = 3.0
 

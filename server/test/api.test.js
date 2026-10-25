@@ -64,10 +64,10 @@ describe("basics", () => {
     assert.equal(r.body.schema, migrations.length);
   });
 
-  test("unknown paths answer with a German error body", async () => {
+  test("unknown paths answer with an error body", async () => {
     const r = await call("GET", "/nope");
     assert.equal(r.status, 404);
-    assert.match(r.body.error, /gibt es nicht/);
+    assert.match(r.body.error, /doesn't exist/);
   });
 
   test("requests without a valid token are rejected", async () => {

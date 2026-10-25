@@ -12,6 +12,7 @@ struct SlimyApp: App {
 
     init() {
         IslandFonts.register()
+        PhoneMonitor.registerPowerTask()
     }
 
     var body: some Scene {
@@ -33,10 +34,12 @@ struct SlimyApp: App {
                 Task {
                     if store.state.hatched { await island.ensureRunning() }
                     await friends.refresh()
+                    await island.maybeMeetup()
                 }
             case .background:
                 Feedback.shared.updateMusic(active: false)
                 BackgroundRefresh.schedule()
+                PhoneMonitor.schedulePowerCheck()
             default:
                 break
             }
@@ -65,10 +68,12 @@ enum BackgroundRefresh {
         let store = GameStore.shared
         guard store.state.hatched else { return }
         store.tick()
+        await PhoneMonitor.shared.checkInBackground()
         await FriendsStore.shared.refresh()
         var nudge: (need: Need, line: String)?
         store.update { nudge = $0.nudge(now: .now) }
         await IslandController.shared.ensureRunning()
+        await IslandController.shared.maybeMeetup()
         if let nudge {
             await IslandController.shared.sync(alert: .init(title: "\(store.slime.name)", body: "\(nudge.line)", sound: .default))
         }
@@ -80,28 +85,23 @@ struct SlimyShortcuts: AppShortcutsProvider {
     static var appShortcuts: [AppShortcut] {
         AppShortcut(
             intent: SummonSlimeIntent(),
-            phrases: ["Hol meinen Slime in \(.applicationName)", "\(.applicationName) zurückholen"],
-            shortTitle: "Slime holen",
+            phrases: ["Summon my slime in \(.applicationName)", "Bring back \(.applicationName)"],
+            shortTitle: "Summon Slime",
             systemImageName: "drop.fill")
         AppShortcut(
             intent: FeedSlimeIntent(),
-            phrases: ["Füttere meinen Slime in \(.applicationName)"],
-            shortTitle: "Slime füttern",
+            phrases: ["Feed my slime in \(.applicationName)"],
+            shortTitle: "Feed Slime",
             systemImageName: "fork.knife")
         AppShortcut(
             intent: PetSlimeIntent(),
-            phrases: ["Kraul meinen Slime in \(.applicationName)"],
-            shortTitle: "Kraulen",
+            phrases: ["Pet my slime in \(.applicationName)"],
+            shortTitle: "Pet Slime",
             systemImageName: "hand.raised.fill")
         AppShortcut(
             intent: SleepSlimeIntent(),
-            phrases: ["Bring meinen Slime ins Bett in \(.applicationName)"],
-            shortTitle: "Ins Bett",
+            phrases: ["Put my slime to bed in \(.applicationName)"],
+            shortTitle: "Bedtime",
             systemImageName: "moon.fill")
-        AppShortcut(
-            intent: SlimeReactsIntent(),
-            phrases: ["Sag es meinem Slime in \(.applicationName)"],
-            shortTitle: "Slime reagieren",
-            systemImageName: "sparkles")
     }
 }

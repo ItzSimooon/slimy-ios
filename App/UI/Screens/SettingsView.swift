@@ -12,7 +12,7 @@ struct SettingsView: View {
                 MenuBackdrop()
                 ScrollView {
                     VStack(spacing: 14) {
-                        MenuHeader(title: "Einstellungen") { dismiss() }
+                        MenuHeader(title: "Settings") { dismiss() }
                         soundSection
                         notificationSection
                         sleepSection
@@ -37,6 +37,7 @@ struct SettingsView: View {
 
     private func note(_ text: String) -> some View {
         Text(text).font(Theme.text(13)).foregroundStyle(Theme.inkSoft)
+            .fixedSize(horizontal: false, vertical: true)
     }
 
     private func hourStepper(_ title: String, _ value: Int, _ set: @escaping (Int) -> Void) -> some View {
@@ -53,30 +54,30 @@ struct SettingsView: View {
 
     private var soundSection: some View {
         let s = store.state.settings
-        return PixelWindow(title: "Ton und Gefühl") {
-            toggle("Geräusche", s.sound) { v in store.setSettings { $0.sound = v } }
-            toggle("Musik", s.music) { v in
+        return PixelWindow(title: "Sound and feel") {
+            toggle("Sounds", s.sound) { v in store.setSettings { $0.sound = v } }
+            toggle("Music", s.music) { v in
                 store.setSettings { $0.music = v }
                 Feedback.shared.updateMusic()
             }
             toggle("Vibration", s.haptics) { v in store.setSettings { $0.haptics = v } }
-            note("Geräusche folgen dem Stummschalter deines iPhones.")
+            note("Sounds follow your iPhone's silent switch.")
         }
     }
 
     private var notificationSection: some View {
         let n = store.state.settings.notifications
-        return PixelWindow(title: "Mitteilungen") {
-            toggle("Wenn er etwas braucht", n.needs) { v in store.setSettings { $0.notifications.needs = v } }
-            toggle("Neue Tagesaufgaben", n.daily) { v in store.setSettings { $0.notifications.daily = v } }
-            toggle("Freunde", n.friends) { v in store.setSettings { $0.notifications.friends = v } }
-            toggle("Geschenke", n.gifts) { v in store.setSettings { $0.notifications.gifts = v } }
-            toggle("Kleine Grüße", n.world) { v in store.setSettings { $0.notifications.world = v } }
-            hourStepper("Ruhe ab", n.quietFrom) { v in store.setSettings { $0.notifications.quietFrom = v } }
-            hourStepper("Ruhe bis", n.quietUntil) { v in store.setSettings { $0.notifications.quietUntil = v } }
-            note("Höchstens \(Notifier.dailyLimit) am Tag. In der Ruhezeit kommt nichts.")
+        return PixelWindow(title: "Notifications") {
+            toggle("When it needs something", n.needs) { v in store.setSettings { $0.notifications.needs = v } }
+            toggle("New daily challenges", n.daily) { v in store.setSettings { $0.notifications.daily = v } }
+            toggle("Friends", n.friends) { v in store.setSettings { $0.notifications.friends = v } }
+            toggle("Gifts", n.gifts) { v in store.setSettings { $0.notifications.gifts = v } }
+            toggle("Little hellos", n.world) { v in store.setSettings { $0.notifications.world = v } }
+            hourStepper("Quiet from", n.quietFrom) { v in store.setSettings { $0.notifications.quietFrom = v } }
+            hourStepper("Quiet until", n.quietUntil) { v in store.setSettings { $0.notifications.quietUntil = v } }
+            note("At most \(Notifier.dailyLimit) a day. Nothing during quiet hours.")
             if !n.asked {
-                PixelButton(title: "Mitteilungen erlauben", kind: .secondary) {
+                PixelButton(title: "Allow notifications", kind: .secondary) {
                     Task { await Notifier.requestPermission() }
                 }
             }
@@ -86,70 +87,72 @@ struct SettingsView: View {
 
     private var sleepSection: some View {
         let sleep = store.state.settings.sleep
-        return PixelWindow(title: "Schlafenszeit") {
-            toggle("Geht von selbst ins Bett", sleep.auto) { v in store.setSettings { $0.sleep.auto = v } }
-            hourStepper("Bettzeit", sleep.bedtime) { v in store.setSettings { $0.sleep.bedtime = v } }
-            hourStepper("Aufstehen", sleep.wake) { v in store.setSettings { $0.sleep.wake = v } }
-            note("Du kannst ihn trotzdem jederzeit wecken oder ins Bett bringen.")
+        return PixelWindow(title: "Bedtime") {
+            toggle("Goes to bed by itself", sleep.auto) { v in store.setSettings { $0.sleep.auto = v } }
+            hourStepper("Bedtime", sleep.bedtime) { v in store.setSettings { $0.sleep.bedtime = v } }
+            hourStepper("Wake up", sleep.wake) { v in store.setSettings { $0.sleep.wake = v } }
+            note("You can still wake it up or put it to bed any time.")
         }
     }
 
     private var islandSection: some View {
         PixelWindow(title: "Dynamic Island") {
-            toggle("Immer zurückholen", island.keepAlive) { island.keepAlive = $0 }
+            toggle("Always bring it back", island.keepAlive) { island.keepAlive = $0 }
             toggle("Animation", island.animated) { island.animated = $0 }
-            note("iOS beendet Live-Aktivitäten nach etwa 8 Stunden. Slimy holt den Slime zurück, wenn du die App öffnest. Für den ganzen Tag: „Slime holen“ ins Kontrollzentrum legen oder Automationen einrichten (unten).")
+            note("iOS ends Live Activities after about 8 hours. Slimy brings your slime back whenever it gets to run: when you open the app, in background refresh, or with \"Summon Slime\" from Control Center or the Action Button.")
             HStack(spacing: 10) {
-                PixelButton(title: island.isLive ? "Neu starten" : "Starten", compact: true) {
+                PixelButton(title: island.isLive ? "Restart" : "Start", compact: true) {
                     Task { await island.ensureRunning(restart: true) }
                 }
                 if island.isLive {
-                    PixelButton(title: "Ausblenden", kind: .quiet, compact: true) {
+                    PixelButton(title: "Hide", kind: .quiet, compact: true) {
                         Task { await island.stop() }
                     }
                 }
             }
-            NavigationLink { DiagnosticsView() } label: { linkLabel("Diagnose", icon: "gear") }
+            NavigationLink { DiagnosticsView() } label: { linkLabel("Diagnostics", icon: "gear") }
                 .buttonStyle(.plain)
         }
     }
 
     private var eventsSection: some View {
-        PixelWindow(title: "Reaktionen aufs iPhone") {
-            toggle("Reagieren, solange die App offen ist", store.state.settings.liveEvents) { v in
+        PixelWindow(title: "Reacting to your iPhone") {
+            toggle("React to my iPhone", store.state.settings.liveEvents) { v in
                 store.setSettings { $0.liveEvents = v }
             }
-            note("Akku, Ladekabel, WLAN, mobile Daten, kein Internet, Stromsparmodus und Uhrzeit.")
-            NavigationLink { EventsGuideView() } label: { linkLabel("Reagieren, wenn die App zu ist", icon: "speech") }
-                .buttonStyle(.plain)
+            note("Battery, charger, Low Power Mode, Wi-Fi, mobile data, no internet, morning and night. No setup needed.")
+            note("While the app is open it reacts right away. When it's closed, it notices the next time iOS lets it run (background refresh, while charging, or when you tap the island), so a reaction can come a little later. Background App Refresh must be on for Slimy.")
+            PixelButton(title: "Check now", kind: .secondary, compact: true) {
+                PhoneMonitor.shared.check()
+            }
         }
     }
 
     private var aboutSection: some View {
-        PixelWindow(title: "Über Slimy") {
+        PixelWindow(title: "About Slimy") {
             HStack {
                 Text("Version").font(Theme.label(15)).foregroundStyle(Theme.ink)
                 Spacer()
                 Text(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0")
                     .font(Theme.label(15)).foregroundStyle(Theme.inkSoft)
             }
-            note("Slimy ist von hyprnode · slime.hyprnode.de\nPixel-Schrift: Pixelify Sans (SIL Open Font License). Grafiken und Töne sind für Slimy gemacht.")
+            note("Slimy is made by hyprnode · slime.hyprnode.de\nPixel font: Pixelify Sans (SIL Open Font License). Art and sounds were made for Slimy.")
         }
     }
 
     private var resetSection: some View {
-        PixelWindow(title: "Neu anfangen") {
+        PixelWindow(title: "Start over") {
             if confirmRelease {
-                note("\(store.state.slime.name) ist dann für immer weg, mit Levels, Münzen und Sachen. Freundschaften bleiben auf dem Server. Das lässt sich nicht rückgängig machen.")
+                note("\(store.state.slime.name) will be gone for good, with its levels, coins and things. Friendships stay on the server. This can't be undone.")
                 HStack(spacing: 10) {
-                    PixelButton(title: "Behalten", kind: .secondary) { confirmRelease = false }
-                    PixelButton(title: "Freilassen", kind: .danger) {
+                    PixelButton(title: "Keep", kind: .secondary) { confirmRelease = false }
+                    PixelButton(title: "Release", kind: .danger) {
                         dismiss()
                         store.releaseSlime()
                     }
                 }
             } else {
-                PixelButton(title: "\(store.state.slime.name) freilassen …", kind: .quiet) { confirmRelease = true }
+                PixelButton(title: "Release \(store.state.slime.name) …", kind: .quiet) { confirmRelease = true }
             }
         }
     }
@@ -164,71 +167,5 @@ struct SettingsView: View {
         .padding(10)
         .background(NotchedRect().fill(Theme.paperShade))
         .overlay(NotchedRect().strokeBorder(Theme.border, lineWidth: 2))
-    }
-}
-
-/// How to make the slime react while the app is closed, with Shortcuts.
-struct EventsGuideView: View {
-    @EnvironmentObject private var store: GameStore
-    @Environment(\.dismiss) private var dismiss
-
-    private let groups: [(String, [PhoneEvent])] = [
-        ("Akku und Strom", [.batteryLow, .batteryCritical, .batteryFull, .chargerConnected, .chargerDisconnected, .lowPowerOn, .lowPowerOff]),
-        ("Netz", [.wifiConnected, .wifiDisconnected, .cellular, .airplaneOn, .airplaneOff]),
-        ("Zeit", [.goodMorning, .goodNight, .alarm, .newHour]),
-    ]
-
-    var body: some View {
-        ZStack {
-            MenuBackdrop()
-            ScrollView {
-                VStack(spacing: 14) {
-                    MenuHeader(title: "Wenn die App zu ist") { dismiss() }
-                    PixelWindow(title: "Einmal pro Ereignis einrichten") {
-                        step(1, "Öffne Kurzbefehle, geh auf Automation und tippe auf +.")
-                        step(2, "Wähl den Auslöser, der unten beim Ereignis steht.")
-                        step(3, "Stell „Sofort ausführen“ ein und schalt „Bei Ausführung mitteilen“ aus.")
-                        step(4, "Füg die Aktion „Slime reagieren“ von Slimy hinzu und wähl das Ereignis.")
-                        step(5, "Optional: Häng „Text sprechen“ an, dann sagt er es laut.")
-                        Link(destination: URL(string: "shortcuts://")!) {
-                            Text("Kurzbefehle öffnen").font(Theme.label(15)).foregroundStyle(Theme.accentInk)
-                        }
-                    }
-                    PixelWindow(title: "Den ganzen Tag in der Insel") {
-                        Text("Leg drei Automationen mit „Tageszeit“ an, zum Beispiel 08:00, 15:00 und 22:00, jeweils mit „Slime holen“. Jede gibt ihm wieder 8 Stunden in der Insel. „Slime holen“ gibt es auch im Kontrollzentrum und für den Action Button.")
-                            .font(Theme.text(14)).foregroundStyle(Theme.ink)
-                    }
-                    ForEach(groups, id: \.0) { title, events in
-                        PixelWindow(title: title) {
-                            ForEach(events) { event in
-                                HStack(spacing: 10) {
-                                    Image(systemName: event.symbol).frame(width: 24).foregroundStyle(Theme.accentInk)
-                                    VStack(alignment: .leading, spacing: 2) {
-                                        Text(event.title).font(Theme.label(15)).foregroundStyle(Theme.ink)
-                                        Text(event.shortcutTrigger).font(Theme.text(12)).foregroundStyle(Theme.inkSoft)
-                                    }
-                                    Spacer()
-                                    PixelButton(title: "Testen", kind: .secondary, compact: true) {
-                                        let said = store.handle(event)
-                                        store.toast = Toast(text: said, good: true)
-                                        Task { await IslandController.shared.sync() }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                .padding(16)
-            }
-        }
-        .toolbar(.hidden, for: .navigationBar)
-    }
-
-    private func step(_ n: Int, _ text: String) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: 10) {
-            Text("\(n)").font(Theme.label(13)).foregroundStyle(.white)
-                .frame(width: 22, height: 22).background(Theme.accent)
-            Text(text).font(Theme.text(14)).foregroundStyle(Theme.ink)
-        }
     }
 }

@@ -5,11 +5,11 @@ enum ItemKind: String, Codable, CaseIterable, Hashable {
 
     var title: String {
         switch self {
-        case .hat: "Hüte"
-        case .glasses: "Brillen"
-        case .scarf: "Schals"
-        case .effect: "Effekte"
-        case .furniture: "Möbel"
+        case .hat: "Hats"
+        case .glasses: "Glasses"
+        case .scarf: "Scarves"
+        case .effect: "Effects"
+        case .furniture: "Furniture"
         }
     }
 }
@@ -20,12 +20,12 @@ enum FurnitureSlot: String, Codable, CaseIterable, Hashable {
 
     var title: String {
         switch self {
-        case .floorLeft: "Boden links"
-        case .floorRight: "Boden rechts"
-        case .wallLeft: "Wand links"
-        case .wallRight: "Wand rechts"
-        case .rug: "Teppich"
-        case .ceiling: "Decke"
+        case .floorLeft: "Floor left"
+        case .floorRight: "Floor right"
+        case .wallLeft: "Wall left"
+        case .wallRight: "Wall right"
+        case .rug: "Rug"
+        case .ceiling: "Ceiling"
         }
     }
 }
@@ -54,33 +54,33 @@ struct CatalogItem: Identifiable, Hashable {
 enum Catalog {
     static let items: [CatalogItem] = [
         // Hats
-        .init(id: "hat.party", kind: .hat, title: "Partyhut", price: 25, unlock: .level(1)),
-        .init(id: "hat.beanie", kind: .hat, title: "Mütze", price: 40, unlock: .level(2)),
-        .init(id: "hat.flower", kind: .hat, title: "Blüte", price: 50, unlock: .level(3)),
-        .init(id: "hat.pumpkin", kind: .hat, title: "Kürbis", price: 60, unlock: .season(month: 10), rare: true),
-        .init(id: "hat.crown", kind: .hat, title: "Krone", price: 150, unlock: .level(8), rare: true),
-        .init(id: "hat.wizard", kind: .hat, title: "Zauberhut", price: 220, unlock: .level(12), rare: true),
+        .init(id: "hat.party", kind: .hat, title: "Party hat", price: 25, unlock: .level(1)),
+        .init(id: "hat.beanie", kind: .hat, title: "Beanie", price: 40, unlock: .level(2)),
+        .init(id: "hat.flower", kind: .hat, title: "Blossom", price: 50, unlock: .level(3)),
+        .init(id: "hat.pumpkin", kind: .hat, title: "Pumpkin", price: 60, unlock: .season(month: 10), rare: true),
+        .init(id: "hat.crown", kind: .hat, title: "Crown", price: 150, unlock: .level(8), rare: true),
+        .init(id: "hat.wizard", kind: .hat, title: "Wizard hat", price: 220, unlock: .level(12), rare: true),
         // Glasses
-        .init(id: "glasses.round", kind: .glasses, title: "Runde Brille", price: 35, unlock: .level(2)),
-        .init(id: "glasses.shades", kind: .glasses, title: "Sonnenbrille", price: 60, unlock: .level(4)),
-        .init(id: "glasses.star", kind: .glasses, title: "Sternbrille", price: 120, unlock: .level(9), rare: true),
+        .init(id: "glasses.round", kind: .glasses, title: "Round glasses", price: 35, unlock: .level(2)),
+        .init(id: "glasses.shades", kind: .glasses, title: "Sunglasses", price: 60, unlock: .level(4)),
+        .init(id: "glasses.star", kind: .glasses, title: "Star glasses", price: 120, unlock: .level(9), rare: true),
         // Scarves
-        .init(id: "scarf.red", kind: .scarf, title: "Roter Schal", price: 40, unlock: .level(3)),
-        .init(id: "scarf.striped", kind: .scarf, title: "Ringelschal", price: 70, unlock: .level(6)),
+        .init(id: "scarf.red", kind: .scarf, title: "Red scarf", price: 40, unlock: .level(3)),
+        .init(id: "scarf.striped", kind: .scarf, title: "Striped scarf", price: 70, unlock: .level(6)),
         // Effects
-        .init(id: "effect.sparkle", kind: .effect, title: "Funkeln", price: 100, unlock: .level(5)),
-        .init(id: "effect.hearts", kind: .effect, title: "Herzchen", price: 0, unlock: .bond(50), rare: true),
-        .init(id: "effect.bubbles", kind: .effect, title: "Seifenblasen", price: 0, unlock: .achievement("bather"), rare: true),
+        .init(id: "effect.sparkle", kind: .effect, title: "Sparkle", price: 100, unlock: .level(5)),
+        .init(id: "effect.hearts", kind: .effect, title: "Little hearts", price: 0, unlock: .bond(50), rare: true),
+        .init(id: "effect.bubbles", kind: .effect, title: "Soap bubbles", price: 0, unlock: .achievement("bather"), rare: true),
         // Furniture
-        .init(id: "furn.bed", kind: .furniture, title: "Bettchen", price: 30, unlock: .level(1), slot: .floorLeft),
-        .init(id: "furn.plant", kind: .furniture, title: "Topfpflanze", price: 25, unlock: .level(1), slot: .floorRight),
-        .init(id: "furn.rug", kind: .furniture, title: "Teppich", price: 35, unlock: .level(2), slot: .rug),
+        .init(id: "furn.bed", kind: .furniture, title: "Little bed", price: 30, unlock: .level(1), slot: .floorLeft),
+        .init(id: "furn.plant", kind: .furniture, title: "Potted plant", price: 25, unlock: .level(1), slot: .floorRight),
+        .init(id: "furn.rug", kind: .furniture, title: "Rug", price: 35, unlock: .level(2), slot: .rug),
         .init(id: "furn.poster", kind: .furniture, title: "Poster", price: 20, unlock: .level(2), slot: .wallLeft),
-        .init(id: "furn.lamp", kind: .furniture, title: "Stehlampe", price: 45, unlock: .level(3), slot: .floorRight),
-        .init(id: "furn.shelf", kind: .furniture, title: "Regal", price: 55, unlock: .level(4), slot: .wallRight),
-        .init(id: "furn.lights", kind: .furniture, title: "Lichterkette", price: 60, unlock: .level(5), slot: .ceiling),
+        .init(id: "furn.lamp", kind: .furniture, title: "Floor lamp", price: 45, unlock: .level(3), slot: .floorRight),
+        .init(id: "furn.shelf", kind: .furniture, title: "Shelf", price: 55, unlock: .level(4), slot: .wallRight),
+        .init(id: "furn.lights", kind: .furniture, title: "Fairy lights", price: 60, unlock: .level(5), slot: .ceiling),
         .init(id: "furn.aquarium", kind: .furniture, title: "Aquarium", price: 120, unlock: .level(8), slot: .floorLeft, rare: true),
-        .init(id: "furn.trophy", kind: .furniture, title: "Pokal", price: 0, unlock: .achievement("arcadeStar"), slot: .wallRight, rare: true),
+        .init(id: "furn.trophy", kind: .furniture, title: "Trophy", price: 0, unlock: .achievement("arcadeStar"), slot: .wallRight, rare: true),
     ]
 
     static func item(_ id: String) -> CatalogItem? { items.first { $0.id == id } }
@@ -95,11 +95,11 @@ enum Habitat: String, Codable, CaseIterable, Identifiable, Hashable {
 
     var title: String {
         switch self {
-        case .room: "Zimmer"
-        case .garden: "Garten"
-        case .beach: "Strand"
-        case .space: "Weltraum"
-        case .crystal: "Kristallhöhle"
+        case .room: "Room"
+        case .garden: "Garden"
+        case .beach: "Beach"
+        case .space: "Space"
+        case .crystal: "Crystal cave"
         }
     }
 

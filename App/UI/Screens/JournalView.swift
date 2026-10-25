@@ -14,9 +14,9 @@ struct JournalView: View {
             MenuBackdrop()
             ScrollView {
                 VStack(spacing: 14) {
-                    MenuHeader(title: "Tagebuch", subtitle: store.state.slime.name) { dismiss() }
-                    PixelTabs(options: [(Tab.tasks, "Aufgaben"), (.achievements, "Erfolge"), (.memories, "Erinnerungen"),
-                                        (.collection, "Sammlung"), (.about, "Über ihn")],
+                    MenuHeader(title: "Journal", subtitle: store.state.slime.name) { dismiss() }
+                    PixelTabs(options: [(Tab.tasks, "Challenges"), (.achievements, "Achievements"), (.memories, "Memories"),
+                                        (.collection, "Collection"), (.about, "About")],
                               selection: $tab)
                     switch tab {
                     case .tasks: TasksSection()
@@ -40,13 +40,13 @@ private struct TasksSection: View {
     var body: some View {
         let board = store.state.progress.challenges
         VStack(spacing: 12) {
-            PixelWindow(title: "Heute") {
+            PixelWindow(title: "Today") {
                 ForEach(board.daily) { c in ChallengeRow(challenge: c) }
             }
-            PixelWindow(title: "Diese Woche") {
+            PixelWindow(title: "This week") {
                 ForEach(board.weekly) { c in ChallengeRow(challenge: c) }
             }
-            Text("Neue Aufgaben gibt es jeden Morgen und jeden Montag.")
+            Text("New challenges every morning and every Monday.")
                 .font(Theme.text(13)).foregroundStyle(Theme.inkSoft)
         }
     }
@@ -71,7 +71,7 @@ private struct ChallengeRow: View {
             }
             Spacer()
             if challenge.claimed {
-                Text("erledigt").font(Theme.label(13)).foregroundStyle(Theme.accentInk)
+                Text("done").font(Theme.label(13)).foregroundStyle(Theme.accentInk)
             } else if done {
                 PixelButton(title: "+\(template?.coins ?? 0)", icon: "coin", compact: true) {
                     store.apply({ $0.claimChallenge(challenge.id, now: .now) }, sound: .coin)
@@ -92,7 +92,7 @@ private struct AchievementsSection: View {
 
     var body: some View {
         let unlocked = store.state.progress.achievements
-        PixelWindow(title: "\(unlocked.count) von \(Achievements.all.count)") {
+        PixelWindow(title: "\(unlocked.count) of \(Achievements.all.count)") {
             ForEach(Achievements.all) { a in
                 let date = unlocked[a.id]
                 HStack(spacing: 10) {
@@ -122,9 +122,9 @@ private struct MemoriesSection: View {
 
     var body: some View {
         let keepsakes = store.state.memory.keepsakes.reversed()
-        PixelWindow(title: "Besondere Momente") {
+        PixelWindow(title: "Special moments") {
             if keepsakes.isEmpty {
-                Text("Hier landen eure besonderen Momente.").font(Theme.text(14)).foregroundStyle(Theme.inkSoft)
+                Text("Your special moments end up here.").font(Theme.text(14)).foregroundStyle(Theme.inkSoft)
             }
             ForEach(Array(keepsakes)) { entry in
                 HStack(alignment: .top, spacing: 10) {
@@ -142,8 +142,8 @@ private struct MemoriesSection: View {
 
     private func highScoreText(_ detail: String) -> String {
         let parts = detail.split(separator: ":")
-        let game = GameID(rawValue: String(parts.first ?? ""))?.title ?? "einem Spiel"
-        return "Rekord in \(game): \(parts.last ?? "")"
+        let game = GameID(rawValue: String(parts.first ?? ""))?.title ?? "a game"
+        return "Record in \(game): \(parts.last ?? "")"
     }
 
     private func icon(_ e: MemoryEntry) -> String {
@@ -161,16 +161,16 @@ private struct MemoriesSection: View {
 
     private func describe(_ e: MemoryEntry) -> String {
         switch e.kind {
-        case .hatched: "\(e.detail) ist geschlüpft"
-        case .favoriteFound: "Lieblingsessen entdeckt: \(Food(rawValue: e.detail)?.title ?? e.detail)"
+        case .hatched: "\(e.detail) hatched"
+        case .favoriteFound: "Found its favourite food: \(Food(rawValue: e.detail)?.title ?? e.detail)"
         case .highScore: highScoreText(e.detail)
-        case .levelUp: "Level \(e.detail) erreicht"
-        case .stageUp: "Gewachsen: \(Stage(rawValue: e.detail)?.title ?? e.detail)"
-        case .achievement: "Erfolg: \(Achievements.achievement(e.detail)?.title ?? e.detail)"
-        case .giftReceived: "Erstes Geschenk von \(e.detail)"
-        case .friendMade: "Neuer Freund: \(e.detail)"
-        case .inLove: "Verliebt in \(e.detail)"
-        case .reunion: "Wiedersehen nach \(e.detail) Tagen"
+        case .levelUp: "Reached level \(e.detail)"
+        case .stageUp: "Grew up: \(Stage(rawValue: e.detail)?.title ?? e.detail)"
+        case .achievement: "Achievement: \(Achievements.achievement(e.detail)?.title ?? e.detail)"
+        case .giftReceived: "First gift from \(e.detail)"
+        case .friendMade: "New friend: \(e.detail)"
+        case .inLove: "In love with \(e.detail)"
+        case .reunion: "Back together after \(e.detail) days"
         default: e.kind.rawValue
         }
     }
@@ -182,7 +182,7 @@ private struct CollectionSection: View {
     var body: some View {
         let s = store.state
         VStack(spacing: 12) {
-            PixelWindow(title: "Essen") {
+            PixelWindow(title: "Food") {
                 LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 5), spacing: 10) {
                     ForEach(Food.allCases) { food in
                         let tasted = s.inventory.foodsTasted.contains(food)
@@ -192,11 +192,11 @@ private struct CollectionSection: View {
                             Text(tasted ? food.title : "???").font(Theme.label(10)).foregroundStyle(Theme.inkSoft).lineLimit(1)
                         }
                         .accessibilityElement(children: .ignore)
-                        .accessibilityLabel(tasted ? food.title : "Noch nicht probiert")
+                        .accessibilityLabel(tasted ? food.title : "Not tried yet")
                     }
                 }
             }
-            PixelWindow(title: "Rekorde") {
+            PixelWindow(title: "Records") {
                 ForEach(GameID.allCases) { game in
                     let record = s.record(game)
                     HStack {
@@ -218,12 +218,12 @@ private struct AboutSection: View {
         let s = store.state.slime
         let stats = store.state.progress.stats
         VStack(spacing: 12) {
-            PixelWindow(title: "Wer ist \(s.name)?") {
+            PixelWindow(title: "Who is \(s.name)?") {
                 HStack(spacing: 12) {
                     LiveSlimeView(height: 80, interactive: false)
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("\(s.stage.title), \(s.ageDays() + 1). Tag").font(Theme.label(15)).foregroundStyle(Theme.ink)
-                        Text("Ist \(s.personality.top.map(\.title).joined(separator: " und ")).")
+                        Text("\(s.stage.title), day \(s.ageDays() + 1)").font(Theme.label(15)).foregroundStyle(Theme.ink)
+                        Text("It's \(s.personality.top.map(\.title).joined(separator: " and ")).")
                             .font(Theme.text(14)).foregroundStyle(Theme.ink)
                         Text(s.personality.dominant.blurb).font(Theme.text(13)).foregroundStyle(Theme.inkSoft)
                     }
@@ -235,23 +235,23 @@ private struct AboutSection: View {
                     }
                 }
             }
-            PixelWindow(title: "Eure Bindung") {
+            PixelWindow(title: "Your bond") {
                 HStack {
                     Text(s.bondStage.title).font(Theme.label(16)).foregroundStyle(Theme.love)
                     Spacer()
                     Text("\(Int(s.bond)) / 100").font(Theme.label(13)).foregroundStyle(Theme.inkSoft)
                 }
                 BlockBar(value: s.bond / 100, color: Theme.love)
-                Text("Wächst mit Kraulen, Füttern, Baden und gemeinsamen Spielen. Sie sinkt nie.")
+                Text("Grows with petting, feeding, baths and playing together. It never goes down.")
                     .font(Theme.text(13)).foregroundStyle(Theme.inkSoft)
             }
-            PixelWindow(title: "Zahlen") {
-                statRow("Gefüttert", stats.feeds)
-                statRow("Gekrault", stats.pets)
-                statRow("Gebadet", stats.baths)
-                statRow("Spiele", stats.plays)
-                statRow("Lieblingsspiel", nil, text: s.favoriteGame.title)
-                statRow("Münzen verdient", store.state.wallet.earnedTotal)
+            PixelWindow(title: "Numbers") {
+                statRow("Fed", stats.feeds)
+                statRow("Petted", stats.pets)
+                statRow("Bathed", stats.baths)
+                statRow("Games", stats.plays)
+                statRow("Favourite game", nil, text: s.favoriteGame.title)
+                statRow("Coins earned", store.state.wallet.earnedTotal)
             }
         }
     }

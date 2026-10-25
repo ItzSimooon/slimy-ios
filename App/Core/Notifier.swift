@@ -42,12 +42,12 @@ enum Notifier {
 
         if prefs.daily, let morning = calendar.nextDate(after: now, matching: DateComponents(hour: max(prefs.quietUntil, 8), minute: 30),
                                                          matchingPolicy: .nextTime) {
-            schedule("slimy.daily", title: "Neue Aufgaben", body: "\(state.slime.name) hat drei neue Aufgaben für heute.",
+            schedule("slimy.daily", title: "New challenges", body: "\(state.slime.name) has three new challenges for today.",
                      at: morning, now: now)
         }
 
         if prefs.world, let later = calendar.date(byAdding: .day, value: 2, to: now) {
-            schedule("slimy.thinking", title: state.slime.name, body: "ich hab heute an dich gedacht. einfach so.",
+            schedule("slimy.thinking", title: state.slime.name, body: "i thought about you today. just because.",
                      at: outsideQuietHours(later, prefs: prefs, calendar: calendar), now: now)
         }
     }

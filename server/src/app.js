@@ -31,10 +31,10 @@ export const LOVE = {
 };
 
 const CAPPED = {
-  hug: "Für heute reicht's mit Umarmungen. Morgen wieder.",
-  visit: "Ihr wart heute schon zusammen. Morgen wieder.",
-  gift: "Heute gab es schon genug Geschenke. Morgen wieder.",
-  kiss: "Genug geschmatzt für heute.",
+  hug: "That's enough hugs for today. More tomorrow.",
+  visit: "You already hung out today. More tomorrow.",
+  gift: "That's enough gifts for today. More tomorrow.",
+  kiss: "That's enough smooches for today.",
 };
 
 export function createApp({ db, clock = () => Date.now(), chat, trustProxy = false, version = "1" }) {
@@ -43,7 +43,7 @@ export function createApp({ db, clock = () => Date.now(), chat, trustProxy = fal
 
   // --- Helpers ---------------------------------------------------------------
 
-  function limit(bucket, key, max, windowMs, message = "Zu viele Anfragen. Warte kurz und versuch es nochmal.") {
+  function limit(bucket, key, max, windowMs, message = "Too many requests. Wait a moment and try again.") {
     if (!limiter.hit(bucket, key, max, windowMs)) fail(429, message);
   }
 
@@ -72,7 +72,7 @@ export function createApp({ db, clock = () => Date.now(), chat, trustProxy = fal
 
   function requireFriend(me, other) {
     const f = friendship(me, other);
-    if (!f) fail(404, "Ihr seid keine Freunde (mehr).");
+    if (!f) fail(404, "You're not friends (anymore).");
     return f;
   }
 
@@ -173,8 +173,8 @@ export function createApp({ db, clock = () => Date.now(), chat, trustProxy = fal
   // Devices ------------------------------------------------------------------
 
   route("POST", "/devices", ({ body, ip }) => {
-    limit("register", ip, 10, HOUR, "Zu viele neue Geräte von hier. Versuch es in einer Stunde nochmal.");
-    const ownerName = text(body.ownerName, "ownerName", { max: 24, fallback: "Jemand" }) || "Jemand";
+    limit("register", ip, 10, HOUR, "Too many new devices from here. Try again in an hour.");
+    const ownerName = text(body.ownerName, "ownerName", { max: 24, fallback: "Someone" }) || "Someone";
     const id = newId("dev");
     const token = newToken();
     const now = clock();
@@ -245,9 +245,9 @@ export function createApp({ db, clock = () => Date.now(), chat, trustProxy = fal
   // Pairing ------------------------------------------------------------------
 
   route("POST", "/pair-codes", ({ me }) => {
-    limit("code", me, 20, HOUR, "Du hast sehr viele Codes geholt. Warte ein bisschen.");
+    limit("code", me, 20, HOUR, "You've fetched a lot of codes. Wait a little.");
     const d = q("SELECT accept_requests FROM devices WHERE id = ?").get(me);
-    if (d.accept_requests !== 1) fail(409, "Du nimmst gerade keine Freundschaftsanfragen an. Schalte es in den Einstellungen ein.");
+    if (d.accept_requests !== 1) fail(409, "You're not accepting friend requests right now. Turn it on in the settings.");
     const now = clock();
     return transaction(db, () => {
       q("DELETE FROM pair_codes WHERE device_id = ? AND used_at IS NULL").run(me);
@@ -262,12 +262,12 @@ export function createApp({ db, clock = () => Date.now(), chat, trustProxy = fal
   // For the website's invite page (/f/CODE): shows whose code it is
   // without using it up. Limited per address like wrong codes.
   route("GET", "/invites/:code", ({ params, ip }) => {
-    if (limiter.exhausted("badcode-ip", ip, 30)) fail(429, "Zu viele Versuche. Versuch es in einer Stunde nochmal.");
+    if (limiter.exhausted("badcode-ip", ip, 30)) fail(429, "Too many tries. Try again in an hour.");
     limit("invite", ip, 120, HOUR);
     const row = q("SELECT * FROM pair_codes WHERE code = ?").get(String(params.code).toUpperCase());
     if (!row || row.used_at || row.expires_at < clock()) {
       limiter.hit("badcode-ip", ip, 30, HOUR);
-      fail(404, "Diesen Code gibt es nicht mehr. Frag nach einem neuen.");
+      fail(404, "This code doesn't exist anymore. Ask for a new one.");
     }
     const slime = slimeOf(row.device_id, null);
     return { ownerName: slime.ownerName, slime: { name: slime.name, skin: slime.skin, stage: slime.stage }, expiresAt: iso(row.expires_at) };
@@ -276,7 +276,7 @@ export function createApp({ db, clock = () => Date.now(), chat, trustProxy = fal
   route("POST", "/friend-requests", ({ me, body, ip }) => {
     // Brute-force protection: wrong codes count per device and per address.
     if (limiter.exhausted("badcode", me, 8) || limiter.exhausted("badcode-ip", ip, 30)) {
-      fail(429, "Zu viele falsche Codes. Versuch es in einer Stunde nochmal.");
+      fail(429, "Too many wrong codes. Try again in an hour.");
     }
     limit("join", me, 30, HOUR);
     const code = text(body.code, "code", { min: 6, max: 6 }).toUpperCase();
@@ -286,16 +286,16 @@ export function createApp({ db, clock = () => Date.now(), chat, trustProxy = fal
       limiter.hit("badcode-ip", ip, 30, HOUR);
       fail(status, message);
     };
-    if (!row || row.used_at) wrong(404, "Diesen Code gibt es nicht. Prüf die Zeichen nochmal.");
-    if (row.device_id === me) fail(400, "Das ist dein eigener Code. Schick ihn einem Freund.");
-    if (row.expires_at < clock()) wrong(410, "Der Code ist abgelaufen. Frag nach einem neuen.");
+    if (!row || row.used_at) wrong(404, "That code doesn't exist. Check the characters again.");
+    if (row.device_id === me) fail(400, "That's your own code. Send it to a friend.");
+    if (row.expires_at < clock()) wrong(410, "The code has expired. Ask for a new one.");
     const owner = row.device_id;
     // A block looks exactly like an unknown code, so nobody learns they were blocked.
-    if (isBlocked(me, owner)) wrong(404, "Diesen Code gibt es nicht. Prüf die Zeichen nochmal.");
+    if (isBlocked(me, owner)) wrong(404, "That code doesn't exist. Check the characters again.");
 
     const existing = friendship(me, owner);
     if (existing) return { status: "friends", friend: friendView(me, existing) };
-    if (friendCount(me) >= LIMITS.maxFriends) fail(409, `Du hast schon ${LIMITS.maxFriends} Slime-Freunde.`);
+    if (friendCount(me) >= LIMITS.maxFriends) fail(409, `You already have ${LIMITS.maxFriends} slime friends.`);
 
     return transaction(db, () => {
       q("UPDATE pair_codes SET used_at = ? WHERE code = ?").run(clock(), code);
@@ -324,9 +324,9 @@ export function createApp({ db, clock = () => Date.now(), chat, trustProxy = fal
 
   route("POST", "/friend-requests/:id/accept", ({ me, params }) => {
     const r = q("SELECT * FROM friend_requests WHERE id = ? AND to_device = ?").get(params.id, me);
-    if (!r) fail(404, "Diese Anfrage gibt es nicht mehr.");
-    if (friendCount(me) >= LIMITS.maxFriends) fail(409, `Du hast schon ${LIMITS.maxFriends} Slime-Freunde.`);
-    if (friendCount(r.from_device) >= LIMITS.maxFriends) fail(409, "Dein Freund hat schon die meisten Slime-Freunde.");
+    if (!r) fail(404, "This request doesn't exist anymore.");
+    if (friendCount(me) >= LIMITS.maxFriends) fail(409, `You already have ${LIMITS.maxFriends} slime friends.`);
+    if (friendCount(r.from_device) >= LIMITS.maxFriends) fail(409, "Your friend already has the most slime friends allowed.");
     return transaction(db, () => {
       befriend(me, r.from_device);
       emit(r.from_device, me, "accepted");
@@ -374,7 +374,7 @@ export function createApp({ db, clock = () => Date.now(), chat, trustProxy = fal
     const rule = LOVE[kind];
     return transaction(db, () => {
       const f = requireFriend(me, params.id);
-      if (rule.minLove && f.love < rule.minLove) fail(409, `Dafür ist es noch zu früh. Erst ab ${rule.minLove} % Liebe.`);
+      if (rule.minLove && f.love < rule.minLove) fail(409, `Too early for that. It unlocks at ${rule.minLove}% love.`);
       const capped = usedToday(me, params.id, kind) >= rule.perDay;
       if (capped && kind === "gift") fail(429, CAPPED.gift);
       const gained = capped ? 0 : Math.min(rule.gain, 100 - f.love);
@@ -393,10 +393,10 @@ export function createApp({ db, clock = () => Date.now(), chat, trustProxy = fal
   });
 
   route("POST", "/friends/:id/messages", ({ me, params, body }) => {
-    limit("message", me, 30, DAY, "Du hast heute schon viele Grüße geschickt.");
+    limit("message", me, 30, DAY, "You've sent a lot of greetings today.");
     const preset = oneOf(body.preset, "preset", ENUMS.message);
     requireFriend(me, params.id);
-    if (usedToday(me, params.id, "message") >= 6) fail(429, "Genug Grüße an diesen Freund für heute.");
+    if (usedToday(me, params.id, "message") >= 6) fail(429, "Enough greetings to this friend for today.");
     emit(params.id, me, "message", { preset });
     return { sent: true };
   });
@@ -405,11 +405,11 @@ export function createApp({ db, clock = () => Date.now(), chat, trustProxy = fal
 
   route("GET", "/blocks", ({ me }) =>
     q("SELECT blocked, created_at FROM blocks WHERE blocker = ? ORDER BY created_at").all(me)
-      .map((r) => ({ deviceId: r.blocked, ownerName: slimeOf(r.blocked, me)?.ownerName ?? "Gelöscht", since: iso(r.created_at) })));
+      .map((r) => ({ deviceId: r.blocked, ownerName: slimeOf(r.blocked, me)?.ownerName ?? "Deleted", since: iso(r.created_at) })));
 
   route("POST", "/blocks", ({ me, body }) => {
     const other = text(body.deviceId, "deviceId", { max: 40 });
-    if (other === me) fail(400, "Du kannst dich nicht selbst blockieren.");
+    if (other === me) fail(400, "You can't block yourself.");
     transaction(db, () => {
       q("INSERT OR IGNORE INTO blocks (blocker, blocked, created_at) VALUES (?, ?, ?)").run(me, other, clock());
       const [a, b] = pair(me, other);
@@ -454,16 +454,16 @@ export function createApp({ db, clock = () => Date.now(), chat, trustProxy = fal
   // Async challenges ------------------------------------------------------------
 
   route("POST", "/challenges", ({ me, body }) => {
-    limit("challenge", me, 20, DAY, "Genug Herausforderungen für heute.");
+    limit("challenge", me, 20, DAY, "Enough challenges for today.");
     const friendId = text(body.friendId, "friendId", { max: 40 });
     const game = oneOf(body.game, "game", ENUMS.game);
     const seed = text(body.seed, "seed", { max: 24 });
-    if (!/^\d{1,20}$/.test(seed)) fail(400, "\"seed\" muss eine Zahl sein.");
+    if (!/^\d{1,20}$/.test(seed)) fail(400, "\"seed\" must be a number.");
     const score = int(body.score, "score", 0, 1_000_000);
     requireFriend(me, friendId);
     const open = q("SELECT COUNT(*) AS n FROM challenges WHERE from_device = ? AND to_device = ? AND answered_at IS NULL AND expires_at > ?")
       .get(me, friendId, clock()).n;
-    if (open >= 3) fail(409, "Es warten schon drei Herausforderungen auf deinen Freund.");
+    if (open >= 3) fail(409, "Your friend already has three challenges waiting.");
     const id = newId("ch");
     const now = clock();
     q(`INSERT INTO challenges (id, from_device, to_device, game, seed, from_score, created_at, expires_at)
@@ -480,9 +480,9 @@ export function createApp({ db, clock = () => Date.now(), chat, trustProxy = fal
     const score = int(body.score, "score", 0, 1_000_000);
     return transaction(db, () => {
       const c = q("SELECT * FROM challenges WHERE id = ? AND to_device = ?").get(params.id, me);
-      if (!c) fail(404, "Diese Herausforderung gibt es nicht.");
+      if (!c) fail(404, "This challenge doesn't exist.");
       if (c.answered_at) return challengeView(c, me);
-      if (c.expires_at < clock()) fail(410, "Die Herausforderung ist abgelaufen.");
+      if (c.expires_at < clock()) fail(410, "The challenge has expired.");
       q("UPDATE challenges SET to_score = ?, answered_at = ? WHERE id = ?").run(score, clock(), c.id);
       emit(c.from_device, me, "challengeResult", { challengeId: c.id });
       if (score > c.from_score) remember(me, c.from_device, "firstChallengeWin", c.game);
@@ -522,9 +522,9 @@ export function createApp({ db, clock = () => Date.now(), chat, trustProxy = fal
   // Chat ------------------------------------------------------------------------
 
   route("POST", "/chat", async ({ me, body }) => {
-    if (!chat?.enabled) fail(503, "Reden ist auf dem Server gerade nicht eingerichtet.");
-    limit("chat-min", me, 8, 60_000, "Nicht so schnell, der Slime denkt noch.");
-    limit("chat-day", me, 60, DAY, "Dein Slime ist für heute müde vom Reden. Morgen wieder.");
+    if (!chat?.enabled) fail(503, "Talking isn't set up on the server right now.");
+    limit("chat-min", me, 8, 60_000, "Not so fast, the slime is still thinking.");
+    limit("chat-day", me, 60, DAY, "Your slime is tired of talking for today. More tomorrow.");
     const message = text(body.message, "message", { max: 500 });
     const history = Array.isArray(body.history) ? body.history.slice(-12) : [];
     const cleanHistory = history
@@ -549,12 +549,12 @@ export function createApp({ db, clock = () => Date.now(), chat, trustProxy = fal
   async function handle(req) {
     const url = new URL(req.url, "http://local");
     let path = url.pathname;
-    if (!path.startsWith("/api/v1/")) fail(404, "Diese Adresse gibt es nicht.");
+    if (!path.startsWith("/api/v1/")) fail(404, "This address doesn't exist.");
     path = path.slice("/api/v1".length);
     const found = routes.find((r) => r.method === req.method && r.regex.test(path));
     if (!found) {
-      if (routes.some((r) => r.regex.test(path))) fail(405, "Diese Methode geht hier nicht.");
-      fail(404, "Diese Adresse gibt es nicht.");
+      if (routes.some((r) => r.regex.test(path))) fail(405, "This method isn't allowed here.");
+      fail(404, "This address doesn't exist.");
     }
     const params = {};
     const match = path.match(found.regex);
@@ -565,7 +565,7 @@ export function createApp({ db, clock = () => Date.now(), chat, trustProxy = fal
       const header = req.headers.authorization ?? "";
       const token = header.startsWith("Bearer ") ? header.slice(7).trim() : "";
       const device = token ? q("SELECT id FROM devices WHERE token_hash = ?").get(sha256(token)) : null;
-      if (!device) fail(401, "Dieses Gerät ist nicht angemeldet. Öffne Slimy einmal mit Internet.");
+      if (!device) fail(401, "This device isn't registered. Open Slimy once with internet.");
       me = device.id;
       q("UPDATE devices SET last_seen = ? WHERE id = ?").run(clock(), me);
       limit("all", me, 1200, HOUR);
@@ -577,10 +577,10 @@ export function createApp({ db, clock = () => Date.now(), chat, trustProxy = fal
     const key = req.headers["idempotency-key"];
     const idempotent = me && key && req.method !== "GET";
     if (idempotent) {
-      if (typeof key !== "string" || key.length > 64) fail(400, "Idempotency-Key ist zu lang.");
+      if (typeof key !== "string" || key.length > 64) fail(400, "Idempotency-Key is too long.");
       const saved = q("SELECT * FROM idempotency WHERE device_id = ? AND key = ?").get(me, key);
       if (saved) {
-        if (saved.method !== req.method || saved.path !== path) fail(422, "Dieser Idempotency-Key wurde schon für etwas anderes benutzt.");
+        if (saved.method !== req.method || saved.path !== path) fail(422, "This Idempotency-Key was already used for something else.");
         return { status: saved.status, body: saved.body == null ? null : JSON.parse(saved.body), replayed: true };
       }
     }
@@ -622,7 +622,7 @@ export function createApp({ db, clock = () => Date.now(), chat, trustProxy = fal
     } catch (error) {
       if (error instanceof HttpError) return send(error.status, { error: error.message });
       console.error(error);
-      send(500, { error: "Auf dem Server ist etwas schiefgegangen. Versuch es später nochmal." });
+      send(500, { error: "Something went wrong on the server. Try again later." });
     }
   }
 
@@ -639,7 +639,7 @@ async function readBody(req) {
   let size = 0;
   for await (const chunk of req) {
     size += chunk.length;
-    if (size > 32 * 1024) throw new HttpError(413, "Die Anfrage ist zu groß.");
+    if (size > 32 * 1024) throw new HttpError(413, "The request is too large.");
     chunks.push(chunk);
   }
   if (!size) return {};
@@ -648,6 +648,6 @@ async function readBody(req) {
     if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) throw new Error("not an object");
     return parsed;
   } catch {
-    throw new HttpError(400, "Die Anfrage ist kein gültiges JSON.");
+    throw new HttpError(400, "The request isn't valid JSON.");
   }
 }

@@ -12,7 +12,7 @@ struct KitchenView: View {
             MenuBackdrop()
             ScrollView {
                 VStack(spacing: 14) {
-                    MenuHeader(title: "Küche", subtitle: "Was soll \(s.slime.name) essen?") { dismiss() }
+                    MenuHeader(title: "Kitchen", subtitle: "What should \(s.slime.name) eat?") { dismiss() }
 
                     PixelWindow {
                         HStack(spacing: 14) {
@@ -25,8 +25,8 @@ struct KitchenView: View {
                                 }
                                 BlockBar(value: s.slime.needs.hunger / 100, color: Theme.color(for: .hunger))
                                 Text(s.inventory.favoriteFound
-                                     ? "Lieblingsessen: \(s.slime.favorite.title)"
-                                     : "Sein Lieblingsessen kennst du noch nicht. Probier Sachen aus.")
+                                     ? "Favourite: \(s.slime.favorite.title)"
+                                     : "You don't know its favourite food yet. Try things out.")
                                     .font(Theme.text(13))
                                     .foregroundStyle(Theme.inkSoft)
                             }
@@ -46,7 +46,7 @@ struct KitchenView: View {
                     }
 
                     HStack {
-                        Text("Probiert: \(s.inventory.foodsTasted.count) von \(Food.allCases.count)")
+                        Text("Tried: \(s.inventory.foodsTasted.count) of \(Food.allCases.count)")
                             .font(Theme.label(14)).foregroundStyle(Theme.inkSoft)
                         Spacer()
                         CoinCounter(coins: s.wallet.coins)
@@ -79,18 +79,18 @@ private struct FoodCard: View {
                         PixelItem(name: "heart").frame(width: 14, height: 11).offset(x: 10, y: -4)
                     }
                 }
-                Text(locked ? "ab Level \(food.unlockLevel)" : food.title)
+                Text(locked ? "from level \(food.unlockLevel)" : food.title)
                     .font(Theme.label(15)).foregroundStyle(Theme.ink)
                 HStack(spacing: 4) {
                     if food.price == 0 {
-                        Text("gratis").font(Theme.label(13)).foregroundStyle(Theme.accentInk)
+                        Text("free").font(Theme.label(13)).foregroundStyle(Theme.accentInk)
                     } else {
                         PixelItem(name: "coin").frame(width: 12, height: 12)
                         Text("\(food.price)").font(Theme.label(13)).foregroundStyle(Theme.ink)
                     }
                     Text("· +\(Int(food.nutrition))").font(Theme.label(12)).foregroundStyle(Theme.inkSoft)
                     if !tasted && !locked {
-                        Text("neu").font(Theme.label(11)).foregroundStyle(.white)
+                        Text("new").font(Theme.label(11)).foregroundStyle(.white)
                             .padding(.horizontal, 4).background(Theme.love)
                     }
                 }
@@ -101,6 +101,6 @@ private struct FoodCard: View {
         .buttonStyle(KeyStyle(fill: Theme.paper))
         .disabled(locked || !affordable)
         .opacity(!locked && !affordable ? 0.55 : 1)
-        .accessibilityLabel("\(food.title), \(food.price == 0 ? "gratis" : "\(food.price) Münzen")\(locked ? ", gesperrt" : "")")
+        .accessibilityLabel("\(food.title), \(food.price == 0 ? "free" : "\(food.price) coins")\(locked ? ", locked" : "")")
     }
 }

@@ -23,7 +23,7 @@ jobs:
         run: python tools/make_slime.py
       - name: Every timer string must become exactly one frame
         run: python tools/verify_fonts.py
-      - name: Every Garten-Rätsel level must be solvable
+      - name: Every Garden Puzzle level must be solvable
         run: python tools/check_puzzles.py
 
   server:

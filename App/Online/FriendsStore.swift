@@ -173,7 +173,7 @@ final class FriendsStore: ObservableObject {
         token = reg.token
     }
 
-    private var displayName: String { ownerName.isEmpty ? "Jemand" : ownerName }
+    private var displayName: String { ownerName.isEmpty ? "Someone" : ownerName }
 
     private func uploadProfile() async throws {
         let slime = GameStore.shared.state.slime
@@ -201,7 +201,7 @@ final class FriendsStore: ObservableObject {
     /// What a friend did. Each kind only shows something or gives food;
     /// nothing a friend sends can change settings or act for you.
     private func handle(_ event: InboxEvent) {
-        let name = event.friendName ?? friend(event.friendId)?.slime.name ?? "Ein Slime"
+        let name = event.friendName ?? friend(event.friendId)?.slime.name ?? "A slime"
         let store = GameStore.shared
         hasNews = true
         defer {
@@ -214,10 +214,10 @@ final class FriendsStore: ObservableObject {
         }
         switch event.kind {
         case "request":
-            store.toast = Toast(text: "\(name) möchte befreundet sein", good: true)
+            store.toast = Toast(text: "\(name) wants to be friends", good: true)
         case "accepted":
             store.update { $0.madeFriend(name, now: .now) }
-            store.toast = Toast(text: "\(name) ist jetzt dein Freund", good: true)
+            store.toast = Toast(text: "\(name) is your friend now", good: true)
             if let id = event.friendId { Task { await IslandController.shared.show(.reunion, with: id) } }
         case "gift":
             var line = ""
@@ -225,11 +225,11 @@ final class FriendsStore: ObservableObject {
             store.toast = Toast(text: line, good: true)
             if let id = event.friendId { Task { await IslandController.shared.show(.gift, with: id) } }
         case "hug", "kiss":
-            store.toast = Toast(text: "\(name): \(event.kind == "hug" ? "umarmung!" : "schmatz.")", good: true)
+            store.toast = Toast(text: "\(name): \(event.kind == "hug" ? "hug!" : "smooch.")", good: true)
             store.update { $0.slime.needs.add(.love, 4); $0.slime.react(.blush, at: .now) }
             if let id = event.friendId { Task { await IslandController.shared.show(.hug, with: id) } }
         case "visit":
-            store.toast = Toast(text: "\(name) ist zu Besuch", good: true)
+            store.toast = Toast(text: "\(name) came to visit", good: true)
             if let f = friend(event.friendId) { visitor = (Self.islandSlime(f), Date.now.addingTimeInterval(10 * 60)) }
             if let id = event.friendId { Task { await IslandController.shared.show(.reunion, with: id) } }
         case "inLove":
@@ -249,11 +249,11 @@ final class FriendsStore: ObservableObject {
             }
             if let moment, let id = event.friendId { Task { await IslandController.shared.show(moment, with: id) } }
         case "challenge":
-            store.toast = Toast(text: "\(name) fordert dich heraus", good: true)
+            store.toast = Toast(text: "\(name) challenges you", good: true)
         case "challengeResult":
-            store.toast = Toast(text: "\(name) hat deine Herausforderung gespielt", good: true)
+            store.toast = Toast(text: "\(name) played your challenge", good: true)
         case "coopDone":
-            store.toast = Toast(text: "Gemeinsamer Garten mit \(name) ist voll", good: true)
+            store.toast = Toast(text: "Your shared garden with \(name) is full", good: true)
             if let id = event.friendId { Task { await IslandController.shared.show(.achievement, with: id) } }
         default:
             break
@@ -275,7 +275,7 @@ final class FriendsStore: ObservableObject {
     func join(code: String) async -> String? {
         let cleaned = code.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
         guard cleaned.count == 6 else {
-            lastError = "Freundes-Codes haben 6 Zeichen."
+            lastError = "Friend codes have 6 characters."
             return nil
         }
         do {
@@ -283,10 +283,10 @@ final class FriendsStore: ObservableObject {
             lastError = nil
             if let friend = result.friend {
                 adopt(friend)
-                return "Ihr seid jetzt Freunde."
+                return "You're friends now."
             }
             requests = try await api.requests()
-            return "Anfrage geschickt. Sobald sie angenommen ist, seid ihr Freunde."
+            return "Request sent. Once it's accepted, you're friends."
         } catch {
             lastError = error.localizedDescription
             return nil
@@ -411,12 +411,12 @@ final class FriendsStore: ObservableObject {
     func interact(with friend: Friend, _ kind: InteractionKind, food: Food? = nil) async -> String? {
         if kind == .gift {
             guard let food, GameStore.shared.state.wallet.coins >= food.price else {
-                lastError = "Zu wenig Münzen für \(food?.title ?? "das Geschenk")."
+                lastError = "Not enough coins for \(food?.title ?? "the gift")."
                 return nil
             }
         }
         if kind == .kiss, friend.love < 50 {
-            lastError = "Für Küsse ist es zu früh. Erst ab 50 % Liebe."
+            lastError = "Too early for kisses. They unlock at 50% love."
             return nil
         }
 
@@ -434,7 +434,7 @@ final class FriendsStore: ObservableObject {
             return applied(result, to: friend, kind, food)
         } catch let error as APIError where error.isTransient {
             enqueue(action)
-            return "Kommt an, sobald du wieder online bist."
+            return "Will arrive once you're back online."
         } catch {
             refund(action)
             lastError = error.localizedDescription
@@ -461,22 +461,22 @@ final class FriendsStore: ObservableObject {
 
         if fellInLove { return said }
         switch kind {
-        case .hug: return "umarmt \(friend.slime.name). quetsch."
-        case .visit: return "zu Besuch bei \(friend.slime.name)"
-        case .gift: return "\((food?.title ?? "Geschenk")) an \(friend.slime.name) geschickt"
-        case .kiss: return "schmatz."
+        case .hug: return "hugged \(friend.slime.name). squish."
+        case .visit: return "visiting \(friend.slime.name)"
+        case .gift: return "\(food?.title ?? "Gift") sent to \(friend.slime.name)"
+        case .kiss: return "smooch."
         }
     }
 
     func send(_ preset: MessagePreset, to friend: Friend) async -> String? {
-        if friend.isDemo { return "\(preset.text) an \(friend.slime.name) geschickt" }
+        if friend.isDemo { return "\(preset.text) sent to \(friend.slime.name)" }
         let action = PendingAction(kind: .message(friend.id, preset))
         do {
             try await api.message(friend.id, preset: preset, key: action.key)
-            return "\(preset.text) an \(friend.slime.name) geschickt"
+            return "\(preset.text) sent to \(friend.slime.name)"
         } catch let error as APIError where error.isTransient {
             enqueue(action)
-            return "Kommt an, sobald du wieder online bist."
+            return "Will arrive once you're back online."
         } catch {
             lastError = error.localizedDescription
             return nil
@@ -502,10 +502,10 @@ final class FriendsStore: ObservableObject {
         do {
             let c = try await api.challenge(friend.id, game: result.game, seed: seed, score: result.score, key: action.key)
             challenges.insert(c, at: 0)
-            return "Herausforderung an \(friend.slime.name) geschickt"
+            return "Challenge sent to \(friend.slime.name)"
         } catch let error as APIError where error.isTransient {
             enqueue(action)
-            return "Wird geschickt, sobald du wieder online bist."
+            return "Will be sent once you're back online."
         } catch {
             lastError = error.localizedDescription
             return nil

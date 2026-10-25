@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Checks that every Garten-Rätsel level can be solved.
+"""Checks that every Garden Puzzle level can be solved.
 
 Reads the levels from App/Arcade/Engines/PuzzleEngines.swift and solves each
 with a breadth-first search over (slime, stones, seeds left), using the same

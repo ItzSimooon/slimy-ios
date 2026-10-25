@@ -2,7 +2,7 @@ import XCTest
 @testable import Slimy
 
 final class ArcadeEngineTests: XCTestCase {
-    // MARK: Snack-Fänger
+    // MARK: Snack Catcher
 
     func testSnackCatcherIsReproducibleFromItsSeed() {
         var a = SnackCatcherEngine(seed: 7)
@@ -30,7 +30,7 @@ final class ArcadeEngineTests: XCTestCase {
         XCTAssertGreaterThan(player.score, 10)
     }
 
-    // MARK: Slime-Sprung
+    // MARK: Slime Jump
 
     func testSlimeJumpKeepsBouncingOnTheFirstPlatform() {
         var engine = SlimeJumpEngine(seed: 1)
@@ -47,7 +47,7 @@ final class ArcadeEngineTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(engine.score, 0)
     }
 
-    // MARK: Blasen-Platzer
+    // MARK: Bubble Pop
 
     func testBubblePopScoresGroupsAndAppliesGravity() {
         // Column 0 from the bottom: red, red, blue. Column 1: blue.
@@ -76,7 +76,7 @@ final class ArcadeEngineTests: XCTestCase {
         XCTAssertEqual(engine.color(1, 0), 3)
     }
 
-    // MARK: Gedächtnisgarten
+    // MARK: Memory Garden
 
     private func waitForInput(_ engine: inout MemoryGardenEngine) {
         var guardSteps = 0
@@ -108,7 +108,7 @@ final class ArcadeEngineTests: XCTestCase {
         XCTAssertFalse(engine.isOver)
     }
 
-    // MARK: Garten-Rätsel
+    // MARK: Garden Puzzle
 
     /// Every level is solvable with the engine's own rules.
     func testEveryGardenPuzzleLevelIsSolvable() {
@@ -162,7 +162,7 @@ final class ArcadeEngineTests: XCTestCase {
         XCTAssertEqual(engine.level, 0)
     }
 
-    // MARK: Schatzsuche
+    // MARK: Treasure Dig
 
     func testTreasureDigUsesUpShovels() {
         var engine = TreasureDigEngine(seed: 5)
@@ -197,7 +197,7 @@ final class ArcadeEngineTests: XCTestCase {
         XCTAssertEqual(engine.shovels, shovels)
     }
 
-    // MARK: Farbenspiel
+    // MARK: Color Match
 
     func testColorMatchRightAndWrongAnswers() {
         var engine = ColorMatchEngine(seed: 11)
@@ -220,7 +220,7 @@ final class ArcadeEngineTests: XCTestCase {
         XCTAssertLessThan(yes, 260)
     }
 
-    // MARK: Slime-Rennen
+    // MARK: Slime Racing
 
     func testRacingWithoutSteeringStillEnds() {
         var engine = SlimeRacingEngine(seed: 4)
@@ -247,7 +247,7 @@ final class ArcadeEngineTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(engine.score, GameID.slimeRacing.goodScore)
     }
 
-    // MARK: Rhythmus-Hüpfer
+    // MARK: Rhythm Bounce
 
     func testRhythmPerfectPlayAndMissedPlay() {
         var perfect = RhythmBounceEngine(seed: 8)

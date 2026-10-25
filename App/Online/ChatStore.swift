@@ -65,7 +65,7 @@ final class ChatStore: ObservableObject {
             messages.append(ChatMessage(role: .slime, text: Self.blubs.randomElement()!))
             if !shownOfflineNote {
                 shownOfflineNote = true
-                messages.append(ChatMessage(role: .note, text: "Richtig reden kann er, sobald slime.hyprnode.de erreichbar ist."))
+                messages.append(ChatMessage(role: .note, text: "It can really talk once slime.hyprnode.de is reachable."))
             }
         }
     }
@@ -82,6 +82,6 @@ final class ChatStore: ObservableObject {
     }
 
     private static let blubs = [
-        "blub?", "blubb blubb.", "*wackelt*", "blub.", "*legt sich schief*", "bwop?",
+        "blub?", "blubb blubb.", "*wobbles*", "blub.", "*tilts*", "bwop?",
     ]
 }

@@ -54,7 +54,7 @@ struct HomeView: View {
                     }
                     .position(x: geo.size.width * 0.8, y: floorY + 20 * scale / 2 - slimeHeight * 0.3)
                     .accessibilityElement(children: .ignore)
-                    .accessibilityLabel("\(visit.friend.name) ist zu Besuch")
+                    .accessibilityLabel("\(visit.friend.name) is visiting")
                 }
 
                 VStack(spacing: 0) {
@@ -113,7 +113,7 @@ struct HomeView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     HStack(spacing: 6) {
                         Text(s.slime.name).font(Theme.title(18)).foregroundStyle(Theme.ink).lineLimit(1)
-                        Text("LV \(s.slime.level)").font(Theme.label(13)).foregroundStyle(Theme.accentInk)
+                        Text("Lv \(s.slime.level)").font(Theme.label(13)).foregroundStyle(Theme.accentInk)
                     }
                     BlockBar(value: s.slime.levelProgress, color: Theme.accent, blocks: 8, height: 5)
                         .frame(width: 110)
@@ -122,13 +122,13 @@ struct HomeView: View {
                 .padding(.vertical, 6)
             }
             .buttonStyle(KeyStyle(fill: Theme.paper))
-            .accessibilityLabel("\(s.slime.name), Level \(s.slime.level). Tagebuch öffnen")
+            .accessibilityLabel("\(s.slime.name), level \(s.slime.level). Open journal")
 
             Spacer()
             CoinCounter(coins: s.wallet.coins)
-            HUDButton(icon: "heart", label: "Freunde", badge: friends.hasNews) { sheet = .friends }
-            HUDButton(icon: "speech", label: "Reden") { sheet = .chat }
-            HUDButton(icon: "gear", label: "Einstellungen") { sheet = .settings }
+            HUDButton(icon: "heart", label: "Friends", badge: friends.hasNews) { sheet = .friends }
+            HUDButton(icon: "speech", label: "Talk") { sheet = .chat }
+            HUDButton(icon: "gear", label: "Settings") { sheet = .settings }
         }
         .padding(.top, 4)
     }
@@ -144,12 +144,12 @@ struct HomeView: View {
                 }
             }
             HStack(spacing: 6) {
-                ActionKey(title: "Essen", icon: "apple", urgent: s.slime.wish == .hunger) { sheet = .kitchen }
-                ActionKey(title: "Spielen", icon: "ball", urgent: s.slime.wish == .fun) { cover = .arcade }
-                ActionKey(title: "Baden", icon: "bubbleItem", urgent: s.slime.wish == .clean) { cover = .bath }
-                ActionKey(title: s.slime.isAsleep ? "Wecken" : "Schlafen", icon: "starJelly",
+                ActionKey(title: "Feed", icon: "apple", urgent: s.slime.wish == .hunger) { sheet = .kitchen }
+                ActionKey(title: "Play", icon: "ball", urgent: s.slime.wish == .fun) { cover = .arcade }
+                ActionKey(title: "Bath", icon: "bubbleItem", urgent: s.slime.wish == .clean) { cover = .bath }
+                ActionKey(title: s.slime.isAsleep ? "Wake" : "Sleep", icon: "starJelly",
                           urgent: s.slime.wish == .energy) { store.toggleSleep() }
-                ActionKey(title: "Laden", icon: "coin", urgent: false) { sheet = .shop }
+                ActionKey(title: "Shop", icon: "coin", urgent: false) { sheet = .shop }
             }
         }
         .padding(10)
@@ -173,7 +173,7 @@ private struct NeedChip: View {
         .padding(.vertical, 4)
         .background(wished ? Theme.color(for: need).opacity(0.18) : .clear)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(need.title) \(Int(value)) Prozent\(wished ? ", braucht er gerade" : "")")
+        .accessibilityLabel("\(need.title) \(Int(value)) percent\(wished ? ", needed right now" : "")")
     }
 }
 
@@ -196,7 +196,7 @@ private struct ActionKey: View {
             .frame(height: 60)
         }
         .buttonStyle(KeyStyle(fill: urgent ? Color(hex: 0xFFE38A) : Theme.paperShade))
-        .accessibilityHint(urgent ? "Dein Slime braucht das gerade" : "")
+        .accessibilityHint(urgent ? "Your slime needs this right now" : "")
     }
 }
 
@@ -216,7 +216,7 @@ struct CelebrationOverlay: View {
                         PixelItem(name: c.icon).frame(width: 56, height: 56)
                         Text(c.title).font(Theme.title(26)).foregroundStyle(Theme.ink).multilineTextAlignment(.center)
                         Text(c.detail).font(Theme.text(16)).foregroundStyle(Theme.inkSoft).multilineTextAlignment(.center)
-                        PixelButton(title: "Weiter") { dismiss() }
+                        PixelButton(title: "Continue") { dismiss() }
                     }
                     .frame(maxWidth: .infinity)
                 }

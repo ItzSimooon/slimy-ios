@@ -110,7 +110,7 @@ final class GameStore: ObservableObject {
     /// without the arcade.
     func quickPlay() {
         guard state.canPlay else {
-            toast = Toast(text: "zu müde zum spielen", good: false)
+            toast = Toast(text: "too tired to play", good: false)
             return
         }
         finish(GameResult(game: state.slime.favoriteGame, score: 0, session: UUID(), finishedAt: .now))
@@ -188,23 +188,23 @@ final class GameStore: ObservableObject {
         for event in events {
             switch event {
             case .levelUp(let level):
-                celebrations.append(Celebration(title: "Level \(level)", detail: "+\(10 * level) Münzen", icon: "coin"))
+                celebrations.append(Celebration(title: "Level \(level)", detail: "+\(10 * level) coins", icon: "coin"))
                 Feedback.shared.play(.levelUp)
             case .stageUp(let stage):
-                celebrations.append(Celebration(title: "\(state.slime.name) ist gewachsen", detail: stage.title, icon: "starJelly"))
+                celebrations.append(Celebration(title: "\(state.slime.name) grew up", detail: stage.title, icon: "starJelly"))
                 Feedback.shared.play(.levelUp)
             case .achievement(let id):
                 if let a = Achievements.achievement(id) {
-                    celebrations.append(Celebration(title: a.title, detail: "Erfolg · +\(a.coins) Münzen", icon: "furn.trophy"))
+                    celebrations.append(Celebration(title: a.title, detail: "Achievement · +\(a.coins) coins", icon: "furn.trophy"))
                     Feedback.shared.play(.success)
                 }
             case .favoriteFound(let food):
-                celebrations.append(Celebration(title: "Lieblingsessen gefunden", detail: food.title, icon: food.sprite))
+                celebrations.append(Celebration(title: "Favourite food found", detail: food.title, icon: food.sprite))
             case .record(let game, let score):
-                celebrations.append(Celebration(title: "Neuer Rekord", detail: "\(game.title): \(score)", icon: game.icon))
+                celebrations.append(Celebration(title: "New record", detail: "\(game.title): \(score)", icon: game.icon))
             case .challenge(let id):
                 if let t = Challenges.template(id) {
-                    celebrations.append(Celebration(title: "Aufgabe geschafft", detail: t.title, icon: "coin"))
+                    celebrations.append(Celebration(title: "Challenge done", detail: t.title, icon: "coin"))
                 }
             }
         }

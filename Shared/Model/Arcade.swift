@@ -9,47 +9,47 @@ enum GameID: String, Codable, CaseIterable, Identifiable, Hashable {
 
     var title: String {
         switch self {
-        case .snackCatcher: "Snack-Fänger"
-        case .slimeJump: "Slime-Sprung"
-        case .bubblePop: "Blasen-Platzer"
-        case .memoryGarden: "Gedächtnisgarten"
-        case .slimeRacing: "Slime-Rennen"
-        case .rhythmBounce: "Rhythmus-Hüpfer"
-        case .gardenPuzzle: "Garten-Rätsel"
-        case .treasureDig: "Schatzsuche"
-        case .basketball: "Slime-Basketball"
-        case .colorMatch: "Farbenspiel"
+        case .snackCatcher: "Snack Catcher"
+        case .slimeJump: "Slime Jump"
+        case .bubblePop: "Bubble Pop"
+        case .memoryGarden: "Memory Garden"
+        case .slimeRacing: "Slime Racing"
+        case .rhythmBounce: "Rhythm Bounce"
+        case .gardenPuzzle: "Garden Puzzle"
+        case .treasureDig: "Treasure Dig"
+        case .basketball: "Slime Basketball"
+        case .colorMatch: "Color Match"
         }
     }
 
     var blurb: String {
         switch self {
-        case .snackCatcher: "Fang Essen, weich Faulem aus, bau Kombos."
-        case .slimeJump: "Spring von Plattform zu Plattform, so hoch es geht."
-        case .bubblePop: "Platz Gruppen gleicher Blasen. Große Gruppen zählen mehr."
-        case .memoryGarden: "Merk dir, welche Blumen leuchten, und tipp sie nach."
-        case .slimeRacing: "Weich Steinen aus und hol den Geist ein."
-        case .rhythmBounce: "Tipp genau dann, wenn der Ton ankommt."
-        case .gardenPuzzle: "Schieb Steine, sammel Samen, erreich das Beet."
-        case .treasureDig: "Grab mit wenig Schaufeln nach Schätzen. Die Zahlen helfen."
-        case .basketball: "Wisch zum Werfen. Der Korb bewegt sich."
-        case .colorMatch: "Passt Farbe oder Form? Schnell entscheiden."
+        case .snackCatcher: "Catch food, dodge the rotten stuff, build combos."
+        case .slimeJump: "Bounce from platform to platform, as high as you can."
+        case .bubblePop: "Pop groups of matching bubbles. Big groups score more."
+        case .memoryGarden: "Remember which flowers light up and tap them back."
+        case .slimeRacing: "Dodge rocks and beat the ghost to the finish."
+        case .rhythmBounce: "Tap right when the note arrives."
+        case .gardenPuzzle: "Push stones, collect seeds, reach the flower bed."
+        case .treasureDig: "Dig for treasure with few shovels. The numbers help."
+        case .basketball: "Swipe to throw. The hoop moves."
+        case .colorMatch: "Does the color or the shape match? Decide fast."
         }
     }
 
     /// Short rules for the first-play introduction.
     var tutorial: [String] {
         switch self {
-        case .snackCatcher: ["Zieh nach links und rechts, um zu fangen.", "Faules Essen und Kakteen kosten Punkte.", "Mehrere Treffer in Folge geben Kombo-Bonus."]
-        case .slimeJump: ["Tipp links oder rechts, um in die Richtung zu springen.", "Landest du auf einer Plattform, springst du weiter.", "Münzen geben Extrapunkte. Nicht runterfallen."]
-        case .bubblePop: ["Tipp auf eine Gruppe aus mindestens zwei gleichen Blasen.", "Je größer die Gruppe, desto mehr Punkte.", "Ohne Züge ist die Runde vorbei."]
-        case .memoryGarden: ["Schau zu, welche Blumen nacheinander leuchten.", "Tipp sie in der gleichen Reihenfolge.", "Jede Runde kommt eine Blume dazu."]
-        case .slimeRacing: ["Wisch nach links oder rechts, um die Spur zu wechseln.", "Steine bremsen, Pfützen machen schneller.", "Sei vor dem Geist im Ziel."]
-        case .rhythmBounce: ["Noten fallen auf die Linie zu.", "Tipp genau, wenn sie die Linie treffen.", "Perfekt gibt mehr Punkte als gut."]
-        case .gardenPuzzle: ["Wisch, um den Slime zu bewegen.", "Steine lassen sich schieben, Wände nicht.", "Sammel alle Samen und geh dann aufs Beet."]
-        case .treasureDig: ["Tipp ein Feld, um zu graben.", "Zahlen zeigen, wie nah der nächste Schatz ist.", "Du hast nur wenige Schaufeln."]
-        case .basketball: ["Wisch vom Ball Richtung Korb.", "Länger wischen wirft weiter.", "Treffer in Folge zählen doppelt."]
-        case .colorMatch: ["Oben steht eine Regel: Farbe oder Form.", "Tipp Ja, wenn das Teil passt, sonst Nein.", "Sei schnell, die Zeit läuft."]
+        case .snackCatcher: ["Drag left and right to catch.", "Rotten food and cacti cost points.", "Several catches in a row give a combo bonus."]
+        case .slimeJump: ["Hold the left or right side to steer.", "Land on a platform and you bounce again.", "Coins give extra points. Don't fall."]
+        case .bubblePop: ["Tap a group of at least two matching bubbles.", "The bigger the group, the more points.", "The round ends when no moves are left."]
+        case .memoryGarden: ["Watch which flowers light up, one after another.", "Tap them in the same order.", "Every round adds one more flower."]
+        case .slimeRacing: ["Swipe or tap left and right to change lanes.", "Rocks slow you down, puddles speed you up.", "Finish before the ghost."]
+        case .rhythmBounce: ["Notes fall toward the line.", "Tap the lane exactly when a note hits the line.", "Perfect scores more than good."]
+        case .gardenPuzzle: ["Swipe or use the arrows to move.", "Stones can be pushed, hedges can't.", "Collect every seed, then step onto the bed."]
+        case .treasureDig: ["Tap a square to dig.", "Numbers show how far the nearest treasure is.", "You only have a few shovels."]
+        case .basketball: ["Swipe up from the ball toward the hoop.", "A longer swipe throws farther.", "Hits in a row count double."]
+        case .colorMatch: ["The rule at the top says color or shape.", "Tap Yes if the piece matches the sample, otherwise No.", "Be quick, the clock is running."]
         }
     }
 

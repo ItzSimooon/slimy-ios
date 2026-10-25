@@ -2,8 +2,9 @@ import Foundation
 
 // MARK: - Phone events
 
-/// Things the phone does that the slime reacts to. In the app these are
-/// detected live; when the app is closed, Shortcuts automations send them.
+/// Things the phone does that the slime reacts to, noticed by PhoneMonitor.
+/// Airplane mode and alarms can't be observed by apps; those cases stay so
+/// older saves still load.
 enum PhoneEvent: String, Codable, CaseIterable, Identifiable, Hashable {
     case batteryLow, batteryCritical, batteryFull
     case chargerConnected, chargerDisconnected
@@ -15,24 +16,24 @@ enum PhoneEvent: String, Codable, CaseIterable, Identifiable, Hashable {
 
     var title: String {
         switch self {
-        case .batteryLow: "Akku niedrig"
-        case .batteryCritical: "Akku fast leer"
-        case .batteryFull: "Akku voll"
-        case .chargerConnected: "Ladekabel dran"
-        case .chargerDisconnected: "Ladekabel ab"
-        case .wifiConnected: "WLAN verbunden"
-        case .wifiDisconnected: "WLAN getrennt"
-        case .cellular: "Mobile Daten"
-        case .offline: "Kein Internet"
-        case .backOnline: "Wieder online"
-        case .airplaneOn: "Flugmodus an"
-        case .airplaneOff: "Flugmodus aus"
-        case .lowPowerOn: "Stromsparen an"
-        case .lowPowerOff: "Stromsparen aus"
-        case .goodMorning: "Guten Morgen"
-        case .goodNight: "Gute Nacht"
-        case .alarm: "Wecker"
-        case .newHour: "Neue Stunde"
+        case .batteryLow: "Battery low"
+        case .batteryCritical: "Battery almost empty"
+        case .batteryFull: "Battery full"
+        case .chargerConnected: "Charger plugged in"
+        case .chargerDisconnected: "Charger unplugged"
+        case .wifiConnected: "Wi-Fi connected"
+        case .wifiDisconnected: "Wi-Fi disconnected"
+        case .cellular: "Mobile data"
+        case .offline: "No internet"
+        case .backOnline: "Back online"
+        case .airplaneOn: "Airplane mode on"
+        case .airplaneOff: "Airplane mode off"
+        case .lowPowerOn: "Low Power Mode on"
+        case .lowPowerOff: "Low Power Mode off"
+        case .goodMorning: "Good morning"
+        case .goodNight: "Good night"
+        case .alarm: "Alarm"
+        case .newHour: "New hour"
         }
     }
 
@@ -54,30 +55,6 @@ enum PhoneEvent: String, Codable, CaseIterable, Identifiable, Hashable {
         case .goodNight: "moon.stars.fill"
         case .alarm: "alarm.fill"
         case .newHour: "clock.fill"
-        }
-    }
-
-    /// The Shortcuts automation trigger that sends this event.
-    var shortcutTrigger: String {
-        switch self {
-        case .batteryLow: "Batterieladung · fällt unter 20 %"
-        case .batteryCritical: "Batterieladung · fällt unter 5 %"
-        case .batteryFull: "Batterieladung · ist gleich 100 %"
-        case .chargerConnected: "Ladegerät · ist verbunden"
-        case .chargerDisconnected: "Ladegerät · ist getrennt"
-        case .wifiConnected: "WLAN · verbindet sich mit beliebigem Netzwerk"
-        case .wifiDisconnected: "WLAN · trennt sich von beliebigem Netzwerk"
-        case .cellular: "WLAN · trennt sich (statt „WLAN getrennt“)"
-        case .offline: "erkennt die App selbst, solange sie offen ist"
-        case .backOnline: "erkennt die App selbst, solange sie offen ist"
-        case .airplaneOn: "Flugmodus · wird aktiviert"
-        case .airplaneOff: "Flugmodus · wird deaktiviert"
-        case .lowPowerOn: "Stromsparmodus · wird aktiviert"
-        case .lowPowerOff: "Stromsparmodus · wird deaktiviert"
-        case .goodMorning: "Tageszeit · Sonnenaufgang"
-        case .goodNight: "Tageszeit · 22:00"
-        case .alarm: "Wecker · wird gestoppt"
-        case .newHour: "Tageszeit · zu jeder vollen Stunde, die du willst"
         }
     }
 
@@ -121,24 +98,24 @@ enum PhoneEvent: String, Codable, CaseIterable, Identifiable, Hashable {
 
     var lines: [String] {
         switch self {
-        case .batteryLow: ["akku 20 %. ich schmelze", "mir wird ganz flüssig", "steck mich an. bitte."]
-        case .batteryCritical: ["5 %. ich bin eine pfütze", "das wars. sag allen tschüss", "akku. fast. leer."]
-        case .batteryFull: ["100 %. ich summe", "voll geladen", "das kabel kann weg"]
-        case .chargerConnected: ["strom. lecker.", "kribbelt", "*schlürft strom*"]
-        case .chargerDisconnected: ["kabel ab. frei.", "tschüss kabel", "los gehts"]
-        case .wifiConnected: ["wlan. schnell.", "hallo router", "verbunden"]
-        case .wifiDisconnected: ["wo ist das wlan hin", "wlan weg", "hallo? wlan?"]
-        case .cellular: ["jetzt mobile daten", "spar die daten", "über funk jetzt"]
-        case .offline: ["kein internet", "offline. alles still.", "wo sind alle"]
-        case .backOnline: ["wieder online", "internet ist zurück", "signal da"]
-        case .airplaneOn: ["flugmodus. fliegen wir?", "anschnallen", "wir heben ab"]
-        case .airplaneOff: ["gelandet", "boden unterm schleim", "zurück auf der erde"]
-        case .lowPowerOn: ["stromsparen. ich beweg mich langsam", "sparmodus", "nur noch kleine wackler"]
-        case .lowPowerOff: ["volle kraft", "sparmodus aus", "ich darf wieder wackeln"]
-        case .goodMorning: ["guten morgen", "aufstehen", "neuer tag. neuer schleim."]
-        case .goodNight: ["schlaf gut", "gute nacht", "zeit für schleimträume"]
-        case .alarm: ["WECKER. AUFSTEHEN.", "der wecker. los.", "hoch mit dir"]
-        case .newHour: ["schon wieder eine stunde", "tick. tack.", "stündlicher wackel-check"]
+        case .batteryLow: ["battery 20%. i'm melting", "getting all runny", "plug me in. please."]
+        case .batteryCritical: ["5%. i'm a puddle", "this is it. tell everyone bye", "battery. almost. gone."]
+        case .batteryFull: ["100%. i'm buzzing", "fully charged", "you can unplug now"]
+        case .chargerConnected: ["power. yum.", "tingly", "*slurps electricity*"]
+        case .chargerDisconnected: ["unplugged. free.", "bye cable", "let's go"]
+        case .wifiConnected: ["wi-fi. zoom.", "hi router", "connected"]
+        case .wifiDisconnected: ["where did the wi-fi go", "wi-fi gone", "hello? wi-fi?"]
+        case .cellular: ["on mobile data now", "careful with the data", "over the air now"]
+        case .offline: ["no internet", "offline. so quiet.", "where did everyone go"]
+        case .backOnline: ["back online", "the internet is back", "signal!"]
+        case .airplaneOn: ["airplane mode. are we flying?", "buckle up", "taking off"]
+        case .airplaneOff: ["landed", "ground under my goo", "back on earth"]
+        case .lowPowerOn: ["power saving. moving slowly", "saver mode", "only tiny wobbles now"]
+        case .lowPowerOff: ["full power", "saver mode off", "i can wobble again"]
+        case .goodMorning: ["good morning", "rise and shine", "new day. new goo."]
+        case .goodNight: ["sleep well", "good night", "time for slime dreams"]
+        case .alarm: ["ALARM. GET UP.", "the alarm. go.", "up you get"]
+        case .newHour: ["another hour already", "tick. tock.", "hourly wobble check"]
         }
     }
 }

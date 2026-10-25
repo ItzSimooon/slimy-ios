@@ -17,11 +17,11 @@ struct SummonSlimeControl: ControlWidget {
     var body: some ControlWidgetConfiguration {
         StaticControlConfiguration(kind: "de.hyprnode.slime.summon") {
             ControlWidgetButton(action: SummonSlimeIntent()) {
-                Label("Slime holen", systemImage: "drop.fill")
+                Label("Summon Slime", systemImage: "drop.fill")
             }
         }
-        .displayName("Slime holen")
-        .description("Holt deinen Slime zurück in die Dynamic Island.")
+        .displayName("Summon Slime")
+        .description("Brings your slime back to the Dynamic Island.")
     }
 }
 
@@ -29,10 +29,10 @@ struct FeedSlimeControl: ControlWidget {
     var body: some ControlWidgetConfiguration {
         StaticControlConfiguration(kind: "de.hyprnode.slime.feed") {
             ControlWidgetButton(action: FeedSlimeIntent()) {
-                Label("Slime füttern", systemImage: "fork.knife")
+                Label("Feed Slime", systemImage: "fork.knife")
             }
         }
-        .displayName("Slime füttern")
-        .description("Füttert deinen Slime, ohne die App zu öffnen.")
+        .displayName("Feed Slime")
+        .description("Feeds your slime without opening the app.")
     }
 }

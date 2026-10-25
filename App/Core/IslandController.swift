@@ -8,7 +8,7 @@ import Foundation
 /// (reunion, hug, gift …) for a limited time before going back to solo.
 /// iOS ends an activity after about 8 hours; without push (which needs a
 /// paid developer account) it comes back when the app opens, through the
-/// "Slime holen" intent (Control Center, Action Button, Shortcuts) or a
+/// "Summon Slime" control (Control Center, Action Button) or a
 /// background refresh run that iOS allows.
 @MainActor
 final class IslandController: ObservableObject {
@@ -64,7 +64,9 @@ final class IslandController: ObservableObject {
             friends: FriendsStore.shared.islandFriends,
             moment: moment?.kind, momentFriend: moment?.friend,
             animated: animated, probe: probe)
-        return ActivityContent(state: state, staleDate: nil, relevanceScore: moment == nil ? 50 : 100)
+        // When the moment's time is up the activity goes stale and the island
+        // draws the solo state, even if the app is suspended by then.
+        return ActivityContent(state: state, staleDate: moment?.until, relevanceScore: moment == nil ? 50 : 100)
     }
 
     func refreshStatus() {
@@ -82,8 +84,8 @@ final class IslandController: ObservableObject {
     func start() async {
         guard GameStore.shared.state.hatched else { return }
         guard ActivityAuthorizationInfo().areActivitiesEnabled else {
-            problem = "Live-Aktivitäten sind für Slimy aus. Schalt sie ein unter Einstellungen → Slimy → Live-Aktivitäten."
-            note("Start abgebrochen: Live-Aktivitäten sind ausgeschaltet")
+            problem = "Live Activities are off for Slimy. Turn them on in Settings → Slimy → Live Activities."
+            note("Start cancelled: Live Activities are off")
             refreshStatus()
             return
         }
@@ -95,18 +97,18 @@ final class IslandController: ObservableObject {
             let activity = try Activity.request(attributes: SlimeActivityAttributes(), content: content(), pushType: nil)
             startedAt = .now
             problem = nil
-            note("Gestartet: \(activity.id.prefix(6))")
+            note("Started: \(activity.id.prefix(6))")
             watch(activity)
         } catch {
-            problem = "Die Insel ist nicht gestartet: \(error.localizedDescription). Öffne Slimy und versuch es nochmal."
-            note("Start fehlgeschlagen: \(error)")
+            problem = "The island didn't start: \(error.localizedDescription). Open Slimy and try again."
+            note("Start failed: \(error)")
         }
         refreshStatus()
     }
 
     func stop() async {
         keepAlive = false
-        note("Beendet von dir")
+        note("Stopped by you")
         for activity in Activity<SlimeActivityAttributes>.activities {
             await activity.end(nil, dismissalPolicy: .immediate)
         }
@@ -129,7 +131,7 @@ final class IslandController: ObservableObject {
     private func watch(_ activity: Activity<SlimeActivityAttributes>) {
         Task { [weak self] in
             for await state in activity.activityStateUpdates {
-                self?.note("Aktivität \(activity.id.prefix(6)): \(state)")
+                self?.note("Activity \(activity.id.prefix(6)): \(state)")
                 self?.refreshStatus()
             }
         }
@@ -156,6 +158,25 @@ final class IslandController: ObservableObject {
             try? await Task.sleep(for: .seconds(kind.duration + 1))
             await self?.sync()
         }
+    }
+
+    /// Now and then a friend's slime drops by and the two meet in the
+    /// island. Called whenever the app runs (opening, background refresh,
+    /// island buttons); at most every two hours and five times a day.
+    func maybeMeetup(now: Date = .now) async {
+        let friends = FriendsStore.shared.islandFriends
+        guard moment == nil, !friends.isEmpty, current != nil,
+              !GameStore.shared.slime.isAsleep else { return }
+        let last = defaults.object(forKey: "slimy.island.lastMeetup") as? Date ?? .distantPast
+        let today = Calendar.current.isDate(last, inSameDayAs: now)
+        let count = today ? defaults.integer(forKey: "slimy.island.meetupsToday") : 0
+        guard now.timeIntervalSince(last) > 2 * 3600, count < 5, Double.random(in: 0..<1) < 0.5 else { return }
+        defaults.set(now, forKey: "slimy.island.lastMeetup")
+        defaults.set(count + 1, forKey: "slimy.island.meetupsToday")
+        // Mostly the partner, sometimes another friend.
+        let friend = Double.random(in: 0..<1) < 0.7 ? friends[0] : friends.randomElement()!
+        note("Meetup with \(friend.name)")
+        await show(.meetup, with: friend.id)
     }
 
     /// A reaction plays for a few seconds; one more update returns to the mood.

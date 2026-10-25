@@ -25,9 +25,9 @@ private let colorMarks: [[String]] = [
     ["..#..", "..#..", "#####", "..#..", "..#.."],
 ]
 private let bubbleColors: [UInt32] = [0xE0577F, 0x4FA3D9, 0xE8A92A, 0x4FB84E]
-private let bubbleNames = ["Rosa", "Blau", "Gelb", "Grün"]
+private let bubbleNames = ["Pink", "Blue", "Yellow", "Green"]
 
-// MARK: - Blasen-Platzer
+// MARK: - Bubble Pop
 
 struct BubblePopView: View {
     let session: GameSession
@@ -80,8 +80,8 @@ struct BubblePopView: View {
                 .padding(2)
             }
             .buttonStyle(.plain)
-            .accessibilityLabel("\(bubbleNames[color]), Gruppe von \(size)")
-            .accessibilityHint(size >= 2 ? "Platzen lassen" : "Zu klein")
+            .accessibilityLabel("\(bubbleNames[color]), group of \(size)")
+            .accessibilityHint(size >= 2 ? "Pop" : "Too small")
         } else {
             Color.clear.accessibilityHidden(true)
         }
@@ -90,11 +90,11 @@ struct BubblePopView: View {
     private func report() {
         session.score = engine.score
         let left = engine.grid.reduce(0) { $0 + $1.compactMap { $0 }.count }
-        session.status = "\(left) übrig"
+        session.status = "\(left) left"
     }
 }
 
-// MARK: - Gedächtnisgarten
+// MARK: - Memory Garden
 
 struct MemoryGardenView: View {
     let session: GameSession
@@ -109,7 +109,7 @@ struct MemoryGardenView: View {
 
     var body: some View {
         VStack(spacing: 16) {
-            Text(engine.isListening ? "Du bist dran" : "Schau genau hin")
+            Text(engine.isListening ? "Your turn" : "Watch closely")
                 .font(Theme.title(20)).foregroundStyle(Theme.ink)
                 .padding(.top, 16)
                 .accessibilityAddTraits(.updatesFrequently)
@@ -123,14 +123,14 @@ struct MemoryGardenView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(GameBackdrop(top: 0xCFEBC0, bottom: 0x9BD08A))
-        .onAppear { session.status = "Runde 1" }
+        .onAppear { session.status = "Round 1" }
         .gameLoop(running: session.running) { dt in
             engine.step(dt)
             let glow = engine.glowing
             if glow != lastGlow, let glow {
                 Feedback.shared.play(.tone(glow))
                 if UIAccessibility.isVoiceOverRunning {
-                    UIAccessibility.post(notification: .announcement, argument: "Blume \(glow + 1)")
+                    UIAccessibility.post(notification: .announcement, argument: "Flower \(glow + 1)")
                 }
             }
             lastGlow = glow
@@ -146,7 +146,7 @@ struct MemoryGardenView: View {
             if engine.tap(i) {
                 Feedback.shared.play(.tone(i))
                 session.score = engine.score
-                session.status = "Runde \(engine.score + 1)"
+                session.status = "Round \(engine.score + 1)"
             } else {
                 Feedback.shared.play(.nope)
                 session.end()
@@ -165,12 +165,12 @@ struct MemoryGardenView: View {
             .aspectRatio(1, contentMode: .fit)
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("Blume \(i + 1)")
+        .accessibilityLabel("Flower \(i + 1)")
         .accessibilityAddTraits(lit ? .isSelected : [])
     }
 }
 
-// MARK: - Garten-Rätsel
+// MARK: - Garden Puzzle
 
 struct GardenPuzzleView: View {
     let session: GameSession
@@ -202,22 +202,22 @@ struct GardenPuzzleView: View {
             .padding(10)
 
             HStack(spacing: 8) {
-                PixelButton(title: "Neu", systemIcon: "arrow.counterclockwise", kind: .quiet, compact: true) {
+                PixelButton(title: "Reset", systemIcon: "arrow.counterclockwise", kind: .quiet, compact: true) {
                     engine.restartLevel()
                 }
                 Spacer()
-                arrow(.left, "arrow.left", "Links")
+                arrow(.left, "arrow.left", "Left")
                 VStack(spacing: 6) {
-                    arrow(.up, "arrow.up", "Hoch")
-                    arrow(.down, "arrow.down", "Runter")
+                    arrow(.up, "arrow.up", "Up")
+                    arrow(.down, "arrow.down", "Down")
                 }
-                arrow(.right, "arrow.right", "Rechts")
+                arrow(.right, "arrow.right", "Right")
             }
             .padding(.horizontal, 12)
             .padding(.bottom, 10)
         }
         .background(Color(hex: 0x8FCB76))
-        .onAppear { session.status = "Feld 1/\(GardenPuzzleEngine.levels.count)" }
+        .onAppear { session.status = "Level 1/\(GardenPuzzleEngine.levels.count)" }
         .gameLoop(running: session.running) { dt in time += dt }
     }
 
@@ -239,7 +239,7 @@ struct GardenPuzzleView: View {
         case .seed: Feedback.shared.play(.coin)
         case .solved:
             Feedback.shared.play(.success)
-            session.status = "Feld \(engine.level + 1)/\(GardenPuzzleEngine.levels.count)"
+            session.status = "Level \(engine.level + 1)/\(GardenPuzzleEngine.levels.count)"
         case .finished:
             Feedback.shared.play(.success)
             session.score = engine.score
@@ -276,17 +276,17 @@ struct GardenPuzzleView: View {
         let s = engine.slime
         func describe(_ d: GardenPuzzleEngine.Direction) -> String {
             let p = s.moved(d)
-            if engine.walls.contains(p) { return "Hecke" }
-            if engine.stones.contains(p) { return "Stein" }
-            if engine.seeds.contains(p) { return "Samen" }
-            if p == engine.bed { return "Beet" }
-            return "frei"
+            if engine.walls.contains(p) { return "hedge" }
+            if engine.stones.contains(p) { return "stone" }
+            if engine.seeds.contains(p) { return "seed" }
+            if p == engine.bed { return "flower bed" }
+            return "free"
         }
-        return "Feld \(engine.level + 1). Noch \(engine.seeds.count) Samen. Oben \(describe(.up)), unten \(describe(.down)), links \(describe(.left)), rechts \(describe(.right))."
+        return "Level \(engine.level + 1). \(engine.seeds.count) seeds left. Up: \(describe(.up)), down: \(describe(.down)), left: \(describe(.left)), right: \(describe(.right))."
     }
 }
 
-// MARK: - Schatzsuche
+// MARK: - Treasure Dig
 
 struct TreasureDigView: View {
     let session: GameSession
@@ -306,7 +306,7 @@ struct TreasureDigView: View {
             }
             .padding(.top, 12)
             .accessibilityElement(children: .ignore)
-            .accessibilityLabel("\(engine.found) von \(TreasureDigEngine.treasureCount) Schätzen gefunden")
+            .accessibilityLabel("\(engine.found) of \(TreasureDigEngine.treasureCount) treasures found")
 
             GeometryReader { geo in
                 let cell = min(geo.size.width, geo.size.height) / CGFloat(TreasureDigEngine.size)
@@ -347,8 +347,8 @@ struct TreasureDigView: View {
                 }
             }
             .buttonStyle(.plain)
-            .accessibilityLabel("Gras, Reihe \(i / TreasureDigEngine.size + 1), Spalte \(i % TreasureDigEngine.size + 1)")
-            .accessibilityHint("Graben")
+            .accessibilityLabel("Grass, row \(i / TreasureDigEngine.size + 1), column \(i % TreasureDigEngine.size + 1)")
+            .accessibilityHint("Dig")
         case .empty:
             let hint = engine.hint(at: i)
             Tile(fill: Color(hex: 0x8A5A3C)) {
@@ -356,23 +356,23 @@ struct TreasureDigView: View {
                     .foregroundStyle(hint <= 1 ? Color(hex: 0xFFE07A) : Color(hex: 0xF1E2C4))
             }
             .accessibilityElement(children: .ignore)
-            .accessibilityLabel("Loch. Nächster Schatz \(hint) Felder entfernt")
+            .accessibilityLabel("Hole. Nearest treasure \(hint) squares away")
         case .treasure:
             Tile(fill: Color(hex: 0x8A5A3C)) {
                 PixelItem(name: "chest").padding(5)
             }
             .accessibilityElement(children: .ignore)
-            .accessibilityLabel("Schatz")
+            .accessibilityLabel("Treasure")
         }
     }
 
     private func report() {
         session.score = engine.score
-        session.status = "\(engine.shovels) Schaufeln"
+        session.status = "\(engine.shovels) shovels"
     }
 }
 
-// MARK: - Farbenspiel
+// MARK: - Color Match
 
 struct ColorMatchView: View {
     let session: GameSession
@@ -394,13 +394,13 @@ struct ColorMatchView: View {
 
     var body: some View {
         VStack(spacing: 14) {
-            Text(engine.rule == .color ? "Gleiche FARBE?" : "Gleiche FORM?")
+            Text(engine.rule == .color ? "Same COLOR?" : "Same SHAPE?")
                 .font(Theme.title(26)).foregroundStyle(Theme.ink)
                 .padding(.top, 16)
                 .accessibilityAddTraits(.isHeader)
             HStack(spacing: 14) {
-                card(engine.target, title: "Vorlage")
-                card(engine.piece, title: "Teil")
+                card(engine.target, title: "Sample")
+                card(engine.piece, title: "Piece")
             }
             .padding(.horizontal, 16)
             .overlay {
@@ -412,8 +412,8 @@ struct ColorMatchView: View {
             }
             Spacer()
             HStack(spacing: 12) {
-                PixelButton(title: "Nein", kind: .danger) { answer(false) }
-                PixelButton(title: "Ja") { answer(true) }
+                PixelButton(title: "No", kind: .danger) { answer(false) }
+                PixelButton(title: "Yes") { answer(true) }
             }
             .padding(.horizontal, 16)
             .padding(.bottom, 16)

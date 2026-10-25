@@ -69,7 +69,7 @@ extension GameState {
     mutating func feed(_ food: Food, now: Date) -> Outcome {
         tick(now: now)
         guard slime.level >= food.unlockLevel else {
-            return Outcome(ok: false, line: "\(food.title) gibt es ab Level \(food.unlockLevel)")
+            return Outcome(ok: false, line: "\(food.title) unlocks at level \(food.unlockLevel)")
         }
         guard wallet.coins >= food.price else {
             return Outcome(ok: false, line: Dialogue.say(.noCoins, in: &self, at: now))
@@ -201,7 +201,7 @@ extension GameState {
         let now = result.finishedAt
         tick(now: now)
         guard wallet.claim("game:\(result.session.uuidString)", coins: result.coins, at: now) else {
-            return Outcome(ok: false, line: "schon abgeholt")
+            return Outcome(ok: false, line: "already collected")
         }
         let game = result.game
         let favorite = game == slime.favoriteGame
@@ -265,8 +265,8 @@ extension GameState {
     func owns(_ id: String) -> Bool { inventory.owned.contains(id) }
 
     mutating func buy(_ item: CatalogItem, now: Date) -> Outcome {
-        guard !owns(item.id) else { return Outcome(ok: false, line: "hast du schon") }
-        guard isAvailable(item.unlock, now: now) else { return Outcome(ok: false, line: "noch gesperrt") }
+        guard !owns(item.id) else { return Outcome(ok: false, line: "you already have it") }
+        guard isAvailable(item.unlock, now: now) else { return Outcome(ok: false, line: "still locked") }
         guard wallet.spend(item.price) else {
             return Outcome(ok: false, line: Dialogue.say(.noCoins, in: &self, at: now))
         }
@@ -280,8 +280,8 @@ extension GameState {
     }
 
     mutating func buy(_ habitat: Habitat, now: Date) -> Outcome {
-        guard !inventory.habitats.contains(habitat) else { return Outcome(ok: false, line: "hast du schon") }
-        guard isAvailable(habitat.unlock, now: now) else { return Outcome(ok: false, line: "noch gesperrt") }
+        guard !inventory.habitats.contains(habitat) else { return Outcome(ok: false, line: "you already have it") }
+        guard isAvailable(habitat.unlock, now: now) else { return Outcome(ok: false, line: "still locked") }
         guard wallet.spend(habitat.price) else {
             return Outcome(ok: false, line: Dialogue.say(.noCoins, in: &self, at: now))
         }
@@ -351,17 +351,17 @@ extension GameState {
         let board = progress.challenges
         let isDaily = board.daily.contains { $0.id == id }
         guard let challenge = (board.daily + board.weekly).first(where: { $0.id == id }),
-              let template = Challenges.template(id) else { return Outcome(ok: false, line: "gibt es nicht") }
-        guard Challenges.isDone(challenge, in: self) else { return Outcome(ok: false, line: "noch nicht geschafft") }
+              let template = Challenges.template(id) else { return Outcome(ok: false, line: "doesn't exist") }
+        guard Challenges.isDone(challenge, in: self) else { return Outcome(ok: false, line: "not done yet") }
         let key = "challenge:\(isDaily ? board.dayKey : board.weekKey):\(id)"
-        guard wallet.claim(key, coins: template.coins, at: now) else { return Outcome(ok: false, line: "schon abgeholt") }
+        guard wallet.claim(key, coins: template.coins, at: now) else { return Outcome(ok: false, line: "already collected") }
         if isDaily, let i = progress.challenges.daily.firstIndex(where: { $0.id == id }) {
             progress.challenges.daily[i].claimed = true
         } else if let i = progress.challenges.weekly.firstIndex(where: { $0.id == id }) {
             progress.challenges.weekly[i].claimed = true
         }
         player.xp += isDaily ? 10 : 30
-        var line = "+\(template.coins) münzen"
+        var line = "+\(template.coins) coins"
         var events: [GameEvent] = [.challenge(id)]
         events += gainXP(isDaily ? 8 : 25, now: now, line: &line)
         return Outcome(ok: true, line: line, events: events)

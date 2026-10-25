@@ -25,9 +25,9 @@ enum Stage: String, Codable, CaseIterable, Comparable {
 
     var title: String {
         switch self {
-        case .baby: "Baby-Slime"
+        case .baby: "Baby slime"
         case .young: "Slime"
-        case .grown: "Großer Slime"
+        case .grown: "Big slime"
         }
     }
 
@@ -58,21 +58,21 @@ struct Personality: Codable, Hashable {
 
         var title: String {
             switch self {
-            case .playful: "verspielt"
-            case .cuddly: "verkuschelt"
-            case .foodie: "verfressen"
-            case .sleepy: "verschlafen"
-            case .curious: "neugierig"
+            case .playful: "playful"
+            case .cuddly: "cuddly"
+            case .foodie: "foodie"
+            case .sleepy: "sleepy"
+            case .curious: "curious"
             }
         }
 
         var blurb: String {
             switch self {
-            case .playful: "Langweilt sich schnell und liebt Spiele."
-            case .cuddly: "Will viel gekrault werden."
-            case .foodie: "Denkt die ganze Zeit ans Essen."
-            case .sleepy: "Braucht viel Schlaf."
-            case .curious: "Will alles anschauen und ausprobieren."
+            case .playful: "Gets bored quickly and loves games."
+            case .cuddly: "Wants lots of cuddles."
+            case .foodie: "Thinks about food all day."
+            case .sleepy: "Needs plenty of sleep."
+            case .curious: "Wants to look at and try everything."
             }
         }
     }
@@ -218,10 +218,10 @@ struct Slime: Codable, Hashable {
 
         var title: String {
             switch self {
-            case .new: "Neu"
-            case .familiar: "Vertraut"
-            case .close: "Eng"
-            case .inseparable: "Unzertrennlich"
+            case .new: "New"
+            case .familiar: "Familiar"
+            case .close: "Close"
+            case .inseparable: "Inseparable"
             }
         }
 

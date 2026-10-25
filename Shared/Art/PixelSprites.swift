@@ -62,7 +62,7 @@ enum SlimeSprites {
 /// The animations, the same in app and island.
 enum SpriteAnim: String, CaseIterable {
     case idle, sad, sleep, eat, play, love, bath, melt, zap, confused, wave
-    case celebrate, stretch, sulk, hide, curious, blush
+    case celebrate, stretch, sulk, hide, curious, blush, meet
 
     init(_ mood: Mood) {
         self = SpriteAnim(rawValue: mood.rawValue) ?? .idle
@@ -79,6 +79,7 @@ enum SpriteAnim: String, CaseIterable {
         switch self {
         case .idle: [0, 1, 3, 5][Calendar.current.component(.minute, from: date) % 4]
         case .play, .celebrate: 1
+        case .meet: 5
         default: 0
         }
     }
@@ -186,17 +187,18 @@ enum AccessoryPlacer {
         }
         let cx = (w - 1) / 2 + 1   // round(11.5) in Python rounds to 12
         let top = anchor[0], ey = anchor[1], neck = anchor[2], look = anchor[3]
+        let dx = anchor.count > 4 ? anchor[4] : 0   // the meet animation slides sideways
         switch sprite.kind {
         case "hat":
-            let x0 = cx - (sprite.rows.first?.count ?? 0) / 2
+            let x0 = cx - (sprite.rows.first?.count ?? 0) / 2 + dx
             let y0 = top - sprite.rows.count + 1
             for (dy, row) in sprite.rows.enumerated() {
-                for (dx, ch) in row.enumerated() where ch != "." { put(x0 + dx, y0 + dy, ch) }
+                for (col, ch) in row.enumerated() where ch != "." { put(x0 + col, y0 + dy, ch) }
             }
         case "glasses":
-            let x0 = cx - (sprite.rows.first?.count ?? 0) / 2 + look
+            let x0 = cx - (sprite.rows.first?.count ?? 0) / 2 + look + dx
             for (dy, row) in sprite.rows.enumerated() {
-                for (dx, ch) in row.enumerated() where ch != "." { put(x0 + dx, ey - 1 + dy, ch) }
+                for (col, ch) in row.enumerated() where ch != "." { put(x0 + col, ey - 1 + dy, ch) }
             }
         case "scarf":
             func span(_ y: Int) -> (Int, Int)? {

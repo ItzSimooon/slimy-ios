@@ -10,9 +10,9 @@ enum APIError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .offline: "slime.hyprnode.de ist nicht erreichbar. Prüf dein Internet und versuch es nochmal."
-        case .server(let status, let message): message ?? "Der Server meldet Fehler \(status)."
-        case .notReady: "slime.hyprnode.de ist noch nicht online. Freunde und Chat gehen, sobald er läuft."
+        case .offline: "Can't reach slime.hyprnode.de. Check your internet and try again."
+        case .server(let status, let message): message ?? "The server reported error \(status)."
+        case .notReady: "slime.hyprnode.de isn't online yet. Friends and chat work once it's running."
         }
     }
 
@@ -101,14 +101,14 @@ enum MessagePreset: String, Codable, CaseIterable, Identifiable {
 
     var text: String {
         switch self {
-        case .hello: "Hallo!"
-        case .missYou: "Ich vermisse dich."
-        case .goodNight: "Gute Nacht!"
-        case .goodMorning: "Guten Morgen!"
-        case .letsPlay: "Lass spielen!"
-        case .thanks: "Danke!"
-        case .congrats: "Glückwunsch!"
-        case .proud: "Ich bin stolz auf dich."
+        case .hello: "Hi!"
+        case .missYou: "I miss you."
+        case .goodNight: "Good night!"
+        case .goodMorning: "Good morning!"
+        case .letsPlay: "Let's play!"
+        case .thanks: "Thank you!"
+        case .congrats: "Congrats!"
+        case .proud: "I'm proud of you."
         }
     }
 

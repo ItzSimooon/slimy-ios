@@ -17,9 +17,9 @@ struct DiagnosticsView: View {
             MenuBackdrop()
             ScrollView {
                 VStack(spacing: 14) {
-                    MenuHeader(title: "Diagnose") { dismiss() }
+                    MenuHeader(title: "Diagnostics") { dismiss() }
 
-                    PixelWindow(title: "Insel-Vorschau") {
+                    PixelWindow(title: "Island preview") {
                         HStack(spacing: 18) {
                             let s = store.state.slime
                             AnimatedSlime(stage: s.stage, anim: .idle, anchor: previewStart, skin: s.skin,
@@ -30,14 +30,14 @@ struct DiagnosticsView: View {
                         }
                         .padding(8)
                         .background(Color.black)
-                        Text("So zeichnet die Insel den Slime. Bewegt er sich hier jede Sekunde, klappt die Animation.")
+                        Text("This is how the island draws the slime. If it moves here every second, the animation works.")
                             .font(Theme.text(13)).foregroundStyle(Theme.inkSoft)
                         Toggle(isOn: Binding(get: { island.probe }, set: { island.probe = $0 })) {
-                            Text("Test-Streifen auf dem Sperrbildschirm").font(Theme.label(15)).foregroundStyle(Theme.ink)
+                            Text("Test strip on the Lock Screen").font(Theme.label(15)).foregroundStyle(Theme.ink)
                         }
                     }
 
-                    PixelWindow(title: "Zustand") {
+                    PixelWindow(title: "Status") {
                         ForEach(report, id: \.0) { label, value, ok in
                             HStack(alignment: .firstTextBaseline) {
                                 Image(systemName: ok ? "checkmark.square.fill" : "xmark.square.fill")
@@ -50,21 +50,21 @@ struct DiagnosticsView: View {
                     }
 
                     HStack(spacing: 10) {
-                        PixelButton(title: "Insel neu starten") {
+                        PixelButton(title: "Restart island") {
                             Task {
                                 await island.ensureRunning(restart: true)
                                 refresh()
                             }
                         }
-                        PixelButton(title: copied ? "Kopiert" : "Bericht kopieren", kind: .secondary) {
+                        PixelButton(title: copied ? "Copied" : "Copy report", kind: .secondary) {
                             UIPasteboard.general.string = text
                             copied = true
                         }
                     }
 
-                    PixelWindow(title: "Verlauf") {
+                    PixelWindow(title: "Log") {
                         if island.log.isEmpty {
-                            Text("Noch nichts passiert.").font(Theme.text(13)).foregroundStyle(Theme.inkSoft)
+                            Text("Nothing happened yet.").font(Theme.text(13)).foregroundStyle(Theme.inkSoft)
                         }
                         ForEach(Array(island.log.enumerated()), id: \.offset) { _, line in
                             Text(line).font(.system(size: 11, design: .monospaced)).foregroundStyle(Theme.ink)
@@ -98,19 +98,19 @@ struct DiagnosticsView: View {
 
         report = [
             ("iPhone", "\(model) · iOS \(UIDevice.current.systemVersion)", true),
-            ("Dynamic Island", hasIsland == nil ? "unbekannt" : (hasIsland! ? "ja" : "nein"), hasIsland != false),
-            ("Live-Aktivitäten erlaubt", auth.areActivitiesEnabled ? "ja" : "nein", auth.areActivitiesEnabled),
-            ("Insel-Erweiterung", appexExists ? "installiert" : "fehlt", appexExists),
-            ("Animations-Schriften", "\(fonts)", fonts > 800),
-            ("Schrift lädt", fontOK ? "ja" : "nein", fontOK),
-            ("Sprites", sprites ? "geladen" : "fehlen", sprites),
-            ("Aktivitäten", activities.isEmpty ? "keine" : activities.map { "\($0.activityState)" }.joined(separator: ", "),
+            ("Dynamic Island", hasIsland == nil ? "unknown" : (hasIsland! ? "yes" : "no"), hasIsland != false),
+            ("Live Activities allowed", auth.areActivitiesEnabled ? "yes" : "no", auth.areActivitiesEnabled),
+            ("Island extension", appexExists ? "installed" : "missing", appexExists),
+            ("Animation fonts", "\(fonts)", fonts > 800),
+            ("Font loads", fontOK ? "yes" : "no", fontOK),
+            ("Sprites", sprites ? "loaded" : "missing", sprites),
+            ("Activities", activities.isEmpty ? "none" : activities.map { "\($0.activityState)" }.joined(separator: ", "),
              activities.contains { $0.activityState == .active }),
-            ("Spielstand", "\(store.loadSource.rawValue), Version \(store.state.version)", store.saveError == nil),
-            ("App Group (Widgets)", GameStorage.sharedDirectory == nil ? "nicht verfügbar" : "aktiv", GameStorage.sharedDirectory != nil),
+            ("Save", "\(store.loadSource.rawValue), version \(store.state.version)", store.saveError == nil),
+            ("App Group (widgets)", GameStorage.sharedDirectory == nil ? "not available" : "active", GameStorage.sharedDirectory != nil),
         ]
-        if let problem = island.problem { report.append(("Letzter Fehler", problem, false)) }
-        if let error = store.saveError { report.append(("Speichern", error, false)) }
+        if let problem = island.problem { report.append(("Last error", problem, false)) }
+        if let error = store.saveError { report.append(("Saving", error, false)) }
     }
 
     static var modelIdentifier: String {

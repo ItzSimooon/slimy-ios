@@ -222,8 +222,8 @@ final class DialogueTests: XCTestCase {
 
     func testPlaceholdersAreFilled() {
         let state = hatchedState()
-        let text = Dialogue.fill("{name} mag {food}", context: LineContext(food: "äpfel"), state: state)
-        XCTAssertEqual(text, "Testi mag äpfel")
+        let text = Dialogue.fill("{name} likes {food}", context: LineContext(food: "apples"), state: state)
+        XCTAssertEqual(text, "Testi likes apples")
     }
 
     func testEveryLineIsFilledCompletely() {

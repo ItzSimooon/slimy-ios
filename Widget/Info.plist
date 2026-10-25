@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>CFBundleDevelopmentRegion</key>
-	<string>de</string>
+	<string>en</string>
 	<key>CFBundleDisplayName</key>
 	<string>Slimy</string>
 	<key>CFBundleExecutable</key>
@@ -316,6 +316,23 @@
 		<string>Acc-glassesstar-Baby-Blush.ttf</string>
 		<string>Acc-scarfred-Baby-Blush.ttf</string>
 		<string>Acc-scarfstriped-Baby-Blush.ttf</string>
+		<string>Slime-Baby-Meet-Body.ttf</string>
+		<string>Slime-Baby-Meet-Shade.ttf</string>
+		<string>Slime-Baby-Meet-Ink.ttf</string>
+		<string>Slime-Baby-Meet-Shine.ttf</string>
+		<string>Slime-Baby-Meet-Warm.ttf</string>
+		<string>Slime-Baby-Meet-Cool.ttf</string>
+		<string>Acc-hatparty-Baby-Meet.ttf</string>
+		<string>Acc-hatbeanie-Baby-Meet.ttf</string>
+		<string>Acc-hatflower-Baby-Meet.ttf</string>
+		<string>Acc-hatpumpkin-Baby-Meet.ttf</string>
+		<string>Acc-hatcrown-Baby-Meet.ttf</string>
+		<string>Acc-hatwizard-Baby-Meet.ttf</string>
+		<string>Acc-glassesround-Baby-Meet.ttf</string>
+		<string>Acc-glassesshades-Baby-Meet.ttf</string>
+		<string>Acc-glassesstar-Baby-Meet.ttf</string>
+		<string>Acc-scarfred-Baby-Meet.ttf</string>
+		<string>Acc-scarfstriped-Baby-Meet.ttf</string>
 		<string>Slime-Young-Idle-Body.ttf</string>
 		<string>Slime-Young-Idle-Shade.ttf</string>
 		<string>Slime-Young-Idle-Ink.ttf</string>
@@ -605,6 +622,23 @@
 		<string>Acc-glassesstar-Young-Blush.ttf</string>
 		<string>Acc-scarfred-Young-Blush.ttf</string>
 		<string>Acc-scarfstriped-Young-Blush.ttf</string>
+		<string>Slime-Young-Meet-Body.ttf</string>
+		<string>Slime-Young-Meet-Shade.ttf</string>
+		<string>Slime-Young-Meet-Ink.ttf</string>
+		<string>Slime-Young-Meet-Shine.ttf</string>
+		<string>Slime-Young-Meet-Warm.ttf</string>
+		<string>Slime-Young-Meet-Cool.ttf</string>
+		<string>Acc-hatparty-Young-Meet.ttf</string>
+		<string>Acc-hatbeanie-Young-Meet.ttf</string>
+		<string>Acc-hatflower-Young-Meet.ttf</string>
+		<string>Acc-hatpumpkin-Young-Meet.ttf</string>
+		<string>Acc-hatcrown-Young-Meet.ttf</string>
+		<string>Acc-hatwizard-Young-Meet.ttf</string>
+		<string>Acc-glassesround-Young-Meet.ttf</string>
+		<string>Acc-glassesshades-Young-Meet.ttf</string>
+		<string>Acc-glassesstar-Young-Meet.ttf</string>
+		<string>Acc-scarfred-Young-Meet.ttf</string>
+		<string>Acc-scarfstriped-Young-Meet.ttf</string>
 		<string>Slime-Grown-Idle-Body.ttf</string>
 		<string>Slime-Grown-Idle-Shade.ttf</string>
 		<string>Slime-Grown-Idle-Ink.ttf</string>
@@ -894,6 +928,23 @@
 		<string>Acc-glassesstar-Grown-Blush.ttf</string>
 		<string>Acc-scarfred-Grown-Blush.ttf</string>
 		<string>Acc-scarfstriped-Grown-Blush.ttf</string>
+		<string>Slime-Grown-Meet-Body.ttf</string>
+		<string>Slime-Grown-Meet-Shade.ttf</string>
+		<string>Slime-Grown-Meet-Ink.ttf</string>
+		<string>Slime-Grown-Meet-Shine.ttf</string>
+		<string>Slime-Grown-Meet-Warm.ttf</string>
+		<string>Slime-Grown-Meet-Cool.ttf</string>
+		<string>Acc-hatparty-Grown-Meet.ttf</string>
+		<string>Acc-hatbeanie-Grown-Meet.ttf</string>
+		<string>Acc-hatflower-Grown-Meet.ttf</string>
+		<string>Acc-hatpumpkin-Grown-Meet.ttf</string>
+		<string>Acc-hatcrown-Grown-Meet.ttf</string>
+		<string>Acc-hatwizard-Grown-Meet.ttf</string>
+		<string>Acc-glassesround-Grown-Meet.ttf</string>
+		<string>Acc-glassesshades-Grown-Meet.ttf</string>
+		<string>Acc-glassesstar-Grown-Meet.ttf</string>
+		<string>Acc-scarfred-Grown-Meet.ttf</string>
+		<string>Acc-scarfstriped-Grown-Meet.ttf</string>
 		<string>Emote-happyA.ttf</string>
 		<string>Emote-happyB.ttf</string>
 		<string>Emote-happyC.ttf</string>

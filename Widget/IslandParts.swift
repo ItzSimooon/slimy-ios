@@ -4,22 +4,42 @@ import WidgetKit
 
 typealias IslandState = SlimeActivityAttributes.ContentState
 
-/// Five block bars, one per need, with the need's icon.
+/// Text in the island and on the Lock Screen. The rounded system font stays
+/// crisp at small sizes; the pixel font is kept for the slime's name on the
+/// Lock Screen, where it is big enough to read.
+enum IslandType {
+    static let line = Font.system(size: 15, weight: .semibold, design: .rounded)
+    static let name = Font.system(size: 13, weight: .bold, design: .rounded)
+    static let small = Font.system(size: 12, weight: .semibold, design: .rounded)
+    static let badge = Font.system(size: 13, weight: .heavy, design: .rounded)
+    static let button = Font.system(size: 12, weight: .bold, design: .rounded)
+}
+
+/// Five block bars, one per need, each with its pixel icon.
 struct NeedsStrip: View {
     let state: IslandState
-    var segments = 5
 
     var body: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 8) {
             ForEach(Need.allCases) { need in
                 HStack(spacing: 4) {
-                    Image(systemName: need.symbol)
-                        .font(.system(size: 9, weight: .bold))
-                        .foregroundStyle(Brand.color(for: need))
-                    PixelBar(value: state.value(need), segments: segments,
-                             color: Brand.color(for: need), height: 6, gap: 1.5)
+                    PixelItem(name: icon(need)).frame(width: 12, height: 12)
+                    PixelBar(value: state.value(need), segments: 5,
+                             color: state.value(need) < 25 ? Brand.danger : Brand.color(for: need), height: 6, gap: 1.5)
                 }
             }
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Need.allCases.map { "\($0.title) \(state.value($0)) percent" }.joined(separator: ", "))
+    }
+
+    private func icon(_ need: Need) -> String {
+        switch need {
+        case .hunger: "apple"
+        case .fun: "ball"
+        case .energy: "starJelly"
+        case .clean: "bubbleItem"
+        case .love: "heart"
         }
     }
 }
@@ -33,15 +53,15 @@ struct IslandButton<I: LiveActivityIntent>: View {
 
     var body: some View {
         Button(intent: intent) {
-            VStack(spacing: 3) {
-                Image(systemName: symbol).font(.system(size: 13, weight: .bold))
-                Text(label).font(Brand.pixelFixed(11))
+            HStack(spacing: 5) {
+                Image(systemName: symbol).font(.system(size: 12, weight: .bold)).foregroundStyle(tint)
+                Text(label).font(IslandType.button).foregroundStyle(Brand.text)
+                    .lineLimit(1).minimumScaleFactor(0.8)
             }
-            .foregroundStyle(tint)
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 6)
-            .background(tint.opacity(0.14))
-            .overlay(Rectangle().strokeBorder(tint.opacity(0.5), lineWidth: 1.5))
+            .frame(height: 34)
+            .background(tint.opacity(0.2))
+            .overlay(Rectangle().strokeBorder(tint.opacity(0.55), lineWidth: 1.5))
         }
         .buttonStyle(.plain)
     }
@@ -53,13 +73,13 @@ struct ActionRow: View {
     var body: some View {
         HStack(spacing: 6) {
             if state.mood == .sleep {
-                IslandButton(intent: SleepSlimeIntent(), symbol: "sun.max.fill", label: "Wecken", tint: Brand.color(for: .energy))
-                IslandButton(intent: PetSlimeIntent(), symbol: "hand.raised.fill", label: "Kraulen", tint: Brand.warm)
+                IslandButton(intent: SleepSlimeIntent(), symbol: "sun.max.fill", label: "Wake", tint: Brand.color(for: .energy))
+                IslandButton(intent: PetSlimeIntent(), symbol: "hand.raised.fill", label: "Pet", tint: Brand.warm)
             } else {
-                IslandButton(intent: FeedSlimeIntent(), symbol: "fork.knife", label: "Essen", tint: Brand.color(for: .hunger))
-                IslandButton(intent: PlaySlimeIntent(), symbol: "gamecontroller.fill", label: "Spielen", tint: Brand.color(for: .fun))
-                IslandButton(intent: BathSlimeIntent(), symbol: "bubbles.and.sparkles.fill", label: "Baden", tint: Brand.color(for: .clean))
-                IslandButton(intent: PetSlimeIntent(), symbol: "hand.raised.fill", label: "Kraulen", tint: Brand.warm)
+                IslandButton(intent: FeedSlimeIntent(), symbol: "fork.knife", label: "Feed", tint: Brand.color(for: .hunger))
+                IslandButton(intent: PlaySlimeIntent(), symbol: "gamecontroller.fill", label: "Play", tint: Brand.color(for: .fun))
+                IslandButton(intent: BathSlimeIntent(), symbol: "drop.fill", label: "Bath", tint: Brand.color(for: .clean))
+                IslandButton(intent: PetSlimeIntent(), symbol: "hand.raised.fill", label: "Pet", tint: Brand.warm)
             }
         }
     }
@@ -73,7 +93,7 @@ extension IslandSlime {
     }
 
     /// A friend's slime, facing the player's. During a shared moment both
-    /// play the same animation.
+    /// play the same animation (in a meetup they slide toward each other).
     init(friend: FriendSlime, state: IslandState, height: CGFloat) {
         self.init(stage: friend.stage, anim: state.moment?.anim ?? SpriteAnim(friend.mood), anchor: state.anchor,
                   skin: friend.skin, accessories: friend.equipped ?? Accessories(), height: height,
@@ -81,18 +101,14 @@ extension IslandSlime {
     }
 }
 
-/// What sits on the right of the compact island: always a small animated
-/// pixel emote, or the friend you share a moment with (or are in love with).
+/// The right side of the compact island: a small animated pixel emote, or
+/// the friend you are meeting (or are in love with), facing your slime.
 struct CompactBadge: View {
     let state: IslandState
 
     var body: some View {
-        if let p = state.partner {
-            HStack(spacing: 1) {
-                PixelItem(name: "heart").frame(width: 8, height: 7)
-                    .opacity(p.inLove || state.moment != nil ? 1 : 0.4)
-                IslandSlime(friend: p, state: state, height: 18)
-            }
+        if let p = state.partner, state.moment != nil || p.inLove {
+            IslandSlime(friend: p, state: state, height: 22)
         } else {
             EmoteView(reel: state.emote, anchor: state.anchor, size: 18, animated: state.isAnimated)
                 .padding(.trailing, 2)
@@ -109,16 +125,16 @@ struct FriendGroup: View {
 
     var body: some View {
         let friends = ordered
-        HStack(alignment: .bottom, spacing: 4) {
+        HStack(alignment: .bottom, spacing: 2) {
             ForEach(friends, id: \.id) { friend in
                 VStack(spacing: 2) {
                     IslandSlime(friend: friend, state: state, height: friend.id == friends.first?.id ? height : height * 0.82)
                     if names {
-                        Text(friend.name).font(Brand.pixelFixed(10)).foregroundStyle(Brand.muted).lineLimit(1)
+                        Text(friend.name).font(IslandType.small).foregroundStyle(Brand.text.opacity(0.8)).lineLimit(1)
                     }
                 }
                 .accessibilityElement(children: .ignore)
-                .accessibilityLabel("\(friend.name) von \(friend.owner)\(friend.inLove ? ", verliebt" : "")")
+                .accessibilityLabel("\(friend.name), \(friend.owner)'s slime\(friend.inLove ? ", in love" : "")")
             }
         }
     }

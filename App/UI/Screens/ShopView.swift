@@ -11,7 +11,7 @@ struct ShopView: View {
     @State private var tab: Tab = .kind(.hat)
 
     private var tabs: [(Tab, String)] {
-        ItemKind.allCases.map { (Tab.kind($0), $0.title) } + [(.habitats, "Orte"), (.colors, "Farben")]
+        ItemKind.allCases.map { (Tab.kind($0), $0.title) } + [(.habitats, "Places"), (.colors, "Colors")]
     }
 
     var body: some View {
@@ -20,7 +20,7 @@ struct ShopView: View {
             MenuBackdrop()
             ScrollView {
                 VStack(spacing: 14) {
-                    MenuHeader(title: "Laden", subtitle: "Kleidung, Möbel und neue Orte") { dismiss() }
+                    MenuHeader(title: "Shop", subtitle: "Clothes, furniture and new places") { dismiss() }
 
                     PixelWindow {
                         HStack(spacing: 16) {
@@ -39,7 +39,7 @@ struct ShopView: View {
                     switch tab {
                     case .kind(let kind):
                         if kind == .furniture {
-                            Text("Möbel stehen in seinem Zimmer.")
+                            Text("Furniture goes in its room.")
                                 .font(Theme.text(13)).foregroundStyle(Theme.inkSoft)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                         }
@@ -65,10 +65,10 @@ struct ShopView: View {
 
 private func unlockText(_ unlock: Unlock) -> String {
     switch unlock {
-    case .level(let n): "ab Level \(n)"
-    case .achievement(let id): "Erfolg: \(Achievements.achievement(id)?.title ?? id)"
-    case .bond(let n): "ab \(n) Bindung"
-    case .season(let month): month == 10 ? "nur im Oktober" : "nur zur Saison"
+    case .level(let n): "from level \(n)"
+    case .achievement(let id): "Achievement: \(Achievements.achievement(id)?.title ?? id)"
+    case .bond(let n): "at \(n) bond"
+    case .season(let month): month == 10 ? "October only" : "seasonal"
     }
 }
 
@@ -91,7 +91,7 @@ private struct ItemRow: View {
                     HStack(spacing: 6) {
                         Text(item.title).font(Theme.label(16)).foregroundStyle(Theme.ink)
                         if item.rare {
-                            Text("SELTEN").font(Theme.label(10)).foregroundStyle(.white)
+                            Text("RARE").font(Theme.label(10)).foregroundStyle(.white)
                                 .padding(.horizontal, 4).background(Theme.love)
                         }
                     }
@@ -126,7 +126,7 @@ private struct ItemRow: View {
     @ViewBuilder
     private func action(owned: Bool, available: Bool, equipped: Bool) -> some View {
         if owned {
-            PixelButton(title: equipped ? "Ablegen" : "Anlegen", kind: equipped ? .quiet : .primary, compact: true) {
+            PixelButton(title: equipped ? "Take off" : "Wear", kind: equipped ? .quiet : .primary, compact: true) {
                 if equipped {
                     store.update { $0.unequip(item.id) }
                 } else {
@@ -135,12 +135,12 @@ private struct ItemRow: View {
                 }
             }
         } else if available {
-            PixelButton(title: item.price == 0 ? "Holen" : "Kaufen", kind: .primary, compact: true) {
+            PixelButton(title: item.price == 0 ? "Get" : "Buy", kind: .primary, compact: true) {
                 store.apply({ $0.buy(item, now: .now) }, sound: .coin)
             }
             .disabled(store.state.wallet.coins < item.price)
         } else {
-            Image(systemName: "lock.fill").foregroundStyle(Theme.inkSoft).accessibilityLabel("Gesperrt")
+            Image(systemName: "lock.fill").foregroundStyle(Theme.inkSoft).accessibilityLabel("Locked")
         }
     }
 }
@@ -164,19 +164,19 @@ private struct HabitatRow: View {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(habitat.title).font(Theme.label(16)).foregroundStyle(Theme.ink)
                         if !owned {
-                            Text(available ? (habitat.price == 0 ? "geschenkt" : "\(habitat.price) Münzen") : unlockText(habitat.unlock))
+                            Text(available ? (habitat.price == 0 ? "geschenkt" : "\(habitat.price) coins") : unlockText(habitat.unlock))
                                 .font(Theme.text(13)).foregroundStyle(Theme.inkSoft)
                         } else if habitat.hasWeather {
-                            Text("mit Wetter").font(Theme.text(13)).foregroundStyle(Theme.inkSoft)
+                            Text("with weather").font(Theme.text(13)).foregroundStyle(Theme.inkSoft)
                         }
                     }
                     Spacer()
                     if here {
-                        Text("Hier wohnt er").font(Theme.label(13)).foregroundStyle(Theme.accentInk)
+                        Text("Lives here").font(Theme.label(13)).foregroundStyle(Theme.accentInk)
                     } else if owned {
-                        PixelButton(title: "Umziehen", compact: true) { store.update { $0.move(to: habitat) } }
+                        PixelButton(title: "Move here", compact: true) { store.update { $0.move(to: habitat) } }
                     } else if available {
-                        PixelButton(title: "Kaufen", compact: true) {
+                        PixelButton(title: "Buy", compact: true) {
                             store.apply({ $0.buy(habitat, now: .now) }, sound: .coin)
                         }
                         .disabled(s.wallet.coins < habitat.price)
@@ -205,12 +205,12 @@ private struct SkinRow: View {
                     .opacity(unlocked ? 1 : 0.4)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(skin.title).font(Theme.label(16)).foregroundStyle(Theme.ink)
-                    Text(unlocked ? (wearing ? "trägt er" : "freigeschaltet") : "ab Level \(skin.unlockLevel)")
+                    Text(unlocked ? (wearing ? "wearing" : "freigeschaltet") : "from level \(skin.unlockLevel)")
                         .font(Theme.text(13)).foregroundStyle(Theme.inkSoft)
                 }
                 Spacer()
                 if unlocked && !wearing {
-                    PixelButton(title: "Färben", compact: true) { store.wear(skin) }
+                    PixelButton(title: "Dye", compact: true) { store.wear(skin) }
                 }
             }
         }

@@ -16,18 +16,19 @@ struct FriendSlime: Codable, Hashable {
 
 /// Something you and a friend are doing together right now.
 enum SharedMoment: String, Codable, Hashable {
-    case reunion, missing, hug, play, gift, love, achievement, sleep
+    case reunion, missing, hug, play, gift, love, achievement, sleep, meetup
 
     var line: String {
         switch self {
-        case .reunion: "wiedersehen!"
-        case .missing: "ich vermisse dich"
-        case .hug: "umarmung"
-        case .play: "zusammen spielen"
-        case .gift: "ein geschenk"
-        case .love: "verliebt"
-        case .achievement: "geschafft, zusammen"
-        case .sleep: "gute nacht, ihr zwei"
+        case .reunion: "together again!"
+        case .missing: "misses you"
+        case .hug: "hug!"
+        case .play: "let's play"
+        case .gift: "sent a gift"
+        case .love: "in love"
+        case .achievement: "did it, together"
+        case .sleep: "good night, you two"
+        case .meetup: "came to say hi"
         }
     }
 
@@ -40,12 +41,13 @@ enum SharedMoment: String, Codable, Hashable {
         case .play: .play
         case .gift: .blush
         case .sleep: .sleep
+        case .meetup: .meet
         }
     }
 
     var reel: EmoteReel {
         switch self {
-        case .hug, .love, .missing: .love
+        case .hug, .love, .missing, .meetup: .love
         case .play: .fun
         case .sleep: .sleepy
         case .reunion, .gift, .achievement: .happyB
@@ -53,9 +55,11 @@ enum SharedMoment: String, Codable, Hashable {
     }
 
     /// How long the island stays in this moment before going back to solo.
+    /// The activity's stale date ends it even if the app isn't running.
     var duration: TimeInterval {
         switch self {
         case .love, .sleep: 30 * 60
+        case .meetup: 3 * 60
         default: 10 * 60
         }
     }
@@ -79,6 +83,8 @@ struct SlimeActivityAttributes: ActivityAttributes {
         var level: Int
         var coins: Int
         var line: String
+        /// The everyday line while a moment shows its own.
+        var baseLine: String?
         var event: PhoneEvent?
         var equipped: Accessories?
         /// Up to three friends, most important first.
@@ -112,6 +118,17 @@ struct SlimeActivityAttributes: ActivityAttributes {
         var partner: FriendSlime? {
             if let momentFriend, let f = friends?.first(where: { $0.id == momentFriend }) { return f }
             return friends?.first(where: \.inLove)
+        }
+
+        /// The same state without the shared moment: what the island falls
+        /// back to once the moment's time is up (the activity goes stale).
+        var solo: Self {
+            guard moment != nil else { return self }
+            var s = self
+            s.moment = nil
+            s.momentFriend = nil
+            s.line = baseLine ?? line
+            return s
         }
 
         /// What the slime is emoting on the right of the compact island.
@@ -160,6 +177,7 @@ extension SlimeActivityAttributes.ContentState {
             level: s.level,
             coins: game.wallet.coins,
             line: momentLine ?? game.line(at: now),
+            baseLine: momentLine == nil ? nil : game.line(at: now),
             event: s.recentEvent(at: now),
             equipped: s.equipped,
             friends: friends.isEmpty ? nil : Array(friends.prefix(3)),

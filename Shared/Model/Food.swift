@@ -10,16 +10,16 @@ enum Food: String, Codable, CaseIterable, Identifiable, Hashable {
 
     var title: String {
         switch self {
-        case .apple: "Apfel"
-        case .carrot: "Möhre"
-        case .berry: "Erdbeere"
-        case .mushroom: "Pilz"
-        case .cookie: "Keks"
-        case .soup: "Suppe"
-        case .honey: "Honig"
+        case .apple: "Apple"
+        case .carrot: "Carrot"
+        case .berry: "Strawberry"
+        case .mushroom: "Mushroom"
+        case .cookie: "Cookie"
+        case .soup: "Soup"
+        case .honey: "Honey"
         case .pudding: "Pudding"
-        case .cake: "Kuchen"
-        case .starJelly: "Sternengelee"
+        case .cake: "Cake"
+        case .starJelly: "Star jelly"
         }
     }
 

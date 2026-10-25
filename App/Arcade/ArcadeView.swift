@@ -36,11 +36,11 @@ struct ArcadeView: View {
             MenuBackdrop()
             ScrollView {
                 VStack(spacing: 14) {
-                    MenuHeader(title: "Spielhalle", subtitle: "Jede Runde kostet etwas Energie und macht Spaß") { dismiss() }
+                    MenuHeader(title: "Arcade", subtitle: "Every round costs a little energy and is fun") { dismiss() }
 
                     HStack(spacing: 10) {
                         PixelItem(name: Theme.icon(for: .energy)).frame(width: 20, height: 20)
-                        Text("Energie").font(Theme.label(14)).foregroundStyle(Theme.ink)
+                        Text("Energy").font(Theme.label(14)).foregroundStyle(Theme.ink)
                         BlockBar(value: s.slime.needs.energy / 100, color: Theme.color(for: .energy), height: 8)
                     }
                     .padding(.horizontal, 4)
@@ -53,8 +53,8 @@ struct ArcadeView: View {
                             HStack(spacing: 10) {
                                 PixelItem(name: c.game.icon).frame(width: 26, height: 26)
                                 VStack(alignment: .leading, spacing: 2) {
-                                    Text("\(c.friendName) fordert dich heraus").font(Theme.label(15)).foregroundStyle(Theme.ink)
-                                    Text("\(c.game.title): schlag \(c.theirScore ?? 0) Punkte").font(Theme.text(13)).foregroundStyle(Theme.inkSoft)
+                                    Text("\(c.friendName) challenges you").font(Theme.label(15)).foregroundStyle(Theme.ink)
+                                    Text("\(c.game.title): beat \(c.theirScore ?? 0) points").font(Theme.text(13)).foregroundStyle(Theme.inkSoft)
                                 }
                                 Spacer()
                             }
@@ -66,7 +66,7 @@ struct ArcadeView: View {
 
                     if !s.canPlay {
                         PixelWindow(fill: Theme.paperShade) {
-                            Text("\(s.slime.name) ist zu müde zum Spielen. Ein Nickerchen oder Sternengelee hilft.")
+                            Text("\(s.slime.name) is too tired to play. A nap or some star jelly helps.")
                                 .font(Theme.text(14)).foregroundStyle(Theme.ink)
                         }
                     }
@@ -108,7 +108,7 @@ private struct GameCard: View {
                     Spacer()
                     if favorite {
                         PixelItem(name: "heart").frame(width: 16, height: 12)
-                            .accessibilityLabel("Lieblingsspiel")
+                            .accessibilityLabel("Favourite game")
                     }
                 }
                 Text(game.title).font(Theme.label(15)).foregroundStyle(Theme.ink)
@@ -127,9 +127,9 @@ private struct GameCard: View {
     }
 
     private var subtitle: String {
-        if locked { return "ab Level \(game.unlockLevel)" }
-        if record.plays == 0 { return "neu" }
-        return "Rekord \(record.best)"
+        if locked { return "from level \(game.unlockLevel)" }
+        if record.plays == 0 { return "new" }
+        return "Record \(record.best)"
     }
 }
 
@@ -214,11 +214,11 @@ struct GameHost: View {
                     .frame(width: 44, height: 44)
             }
             .buttonStyle(KeyStyle(fill: Theme.paper))
-            .accessibilityLabel(session?.ended == false ? "Pause" : "Schließen")
+            .accessibilityLabel(session?.ended == false ? "Pause" : "Close")
 
             VStack(alignment: .leading, spacing: 0) {
                 Text(game.title).font(Theme.label(15)).foregroundStyle(Theme.ink)
-                Text("Rekord \(store.state.record(game).best)").font(Theme.text(12)).foregroundStyle(Theme.inkSoft)
+                Text("Record \(store.state.record(game).best)").font(Theme.text(12)).foregroundStyle(Theme.inkSoft)
             }
             Spacer()
             if let session {
@@ -226,7 +226,7 @@ struct GameHost: View {
                 Text("\(session.score)")
                     .font(Theme.title(24)).foregroundStyle(Theme.ink).monospacedDigit()
                     .contentTransition(.numericText())
-                    .accessibilityLabel("\(session.score) Punkte")
+                    .accessibilityLabel("\(session.score) points")
             }
         }
         .padding(.top, 4)
@@ -256,10 +256,10 @@ struct GameHost: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
-            Text("Gut ist alles ab \(game.goodScore) Punkten.").font(Theme.text(13)).foregroundStyle(Theme.inkSoft)
+            Text("Anything from \(game.goodScore) points is good.").font(Theme.text(13)).foregroundStyle(Theme.inkSoft)
             HStack(spacing: 10) {
-                PixelButton(title: "Zurück", kind: .quiet) { close() }
-                PixelButton(title: session == nil ? "Los geht's" : "Verstanden") {
+                PixelButton(title: "Back", kind: .quiet) { close() }
+                PixelButton(title: session == nil ? "Let's go" : "Got it") {
                     store.update { $0.markTutorialSeen(game) }
                     showTutorial = false
                     // Opened from the pause menu: the round stays paused.
@@ -273,37 +273,37 @@ struct GameHost: View {
         PixelWindow(title: "Pause") {
             if confirmQuit {
                 Text(session.score > 0
-                     ? "Die Runde endet mit \(session.score) Punkten und wird gewertet."
-                     : "Ohne Punkte gibt es nichts, es kostet aber auch keine Energie.")
+                     ? "The round ends with \(session.score) points and counts."
+                     : "No points means no reward, but it costs no energy either.")
                     .font(Theme.text(14)).foregroundStyle(Theme.ink)
                 HStack(spacing: 10) {
-                    PixelButton(title: "Weiterspielen", kind: .secondary) { confirmQuit = false }
-                    PixelButton(title: "Beenden", kind: .danger) {
+                    PixelButton(title: "Keep playing", kind: .secondary) { confirmQuit = false }
+                    PixelButton(title: "End", kind: .danger) {
                         confirmQuit = false
                         session.end()
                     }
                 }
             } else {
-                PixelButton(title: "Weiter", systemIcon: "play.fill") { session.paused = false }
-                PixelButton(title: "Spielregeln", kind: .secondary) { showTutorial = true }
-                PixelButton(title: "Runde beenden", kind: .quiet) { confirmQuit = true }
+                PixelButton(title: "Resume", systemIcon: "play.fill") { session.paused = false }
+                PixelButton(title: "How to play", kind: .secondary) { showTutorial = true }
+                PixelButton(title: "End round", kind: .quiet) { confirmQuit = true }
             }
         }
     }
 
     private func results(_ summary: RoundSummary) -> some View {
-        PixelWindow(title: summary.record ? "Neuer Rekord!" : "Geschafft") {
+        PixelWindow(title: summary.record ? "New record!" : "Done") {
             HStack(alignment: .bottom, spacing: 14) {
                 GameSlime(anim: summary.record ? .celebrate : .play, height: 64, time: Date.now.timeIntervalSinceReferenceDate)
                 VStack(alignment: .leading, spacing: 2) {
                     Text("\(summary.result.score)").font(Theme.title(40)).foregroundStyle(Theme.ink)
-                    Text("Punkte").font(Theme.text(13)).foregroundStyle(Theme.inkSoft)
+                    Text("points").font(Theme.text(13)).foregroundStyle(Theme.inkSoft)
                 }
             }
             if summary.paid {
                 HStack(spacing: 14) {
                     reward("coin", "+\(summary.result.coins)")
-                    reward("starJelly", "+\(summary.result.xp) EP")
+                    reward("starJelly", "+\(summary.result.xp) XP")
                 }
                 Text(summary.line).font(Theme.label(15)).foregroundStyle(Theme.accentInk)
             } else {
@@ -311,12 +311,12 @@ struct GameHost: View {
             }
             if let challenge, lastSeed == challenge.seedValue {
                 Text(summary.result.score > (challenge.theirScore ?? 0)
-                     ? "Du hast \(challenge.friendName) geschlagen: \(summary.result.score) zu \(challenge.theirScore ?? 0)."
-                     : "\(challenge.friendName) bleibt vorn: \(challenge.theirScore ?? 0) zu \(summary.result.score).")
+                     ? "You beat \(challenge.friendName): \(summary.result.score) to \(challenge.theirScore ?? 0)."
+                     : "\(challenge.friendName) stays ahead: \(challenge.theirScore ?? 0) to \(summary.result.score).")
                     .font(Theme.label(15)).foregroundStyle(Theme.love)
             } else if summary.result.score > 0, !friends.friends.isEmpty {
-                PixelButton(title: "Freund herausfordern", icon: "flag", kind: .secondary) { choosingFriend = true }
-                    .confirmationDialog("Wen herausfordern?", isPresented: $choosingFriend) {
+                PixelButton(title: "Challenge a friend", icon: "flag", kind: .secondary) { choosingFriend = true }
+                    .confirmationDialog("Who do you want to challenge?", isPresented: $choosingFriend) {
                         ForEach(friends.friends) { friend in
                             Button(friend.slime.name) {
                                 Task { challengeLine = await friends.challenge(friend, with: summary.result, seed: lastSeed) ?? friends.lastError }
@@ -328,12 +328,12 @@ struct GameHost: View {
                 Text(challengeLine).font(Theme.text(13)).foregroundStyle(Theme.inkSoft)
             }
             HStack(spacing: 10) {
-                PixelButton(title: "Zurück", kind: .quiet) { close() }
-                PixelButton(title: "Nochmal") { start() }
+                PixelButton(title: "Back", kind: .quiet) { close() }
+                PixelButton(title: "Again") { start() }
                     .disabled(!store.state.canPlay)
             }
             if !store.state.canPlay {
-                Text("Für eine weitere Runde ist \(store.state.slime.name) zu müde.")
+                Text("\(store.state.slime.name) is too tired for another round.")
                     .font(Theme.text(13)).foregroundStyle(Theme.inkSoft)
             }
         }
@@ -350,13 +350,13 @@ struct GameHost: View {
 
     private func start() {
         guard store.state.canPlay else {
-            store.toast = Toast(text: "\(store.state.slime.name) ist zu müde.", good: false)
+            store.toast = Toast(text: "\(store.state.slime.name) is too tired.", good: false)
             close()
             return
         }
         confirmQuit = false
         challengeLine = nil
-        // A challenge is played once on its seed; "Nochmal" afterwards is a normal round.
+        // A challenge is played once on its seed; "Again" afterwards is a normal round.
         let seed: UInt64? = (summary == nil && challenge != nil) ? challenge?.seedValue : nil
         summary = nil
         let next = GameSession(game: game, seed: seed)
@@ -369,7 +369,7 @@ struct GameHost: View {
         let result = GameResult(game: game, score: session.score, session: session.id, finishedAt: .now)
         guard result.score > 0 else {
             summary = RoundSummary(result: result, paid: false, record: false,
-                                   line: "Keine Punkte diesmal. Energie hat es nicht gekostet.")
+                                   line: "No points this time. It didn't cost any energy.")
             Feedback.shared.play(.whoosh)
             return
         }

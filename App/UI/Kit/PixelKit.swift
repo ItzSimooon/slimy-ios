@@ -142,7 +142,7 @@ struct BlockBar: View {
         .padding(2)
         .overlay(Rectangle().strokeBorder(Theme.border, lineWidth: 2))
         .accessibilityElement()
-        .accessibilityValue("\(Int(value * 100)) Prozent")
+        .accessibilityValue("\(Int(value * 100)) percent")
     }
 }
 
@@ -163,7 +163,7 @@ struct CoinCounter: View {
         .background(NotchedRect().fill(Theme.paper))
         .overlay(NotchedRect().strokeBorder(Theme.border, lineWidth: Theme.px))
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(coins) Münzen")
+        .accessibilityLabel("\(coins) coins")
     }
 }
 
@@ -188,7 +188,7 @@ struct SpeechBox: View {
                 Rectangle().fill(Theme.border).frame(width: 6, height: 3)
             }
         }
-        .accessibilityLabel("Slime sagt: \(text)")
+        .accessibilityLabel("Slime says: \(text)")
     }
 }
 
@@ -243,7 +243,7 @@ struct MenuHeader: View {
                     .frame(width: 44, height: 44)
             }
             .buttonStyle(KeyStyle(fill: Theme.paper))
-            .accessibilityLabel("Schließen")
+            .accessibilityLabel("Close")
         }
     }
 }

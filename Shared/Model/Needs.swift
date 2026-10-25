@@ -7,11 +7,11 @@ enum Need: String, Codable, CaseIterable, Identifiable, Hashable {
 
     var title: String {
         switch self {
-        case .hunger: "Essen"
-        case .fun: "Spaß"
-        case .energy: "Energie"
-        case .clean: "Sauber"
-        case .love: "Zuneigung"
+        case .hunger: "Food"
+        case .fun: "Fun"
+        case .energy: "Energy"
+        case .clean: "Clean"
+        case .love: "Love"
         }
     }
 
@@ -44,11 +44,11 @@ enum Need: String, Codable, CaseIterable, Identifiable, Hashable {
     /// What it means when this need is low. Shown in the needs panel.
     var lowHint: String {
         switch self {
-        case .hunger: "Hat Hunger. Ohne Essen wird er schlapp."
-        case .fun: "Langweilt sich. Ein Spiel hilft."
-        case .energy: "Ist müde. Ab ins Bett."
-        case .clean: "Ist klebrig. Zeit für ein Bad."
-        case .love: "Möchte gekrault werden."
+        case .hunger: "Hungry. Something to eat would help."
+        case .fun: "Bored. A game would help."
+        case .energy: "Tired. Time for bed."
+        case .clean: "Sticky. Time for a bath."
+        case .love: "Wants some cuddles."
         }
     }
 }

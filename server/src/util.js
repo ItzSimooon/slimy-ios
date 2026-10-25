@@ -1,6 +1,6 @@
 import { createHash, randomBytes, randomInt } from "node:crypto";
 
-/** An error with an HTTP status and a German message the app shows as is. */
+/** An error with an HTTP status and an English message the app shows as is. */
 export class HttpError extends Error {
   constructor(status, message) {
     super(message);
@@ -71,23 +71,23 @@ export const ENUMS = {
 
 export function text(value, field, { min = 1, max = 40, fallback } = {}) {
   if (value == null && fallback !== undefined) return fallback;
-  if (typeof value !== "string") fail(400, `"${field}" fehlt oder ist kein Text.`);
+  if (typeof value !== "string") fail(400, `"${field}" is missing or not text.`);
   const trimmed = value.trim().replace(/\s+/g, " ");
-  if ([...trimmed].length < min) fail(400, `"${field}" ist zu kurz.`);
+  if ([...trimmed].length < min) fail(400, `"${field}" is too short.`);
   return [...trimmed].slice(0, max).join("");
 }
 
 export function int(value, field, min, max) {
-  if (!Number.isInteger(value) || value < min || value > max) fail(400, `"${field}" muss eine Zahl von ${min} bis ${max} sein.`);
+  if (!Number.isInteger(value) || value < min || value > max) fail(400, `"${field}" must be a number from ${min} to ${max}.`);
   return value;
 }
 
 export function oneOf(value, field, list) {
-  if (!list.includes(value)) fail(400, `"${field}" hat einen unbekannten Wert.`);
+  if (!list.includes(value)) fail(400, `"${field}" has an unknown value.`);
   return value;
 }
 
 export function bool(value, field) {
-  if (typeof value !== "boolean") fail(400, `"${field}" muss wahr oder falsch sein.`);
+  if (typeof value !== "boolean") fail(400, `"${field}" must be true or false.`);
   return value;
 }

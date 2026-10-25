@@ -8,13 +8,13 @@ enum Skin: String, Codable, CaseIterable, Identifiable, Hashable {
 
     var title: String {
         switch self {
-        case .lime: "Limette"
-        case .bubblegum: "Kaugummi"
-        case .ocean: "Ozean"
-        case .grape: "Traube"
+        case .lime: "Lime"
+        case .bubblegum: "Bubblegum"
+        case .ocean: "Ocean"
+        case .grape: "Grape"
         case .lava: "Lava"
         case .gold: "Gold"
-        case .ghost: "Geist"
+        case .ghost: "Ghost"
         case .void: "Hypr Void"
         }
     }
