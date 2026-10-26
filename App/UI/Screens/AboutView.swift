@@ -9,7 +9,7 @@ struct AboutView: View {
     private static let website = URL(string: "https://slime.hyprnode.de")!
 
     private static var version: String {
-        Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0"
+        Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.1"
     }
 
     private static var build: String {
@@ -95,12 +95,14 @@ private struct AboutHeader: View {
     var body: some View {
         VStack(spacing: 12) {
             AboutAppIcon(size: 96)
+            // Pixelify Sans from its CTFont, and no rounded design: under the
+            // app's .fontDesign(.rounded) a Font.custom turns into SF Rounded.
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text("slimy")
-                    .font(.custom("PixelifySans-Bold", size: 34, relativeTo: .largeTitle))
+                    .font(Brand.voice(34, relativeTo: .largeTitle)).fontDesign(nil)
                     .foregroundStyle(Theme.ink)
                 Text("by hyprnode")
-                    .font(.custom("PixelifySans-Bold", size: 18, relativeTo: .headline))
+                    .font(Brand.voice(18, relativeTo: .headline)).fontDesign(nil)
                     .foregroundStyle(Brand.hypr)
             }
             .lineLimit(1)

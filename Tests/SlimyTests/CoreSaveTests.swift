@@ -137,7 +137,7 @@ final class CoreSaveTests: XCTestCase {
     }
 
     func testProblemsExplainThemselves() {
-        for problem in [SaveFile.Problem.unreadable, .notASave, .newerVersion, .noSlime, .tooLarge] {
+        for problem in [SaveFile.Problem.unreadable, .notASave, .newerVersion, .noSlime, .tooLarge, .caringTogether] {
             XCTAssertFalse((problem.errorDescription ?? "").isEmpty)
             XCTAssertTrue(problem.localizedDescription.hasSuffix("."))
         }

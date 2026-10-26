@@ -2,12 +2,14 @@ import SwiftUI
 import UIKit
 
 /// The daily gift: a calendar of seven gifts, one for each day the player
-/// drops by, and the streak of days in a row. Missing a day never takes a
-/// gift away; only the streak starts over.
+/// drops by, and the streak of days in a row. The seventh gift brings a
+/// mystery crate, which can be opened right here. Missing a day never takes
+/// a gift away; only the streak starts over.
 struct StreakView: View {
     @EnvironmentObject private var store: GameStore
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var pop = false
+    @State private var opening: CrateKind?
 
     var body: some View {
         NavigationStack {
@@ -19,6 +21,9 @@ struct StreakView: View {
             .sheetTitle("Daily Gift", inline: true)
         }
         .presentationDetents([.large])
+        .fullScreenCover(item: $opening) { kind in
+            CrateOpenView(kind: kind) { opening = nil }
+        }
     }
 
     private func content(_ info: StreakInfo) -> some View {
@@ -81,6 +86,10 @@ struct StreakView: View {
                 AppButton(title: "Open Gift") { open() }
             } else if info.claimedToday {
                 reward(gift)
+                if let crate = gift.crate, store.state.crates[crate, default: 0] > 0 {
+                    AppButton(title: "Open the \(CrateCopy.name(crate).lowercased())", systemIcon: "shippingbox",
+                              kind: .secondary) { opening = crate }
+                }
             }
         }
         .frame(maxWidth: .infinity)
@@ -113,8 +122,14 @@ struct StreakView: View {
     /// What today's gift held.
     private func reward(_ gift: DailyGift) -> some View {
         HStack(spacing: 12) {
-            if gift.item != nil {
-                ItemIcon(name: gift.icon, size: 40)
+            if let crate = gift.crate {
+                CrateSprite(kind: crate)
+                    .padding(7)
+                    .frame(width: 40, height: 40)
+                    .background(Theme.well, in: RoundedRectangle(cornerRadius: 40 * 0.26, style: .continuous))
+            }
+            if let item = gift.item {
+                ItemIcon(name: Catalog.item(item)?.sprite ?? item, size: 40)
             }
             HStack(spacing: 6) {
                 PixelItem(name: "coin").frame(width: 18, height: 18)
@@ -199,17 +214,22 @@ private struct DayTile: View {
                 .foregroundStyle(state.isToday ? Theme.accent : Theme.inkSoft)
                 .lineLimit(1)
             HStack(spacing: 6) {
-                if gift.item != nil {
-                    ArtView(name: gift.icon).frame(width: 30, height: 30)
+                if let crate = gift.crate {
+                    CrateSprite(kind: crate).frame(width: 30, height: 30)
                 }
-                PixelItem(name: "coin").frame(width: gift.item == nil ? 24 : 16, height: gift.item == nil ? 24 : 16)
+                if let item = gift.item {
+                    ArtView(name: Catalog.item(item)?.sprite ?? item).frame(width: 30, height: 30)
+                }
+                let small = gift.item != nil || gift.crate != nil
+                PixelItem(name: "coin").frame(width: small ? 16 : 24, height: small ? 16 : 24)
             }
             .frame(height: 30)
             .opacity(state.isOpened ? 0.4 : 1)
             Text(label)
                 .font(.caption2.weight(.semibold))
                 .foregroundStyle(state.isOpened ? Theme.inkSoft : Theme.ink)
-                .lineLimit(1)
+                .multilineTextAlignment(.center)
+                .lineLimit(gift.crate != nil ? 2 : 1)
                 .minimumScaleFactor(0.8)
         }
         .padding(.horizontal, 6)
@@ -233,8 +253,11 @@ private struct DayTile: View {
     }
 
     private var label: String {
-        if let item = gift.item, let entry = Catalog.item(item) { return "\(entry.title) + \(gift.coins)" }
-        return "\(gift.coins) coins"
+        var parts: [String] = []
+        if let crate = gift.crate { parts.append(CrateCopy.name(crate)) }
+        if let item = gift.item, let entry = Catalog.item(item) { parts.append(entry.title) }
+        if parts.isEmpty { return "\(gift.coins) coins" }
+        return (parts + ["\(gift.coins)"]).joined(separator: " + ")
     }
 
     private var fill: Color {

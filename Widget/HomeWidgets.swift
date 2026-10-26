@@ -31,7 +31,7 @@ struct SlimeNeedsWidget: Widget {
                 .widgetURL(URL(string: "slimy://home"))
         }
         .configurationDisplayName("Needs")
-        .description("Food, fun, energy, clean and love at a glance.")
+        .description("All five needs at a glance.")
         .supportedFamilies([.systemSmall, .accessoryCircular, .accessoryRectangular])
     }
 }

@@ -465,3 +465,68 @@ describe("admin endpoints", () => {
     assert.equal((await call("GET", "/admin/session", { cookie })).status, 401);
   });
 });
+
+describe("admin and caring together", () => {
+  let cookie;
+  beforeEach(async () => {
+    ({ cookie } = await login());
+  });
+
+  async function share(host, joiner) {
+    const code = (await call("POST", "/care/codes", { token: host.token, csrf: false, body: {} })).body.code;
+    const r = await call("POST", "/care/join", { token: joiner.token, csrf: false, body: { code } });
+    assert.equal(r.status, 200);
+  }
+
+  const careOf = (d) => call("GET", "/care", { token: d.token, csrf: false });
+
+  test("stats count the pairs", async () => {
+    const a = await device("Anna"), b = await device("Ben"), c = await device("Cleo"), d = await device("Dora");
+    assert.deepEqual((await call("GET", "/admin/stats", { cookie })).body.care, { pairs: 0 });
+    await share(a, b);
+    await share(c, d);
+    assert.deepEqual((await call("GET", "/admin/stats", { cookie })).body.care, { pairs: 2 });
+  });
+
+  test("device detail names the care partner from either side", async () => {
+    const anna = await device("Anna"), ben = await device("Ben"), cleo = await device("Cleo");
+    await share(anna, ben);
+    const host = await call("GET", `/admin/devices/${anna.deviceId}`, { cookie });
+    assert.deepEqual(host.body.carePartner, { id: ben.deviceId, ownerName: "Ben" });
+    const joiner = await call("GET", `/admin/devices/${ben.deviceId}`, { cookie });
+    assert.deepEqual(joiner.body.carePartner, { id: anna.deviceId, ownerName: "Anna" });
+    assert.equal((await call("GET", `/admin/devices/${cleo.deviceId}`, { cookie })).body.carePartner, null);
+  });
+
+  test("a ban unpairs the partner and removes the banned device's care codes", async () => {
+    const anna = await device("Anna"), ben = await device("Ben"), cleo = await device("Cleo");
+    await share(anna, ben);
+    await call("PUT", "/care/snapshot", { token: anna.token, csrf: false, body: { snapshot: { name: "Blob" }, version: 1 } });
+    await call("POST", "/care/events", { token: anna.token, csrf: false, body: { kind: "feed", at: "2026-10-25T12:00:00Z" } });
+    const r = await call("POST", `/admin/devices/${anna.deviceId}/ban`, { cookie });
+    assert.equal(r.status, 200);
+    assert.equal((await careOf(ben)).body.partner, null);
+    for (const table of ["care_pairs", "care_events"]) assert.equal(db.prepare(`SELECT COUNT(*) AS n FROM ${table}`).get().n, 0, table);
+    assert.equal((await call("GET", `/admin/devices/${ben.deviceId}`, { cookie })).body.carePartner, null);
+    // An unban doesn't bring the pair back.
+    await call("POST", `/admin/devices/${anna.deviceId}/unban`, { cookie });
+    assert.equal((await careOf(anna)).body.partner, null);
+    // Banning through a report does the same, and the banned device's open code goes away.
+    await share(ben, cleo);
+    const code = (await call("POST", "/care/codes", { token: anna.token, csrf: false, body: {} })).body.code;
+    await call("POST", "/reports", { token: ben.token, csrf: false, body: { deviceId: cleo.deviceId, reason: "harassment" } });
+    const id = db.prepare("SELECT id FROM reports").get().id;
+    await call("POST", `/admin/reports/${id}/resolve`, { cookie, body: { action: "ban" } });
+    assert.equal((await careOf(ben)).body.partner, null);
+    await call("POST", `/admin/devices/${anna.deviceId}/ban`, { cookie });
+    assert.equal(db.prepare("SELECT COUNT(*) AS n FROM care_codes WHERE code = ?").get(code).n, 0);
+  });
+
+  test("deleting a device unpairs the partner", async () => {
+    const anna = await device("Anna"), ben = await device("Ben");
+    await share(anna, ben);
+    assert.equal((await call("DELETE", `/admin/devices/${ben.deviceId}`, { cookie })).status, 204);
+    assert.equal((await careOf(anna)).body.partner, null);
+    assert.deepEqual((await call("GET", "/admin/stats", { cookie })).body.care, { pairs: 0 });
+  });
+});

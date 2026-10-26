@@ -4,8 +4,9 @@ import UIKit
 import UniformTypeIdentifiers
 import UserNotifications
 
-/// Settings as a native form: sound, notifications, bedtime, the island,
-/// phone reactions, online and privacy, backups, help and starting over.
+/// Settings as a native form: the slime's chatter and Care Together, sound,
+/// notifications, bedtime, the island, phone reactions, online and privacy,
+/// backups, help and starting over.
 struct SettingsView: View {
     @EnvironmentObject private var store: GameStore
     @EnvironmentObject private var island: IslandController
@@ -15,6 +16,7 @@ struct SettingsView: View {
     var body: some View {
         NavigationStack {
             Form {
+                SettingsSlimeSection()
                 SettingsSoundSection()
                 SettingsNotificationSection(status: $system.notifications)
                 SettingsBedtimeSection()
@@ -52,6 +54,41 @@ private struct SettingsSystemStatus {
     var notifications: UNAuthorizationStatus?
     var activitiesEnabled = true
     var backgroundRefresh: UIBackgroundRefreshStatus = .available
+}
+
+// MARK: - Your slime
+
+private struct SettingsSlimeSection: View {
+    @EnvironmentObject private var store: GameStore
+
+    var body: some View {
+        let name = store.state.slime.name
+        Section {
+            Toggle(isOn: settingBinding(store, \.chatty)) {
+                SettingsTitle(title: "Talks on its own",
+                              detail: "\(name) says what's on its mind every few seconds while Slimy is open.")
+            }
+            NavigationLink {
+                CareTogetherView()
+            } label: {
+                LabeledContent {
+                    Text(partnerText)
+                } label: {
+                    Label("Care Together", systemImage: "person.2.fill")
+                }
+            }
+        } header: {
+            Text("Your slime")
+        } footer: {
+            Text("With Care Together, one other person looks after \(name) with you on their iPhone. Everything either of you does for it shows up on both. Coins and things stay your own.")
+        }
+    }
+
+    private var partnerText: String {
+        guard store.isSharing else { return "Off" }
+        let partner = (store.state.care?.partnerName ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        return partner.isEmpty ? "On" : "With \(partner)"
+    }
 }
 
 // MARK: - Sound
@@ -299,7 +336,7 @@ private struct SettingsOnlineSection: View {
         } header: {
             Text("Online")
         } footer: {
-            Text("Friends, the leaderboard and talking with your slime need slime.hyprnode.de. Your slime, coins and things always stay on this iPhone.")
+            Text("Friends, the leaderboard, Care Together and talking with your slime need slime.hyprnode.de. Your slime, coins and things always stay on this iPhone; with Care Together, your slime is also shared with your partner.")
         }
     }
 }
@@ -346,7 +383,7 @@ private struct SettingsPrivacySection: View {
                         Task { await deleteServerData() }
                     }
                 } message: {
-                    Text("Your friendships, love, memories, scores and everything friends sent you are deleted for good, and Slimy goes offline. Your slime on this iPhone stays. This can't be undone.")
+                    Text("Your friendships, scores, Care Together and everything friends sent you are deleted for good, and Slimy goes offline. Your slime on this iPhone stays. This can't be undone.")
                 }
             }
             SettingsLinkRow(title: "Privacy Policy", systemImage: "hand.raised", url: FriendsStore.privacyURL)
@@ -354,7 +391,7 @@ private struct SettingsPrivacySection: View {
         } header: {
             Text("Privacy")
         } footer: {
-            Text("With Talk with AI on, your message, the recent chat and a few facts about your slime go to Cloudflare Workers AI and Groq, which write the reply. Your name and device ID are never passed on to them, and slime.hyprnode.de doesn't keep the messages.")
+            Text("With Talk with AI on, your message, the recent chat and a few facts about your slime, like how it feels, go to Cloudflare Workers AI and Groq, which write the reply. Your name and device ID are never passed on to them, and slime.hyprnode.de doesn't keep the messages.")
         }
     }
 
@@ -401,6 +438,8 @@ private struct SettingsBackupSection: View {
             } label: {
                 Label("Import Save…", systemImage: "square.and.arrow.down")
             }
+            // A save would replace the slime you share; stop sharing first.
+            .disabled(store.isSharing)
             .fileImporter(isPresented: $picking, allowedContentTypes: Self.importTypes) { result in
                 picked(result)
             }
@@ -413,7 +452,11 @@ private struct SettingsBackupSection: View {
         } header: {
             Text("Backup")
         } footer: {
-            Text("Your slime lives only on this iPhone. Export a save to keep a copy in Files or to move your slime to a new iPhone. Friends aren't part of a save.")
+            if store.isSharing {
+                Text("Export a save to keep a copy in Files. While you care for \(name) together, a save can't be imported; stop sharing in Care Together first.")
+            } else {
+                Text("Your slime lives only on this iPhone. Export a save to keep a copy in Files or to move your slime to a new iPhone. Friends aren't part of a save.")
+            }
         }
     }
 
@@ -563,6 +606,8 @@ private struct SettingsStartOverSection: View {
         let name = store.state.slime.name
         Section {
             Button("Release \(name)…", role: .destructive) { confirm = true }
+                // A shared slime belongs to two people; stop sharing first.
+                .disabled(store.isSharing)
                 .confirmationDialog("Release \(name)?", isPresented: $confirm, titleVisibility: .visible) {
                     Button("Release \(name)", role: .destructive) {
                         dismiss()
@@ -577,7 +622,11 @@ private struct SettingsStartOverSection: View {
         } header: {
             Text("Start over")
         } footer: {
-            Text("Export a save first if you might want \(name) back.")
+            if store.isSharing {
+                Text("You care for \(name) together with someone. Stop sharing in Care Together before you release a slime.")
+            } else {
+                Text("Export a save first if you might want \(name) back.")
+            }
         }
     }
 }

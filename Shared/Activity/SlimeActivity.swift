@@ -1,7 +1,8 @@
 import ActivityKit
 import Foundation
 
-/// A friend's slime as the island shows it.
+/// A friend's slime as the island shows it. States saved by Slimy 1.0 also
+/// carried the friends' love meter; decoding skips those keys.
 struct FriendSlime: Codable, Hashable {
     var id: String
     var name: String
@@ -9,14 +10,19 @@ struct FriendSlime: Codable, Hashable {
     var skin: Skin
     var stage: Stage
     var mood: Mood
-    var love: Int
-    var inLove: Bool
     var equipped: Accessories?
 }
 
 /// Something you and a friend are doing together right now.
 enum SharedMoment: String, Codable, Hashable {
-    case reunion, missing, hug, play, gift, love, achievement, sleep, meetup
+    case reunion, missing, hug, play, gift, achievement, sleep, meetup
+
+    /// Activities started by Slimy 1.0 can still carry its "fell in love"
+    /// moment; it plays as a hug now, and so does anything else unknown.
+    init(from decoder: Decoder) throws {
+        let raw = try decoder.singleValueContainer().decode(String.self)
+        self = SharedMoment(rawValue: raw) ?? .hug
+    }
 
     var line: String {
         switch self {
@@ -25,7 +31,6 @@ enum SharedMoment: String, Codable, Hashable {
         case .hug: "hug!"
         case .play: "let's play"
         case .gift: "sent a gift"
-        case .love: "in love"
         case .achievement: "did it, together"
         case .sleep: "good night, you two"
         case .meetup: "came to say hi"
@@ -37,7 +42,7 @@ enum SharedMoment: String, Codable, Hashable {
         switch self {
         case .reunion, .achievement: .celebrate
         case .missing: .sad
-        case .hug, .love: .love
+        case .hug: .love
         case .play: .play
         case .gift: .blush
         case .sleep: .sleep
@@ -47,10 +52,24 @@ enum SharedMoment: String, Codable, Hashable {
 
     var reel: EmoteReel {
         switch self {
-        case .hug, .love, .missing, .meetup: .love
+        case .hug, .missing, .meetup: .love
         case .play: .fun
         case .sleep: .sleepy
         case .reunion, .gift, .achievement: .happyB
+        }
+    }
+
+    /// SF Symbol for the moment next to the friend's name on the Lock Screen.
+    var symbol: String {
+        switch self {
+        case .reunion: "party.popper.fill"
+        case .missing: "cloud.rain.fill"
+        case .hug: "figure.2.arms.open"
+        case .play: "gamecontroller.fill"
+        case .gift: "gift.fill"
+        case .achievement: "trophy.fill"
+        case .sleep: "moon.zzz.fill"
+        case .meetup: "hand.wave.fill"
         }
     }
 
@@ -58,7 +77,7 @@ enum SharedMoment: String, Codable, Hashable {
     /// The activity's stale date ends it even if the app isn't running.
     var duration: TimeInterval {
         switch self {
-        case .love, .sleep: 30 * 60
+        case .sleep: 30 * 60
         case .meetup: 3 * 60
         default: 10 * 60
         }
@@ -113,10 +132,10 @@ struct SlimeActivityAttributes: ActivityAttributes {
             return SpriteAnim(reaction) ?? SpriteAnim(mood)
         }
 
-        /// The friend sharing the moment, or the one in love.
+        /// The friend sharing the moment, while there is one.
         var partner: FriendSlime? {
-            if let momentFriend, let f = friends?.first(where: { $0.id == momentFriend }) { return f }
-            return friends?.first(where: \.inLove)
+            guard moment != nil, let momentFriend else { return nil }
+            return friends?.first(where: { $0.id == momentFriend })
         }
 
         /// The everyday state without the shared moment or the phone event:
@@ -162,6 +181,13 @@ extension SlimeActivityAttributes.ContentState {
                 momentLine = moment.line
             }
         }
+        // Up to three friends. The one sharing a moment is always among them,
+        // so the island can show who the slime is with.
+        var shown = Array(friends.prefix(3))
+        if let id = momentFriend, !shown.contains(where: { $0.id == id }),
+           let friend = friends.first(where: { $0.id == id }) {
+            shown = [friend] + Array(shown.prefix(2))
+        }
         self.init(
             name: s.name,
             skin: s.skin,
@@ -181,7 +207,7 @@ extension SlimeActivityAttributes.ContentState {
             baseLine: momentLine == nil ? nil : game.line(at: now),
             event: s.recentEvent(at: now),
             equipped: s.equipped,
-            friends: friends.isEmpty ? nil : Array(friends.prefix(3)),
+            friends: shown.isEmpty ? nil : shown,
             moment: moment,
             momentFriend: momentFriend,
             animated: animated)

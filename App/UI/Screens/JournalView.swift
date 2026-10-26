@@ -302,9 +302,19 @@ private struct AchievementRow: View {
     let achievement: Achievement
     let date: Date?
 
+    /// A hidden achievement stays a secret until it's earned.
+    private var secret: Bool { achievement.hidden && date == nil }
+    private var title: String { secret ? "???" : achievement.title }
+    private var detail: String { secret ? "A secret. It shows itself once it's earned." : achievement.detail }
+
+    private var reward: String {
+        guard let crate = achievement.crate else { return CrateCopy.coins(achievement.coins) }
+        return "\(CrateCopy.coins(achievement.coins)) and a \(CrateCopy.name(crate).lowercased())"
+    }
+
     private var status: String {
         if let date { return "Unlocked \(date.formatted(date: .long, time: .omitted))" }
-        return "Locked, reward \(achievement.coins) coins"
+        return "Locked, reward \(reward)"
     }
 
     var body: some View {
@@ -313,10 +323,10 @@ private struct AchievementRow: View {
                 .saturation(date == nil ? 0 : 1)
                 .opacity(date == nil ? 0.45 : 1)
             VStack(alignment: .leading, spacing: 2) {
-                Text(achievement.title)
+                Text(title)
                     .font(.body.weight(.semibold))
                     .foregroundStyle(Theme.ink)
-                Text(achievement.detail)
+                Text(detail)
                     .font(.subheadline)
                     .foregroundStyle(Theme.inkSoft)
                     .fixedSize(horizontal: false, vertical: true)
@@ -328,18 +338,24 @@ private struct AchievementRow: View {
                     .foregroundStyle(Theme.inkSoft)
                     .multilineTextAlignment(.trailing)
             } else {
-                HStack(spacing: 4) {
-                    PixelItem(name: "coin").frame(width: 14, height: 14)
-                    Text(achievement.coins, format: .number)
-                        .font(.subheadline.weight(.semibold))
-                        .monospacedDigit()
-                        .foregroundStyle(Theme.inkSoft)
+                VStack(alignment: .trailing, spacing: 4) {
+                    HStack(spacing: 4) {
+                        PixelItem(name: "coin").frame(width: 14, height: 14)
+                        Text(achievement.coins, format: .number)
+                            .font(.subheadline.weight(.semibold))
+                            .monospacedDigit()
+                            .foregroundStyle(Theme.inkSoft)
+                    }
+                    if let crate = achievement.crate {
+                        CrateSprite(kind: crate)
+                            .frame(width: 20, height: 20)
+                    }
                 }
             }
         }
         .padding(.vertical, 2)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(achievement.title). \(achievement.detail)")
+        .accessibilityLabel(secret ? "Secret achievement" : "\(achievement.title). \(achievement.detail)")
         .accessibilityValue(status)
     }
 }
@@ -396,7 +412,7 @@ private struct MemoryRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            ItemIcon(name: entry.icon, size: 40)
+            icon
             VStack(alignment: .leading, spacing: 2) {
                 Text(entry.summary)
                     .font(.body)
@@ -409,6 +425,22 @@ private struct MemoryRow: View {
         }
         .padding(.vertical, 2)
         .accessibilityElement(children: .combine)
+    }
+
+    /// Crates are drawn like everywhere else (their sprites leave room
+    /// above the lid), and effects, which have no sprite, show what floats
+    /// around the slime.
+    @ViewBuilder private var icon: some View {
+        if let kind = CrateKind.allCases.first(where: { $0.sprite == entry.icon }) {
+            CrateSprite(kind: kind)
+                .padding(7)
+                .frame(width: 40, height: 40)
+                .background(Theme.well, in: RoundedRectangle(cornerRadius: 40 * 0.26, style: .continuous))
+        } else if let item = Catalog.item(entry.icon), item.kind == .effect {
+            CollectionItemIcon(item: item, size: 40)
+        } else {
+            ItemIcon(name: entry.icon, size: 40)
+        }
     }
 }
 
@@ -423,7 +455,9 @@ private struct CollectionContent: View {
         let tasted = s.inventory.foodsTasted
         let wardrobe = Catalog.items.filter { $0.kind != .furniture }
         let furniture = Catalog.items(.furniture)
-        let skins = Skin.allCases.filter { s.slime.isUnlocked($0) }
+        // Secret colours live in the legendary slot under Crates.
+        let colours = Skin.allCases.filter { !$0.isSecret }
+        let skins = colours.filter { s.slime.isUnlocked($0) }
 
         Section {
             grid {
@@ -491,7 +525,7 @@ private struct CollectionContent: View {
 
         Section {
             grid {
-                ForEach(Skin.allCases) { skin in
+                ForEach(colours) { skin in
                     let have = s.slime.isUnlocked(skin)
                     CollectionCell(title: skin.title, have: have,
                                    accessibility: "\(skin.title), \(have ? "unlocked" : "unlocks at level \(skin.unlockLevel)")") {
@@ -501,8 +535,10 @@ private struct CollectionContent: View {
                 }
             }
         } header: {
-            countHeader("Colours", skins.count, Skin.allCases.count)
+            countHeader("Colours", skins.count, colours.count)
         }
+
+        CratesCollection(state: s)
 
         Section("Records") {
             ForEach(GameID.classics) { game in
@@ -554,6 +590,82 @@ private struct CollectionContent: View {
     }
 }
 
+/// Crates opened so far, and the legendary slot: a question mark until the
+/// secret colour turns up, then the slime wearing it.
+private struct CratesCollection: View {
+    let state: GameState
+
+    var body: some View {
+        let opened = state.progress.stats.cratesOpened
+        let waiting = CrateKind.allCases.reduce(0) { $0 + state.crates[$1, default: 0] }
+        let waitingText = waiting == 0 ? "None waiting" : (waiting == 1 ? "1 waiting to be opened" : "\(waiting) waiting to be opened")
+        let found = Skin.allCases.first { $0.isSecret && state.slime.isUnlocked($0) }
+
+        Section {
+            HStack(spacing: 12) {
+                CrateSprite(kind: .golden)
+                    .padding(7)
+                    .frame(width: 40, height: 40)
+                    .background(Theme.well, in: RoundedRectangle(cornerRadius: 40 * 0.26, style: .continuous))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Crates opened")
+                        .font(.body)
+                        .foregroundStyle(Theme.ink)
+                    Text(waitingText)
+                        .font(.caption)
+                        .foregroundStyle(Theme.inkSoft)
+                }
+                Spacer(minLength: 8)
+                Text(opened, format: .number)
+                    .font(.headline)
+                    .monospacedDigit()
+                    .foregroundStyle(Theme.ink)
+            }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("Crates opened")
+            .accessibilityValue("\(opened), \(waitingText.lowercased())")
+
+            HStack(spacing: 12) {
+                legendaryArt(found)
+                VStack(alignment: .leading, spacing: 4) {
+                    RarityBadge(rarity: .legendary, compact: true)
+                    Text(found?.title ?? "???")
+                        .font(.body.weight(.semibold))
+                        .foregroundStyle(Theme.ink)
+                    Text(found == nil ? "Still a secret. Some crates hold it, very rarely."
+                                      : "Found in a crate. Wear it any time from the shop.")
+                        .font(.caption)
+                        .foregroundStyle(Theme.inkSoft)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            .padding(.vertical, 2)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("Legendary")
+            .accessibilityValue(found.map { "\($0.title), found" } ?? "Still a secret")
+        } header: {
+            Text("Crates")
+        }
+    }
+
+    @ViewBuilder
+    private func legendaryArt(_ found: Skin?) -> some View {
+        if let found {
+            CollectionSkin(skin: found, stage: state.slime.stage)
+                .frame(width: 44, height: 37)
+                .frame(width: 56, height: 52)
+                .background(Rarity.legendary.displayColor.opacity(0.2),
+                            in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        } else {
+            Image(systemName: "questionmark")
+                .font(.title3.weight(.bold))
+                .foregroundStyle(Theme.inkSoft)
+                .frame(width: 56, height: 52)
+                .background(Theme.well, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        }
+    }
+}
+
 private struct CollectionCell<Art: View>: View {
     let title: String
     let have: Bool
@@ -580,11 +692,12 @@ private struct CollectionCell<Art: View>: View {
 /// Accessories show their sprite; effects show what floats around the slime.
 private struct CollectionItemIcon: View {
     let item: CatalogItem
+    var size: CGFloat = 44
 
     var body: some View {
         if item.kind == .effect {
             ZStack {
-                RoundedRectangle(cornerRadius: 44 * 0.26, style: .continuous).fill(Theme.well)
+                RoundedRectangle(cornerRadius: size * 0.26, style: .continuous).fill(Theme.well)
                 Group {
                     switch item.id {
                     case "effect.hearts": PixelItem(name: "heart")
@@ -592,11 +705,12 @@ private struct CollectionItemIcon: View {
                     default: IconShape(rows: SlimeSprites.emoteIcons["sparkle"] ?? []).fill(Theme.gold)
                     }
                 }
-                .padding(10)
+                .padding(size * 0.23)
             }
-            .frame(width: 44, height: 44)
+            .frame(width: size, height: size)
+            .accessibilityHidden(true)
         } else {
-            ItemIcon(name: item.sprite, size: 44)
+            ItemIcon(name: item.sprite, size: size)
         }
     }
 }

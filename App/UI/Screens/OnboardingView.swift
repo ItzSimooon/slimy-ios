@@ -98,7 +98,7 @@ struct OnboardingView: View {
                 Text(s.personality.dominant.blurb)
                     .font(.body)
                     .foregroundStyle(Theme.inkSoft)
-                Text("Tap it or rub it. It likes that.")
+                Text("Tap it or rub it. It likes that, and it'll tell you how it feels.")
                     .font(.body)
                     .foregroundStyle(Theme.ink)
                 AppButton(title: "Next") { go(to: .feed) }

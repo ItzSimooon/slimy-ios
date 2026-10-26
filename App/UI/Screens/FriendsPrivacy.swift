@@ -46,12 +46,14 @@ struct FriendPrivacyView: View {
                 toast = Toast(text: "You're offline. Nothing is sent to slime.hyprnode.de.", good: true)
             }
         } message: {
-            Text("Slimy stops talking to slime.hyprnode.de. Your friends stay saved on this iPhone and you can go online again any time.")
+            Text(store.state.care == nil
+                 ? "Slimy stops talking to slime.hyprnode.de. Your friends stay saved on this iPhone and you can go online again any time."
+                 : "Slimy stops talking to slime.hyprnode.de. Your friends stay saved on this iPhone. What you do for \(store.state.slime.name) reaches \(store.state.care?.partnerName ?? "your partner") once you go online again.")
         }
         .confirmationDialog("Delete your data on slime.hyprnode.de?", isPresented: $confirmDelete, titleVisibility: .visible) {
             Button("Delete Data", role: .destructive) { deleteData() }
         } message: {
-            Text("Your friendships, love, memories, scores and everything friends sent you are deleted for good, and Slimy goes offline. Your slime on this iPhone stays. This can't be undone.")
+            Text(deleteMessage)
         }
         .sheet(isPresented: $showGoOnline) {
             GoOnlineView()
@@ -101,7 +103,7 @@ struct FriendPrivacyView: View {
                 }
                 .disabled(!namesValid || savingNames)
             }
-            if let message = nameError ?? friends.profileNotice {
+            if let message = nameError ?? friends.profileNotice ?? friends.careNameNotice {
                 Label(message, systemImage: "exclamationmark.triangle.fill")
                     .font(.footnote)
                     .foregroundStyle(Theme.danger)
@@ -270,8 +272,8 @@ struct FriendPrivacyView: View {
             Text("Connection")
         } footer: {
             Text(friends.isOnline
-                 ? "Going offline stops all syncing. Your friends stay saved on this iPhone, and your data stays on the server until you delete it."
-                 : "Friends, the leaderboard and chat need slime.hyprnode.de. Going online asks you to agree to the Terms first.")
+                 ? "Going offline stops all syncing, Care Together included. Your friends stay saved on this iPhone, and your data stays on the server until you delete it."
+                 : "Friends, the leaderboard, Care Together and chat need slime.hyprnode.de. Going online asks you to agree to the Terms first.")
         }
     }
 
@@ -293,8 +295,21 @@ struct FriendPrivacyView: View {
         } header: {
             Text("Your data")
         } footer: {
-            Text("Deletes your device, name, friendships, love, memories, scores and everything friends sent you from slime.hyprnode.de, and takes Slimy offline. Your slime on this iPhone stays.")
+            Text("Deletes your device, name, friendships, memories, scores, Care Together and everything friends sent you from slime.hyprnode.de, and takes Slimy offline. Your slime on this iPhone stays.")
         }
+    }
+
+    /// What deleting takes with it. While you care for someone else's slime,
+    /// yours comes back.
+    private var deleteMessage: String {
+        let base = "Your friendships, memories, scores and everything friends sent you are deleted for good, and Slimy goes offline."
+        guard let link = store.state.care else {
+            return "\(base) Your slime on this iPhone stays. This can't be undone."
+        }
+        if link.role == CareRole.joiner {
+            return "\(base) Caring for \(store.state.slime.name) with \(link.partnerName) stops, and your own slime comes back. This can't be undone."
+        }
+        return "\(base) \(link.partnerName) stops caring for \(store.state.slime.name) with you; it stays on this iPhone. This can't be undone."
     }
 
     private var documentsSection: some View {

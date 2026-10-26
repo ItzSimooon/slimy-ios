@@ -4,7 +4,7 @@
 //
 //   <a data-download>            → the release page of the newest build
 //   <a data-ipa="ipa|unsigned">  → that IPA file
-//   <x data-release-name>        → "Slimy 1.0 (build 128)"
+//   <x data-release-name>        → "Slimy 1.1 (build 141)"
 //   <x data-release-date>        → "25 October 2026"
 //   <x data-release-ready>       → shown once a release is known (starts hidden)
 

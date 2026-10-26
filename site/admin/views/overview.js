@@ -1,5 +1,9 @@
 // Overview: the numbers from GET /admin/stats, chat requests of the last
 // seven days, AI providers and the server.
+//
+// Love between slimes is a 1.0 feature that the 1.1 app no longer shows. The
+// server still counts it (hugs, visits and gifts from any app raise it) so
+// older apps keep working, and "in love" only shows when there is any.
 
 import { api } from "../lib/api.js";
 import { childAbort, h, icon, isAbort, replace } from "../lib/dom.js";
@@ -126,6 +130,8 @@ function providerRows(stats) {
 function render(stats, signal, chatMode, onChatMode) {
   const d = stats.devices ?? {};
   const f = stats.friendships ?? {};
+  // Older servers don't send care stats; show a dash rather than a made-up 0.
+  const pairs = typeof stats.care?.pairs === "number" ? stats.care.pairs : null;
   const r = stats.reports ?? {};
   const today = stats.chat?.today ?? {};
   const server = stats.server ?? {};
@@ -138,12 +144,15 @@ function render(stats, signal, chatMode, onChatMode) {
     tile({ label: "Active today", iconName: "sparkle", tint: "blue", value: fmtInt(d.active1d), sub: `${fmtInt(d.active7d)} this week` }),
     tile({ label: "Active this month", iconName: "clock", tint: "teal", value: fmtInt(d.active30d), sub: d.total ? `${fmtPercent(d.active30d ?? 0, d.total)} of all devices` : "No devices yet" }),
     tile({ label: "Open reports", iconName: "flag", tint: "red", value: fmtInt(r.open), sub: `${fmtInt(r.total)} all time`, href: "#/reports", alert: (r.open ?? 0) > 0 }),
-    tile({ label: "Friendships", iconName: "people", tint: "pink", value: fmtInt(f.total), sub: `${fmtInt(f.inLove)} in love` }),
+    tile({ label: "Friendships", iconName: "people", tint: "pink", value: fmtInt(f.total),
+      sub: f.inLove ? `${fmtInt(f.inLove)} in love (a 1.0 feature)` : "Between devices" }),
+    tile({ label: "Caring together", iconName: "heart", tint: "indigo", value: pairs === null ? "–" : fmtInt(pairs),
+      sub: pairs === null ? "Not reported by this server" : pairs === 0 ? "Nobody shares a slime yet" : `${plural(pairs * 2, "device")} share a slime` }),
     tile({ label: "Chat today", iconName: "bubble", tint: "orange", value: fmtInt(today.requests), sub: today.failures ? `${fmtInt(today.failures)} failed` : "No failures", href: "#/chat" }),
-    tile({ label: "Events (24 h)", iconName: "bolt", tint: "indigo", value: fmtInt(stats.events24h), sub: "Gifts, visits, greetings" }),
     tile({ label: "Banned", iconName: "ban", tint: "gray", value: fmtInt(d.banned), sub: d.banned === 1 ? "Device" : "Devices", href: "#/devices?banned=1" }));
 
   const activity = group({ header: "Activity" },
+    row({ leading: h("span", { class: "row-icon tint-indigo" }, icon("bolt")), title: "Events between devices", subtitle: "Gifts, visits, greetings · last 24 hours", value: fmtInt(stats.events24h) }),
     row({ leading: h("span", { class: "row-icon tint-teal" }, icon("hash")), title: "Friend codes created", subtitle: "Last 24 hours", value: fmtInt(stats.pairCodes24h) }),
     row({ leading: h("span", { class: "row-icon tint-green" }, icon("device")), title: "New devices", subtitle: "Last 7 days", value: fmtInt(d.new7d) }),
     row({ leading: h("span", { class: "row-icon tint-blue" }, icon("sparkle")), title: "Active devices", subtitle: "Last 7 days", value: fmtInt(d.active7d) }),

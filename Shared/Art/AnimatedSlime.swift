@@ -12,6 +12,11 @@ enum SlimeFont {
         "Slime-\(stage.rawValue.capitalizedFirst)-\(anim.rawValue.capitalizedFirst)-\(layer.rawValue.capitalizedFirst)"
     }
 
+    /// A skin's overlay layer (the axolotl's gills and cheeks), e.g. Slime-Young-Idle-Gills.
+    static func overlay(_ layer: String, stage: Stage, anim: SpriteAnim) -> String {
+        "Slime-\(stage.rawValue.capitalizedFirst)-\(anim.rawValue.capitalizedFirst)-\(layer)"
+    }
+
     static func accessory(_ item: String, stage: Stage, anim: SpriteAnim) -> String {
         "Acc-\(item.replacingOccurrences(of: ".", with: ""))-\(stage.rawValue.capitalizedFirst)-\(anim.rawValue.capitalizedFirst)"
     }
@@ -63,6 +68,11 @@ struct AnimatedSlime: View {
             ForEach(SpriteLayer.allCases, id: \.self) { layer in
                 TickingGlyph(font: SlimeFont.name(stage: stage, anim: anim, layer: layer), anchor: anchor,
                              height: height, width: width, color: skin.color(for: layer))
+            }
+            // The axolotl's gills and cheeks: one more timer, in one colour.
+            if let overlay = skin.overlay {
+                TickingGlyph(font: SlimeFont.overlay(overlay.layer, stage: stage, anim: anim), anchor: anchor,
+                             height: height, width: width, color: Color(hex: overlay.island))
             }
             // Only accessories with sprite art have an island font; anything
             // else would show the timer's digits instead of a glyph.

@@ -107,8 +107,57 @@ private struct HelpTopic: Identifiable {
     let items: [HelpItem]
 
     static func all(sideloaded: Bool, hasAppGroup: Bool) -> [HelpTopic] {
-        [island, install(sideloaded: sideloaded, hasAppGroup: hasAppGroup), friends, chat, data]
+        [island, slime, crates, care, install(sideloaded: sideloaded, hasAppGroup: hasAppGroup), friends, chat, data]
     }
+
+    private static let slime = HelpTopic(id: "slime", title: "Your slime", items: [
+        HelpItem(
+            id: "slime.feelings",
+            question: "Does my slime have feelings?",
+            answer: "Yes. It can feel joy, sadness, anger, fear, love, curiosity, boredom, excitement and sleepiness, some more strongly than others. Meals, games, baths, cuddles, friends and chats change how it feels, and its feelings settle again over time. Its mood shows under its name on the home screen, in how it moves and in what it says."),
+        HelpItem(
+            id: "slime.talking",
+            question: "Why does my slime keep talking?",
+            answer: "While Slimy is open, your slime says what's on its mind every few seconds: how it feels, what it needs, the time of day, the weather or what just happened. It never repeats itself straight away. For a quieter slime, turn off Talks on its own in Settings."),
+    ])
+
+    private static let crates = HelpTopic(id: "crates", title: "Crates", items: [
+        HelpItem(
+            id: "crates.get",
+            question: "How do I get crates?",
+            answer: "Buy them with coins: a wooden crate costs 80 coins, a golden crate 300. Mystery crates can't be bought: one comes with the gift on day 7 of a streak, with every fifth level, with some achievements and, now and then, after a great round in the arcade. Tap a crate a few times to open it."),
+        HelpItem(
+            id: "crates.inside",
+            question: "What's inside a crate?",
+            answer: "Coins, food, hats and other things to wear, furniture, new colours for your slime, or even another crate. Rewards are common, rare, epic or legendary, and one legendary reward is a secret. If you get something you already have, it turns into coins instead."),
+        HelpItem(
+            id: "crates.odds",
+            question: "What are the chances of each reward?",
+            answer: "Tap Drop rates in the shop or next to your crates to see the chances for every kind of crate. Wooden crates never hold a legendary reward; golden and mystery crates can. Which legendary reward that is stays a secret until you find it."),
+        HelpItem(
+            id: "crates.money",
+            question: "Do crates cost real money?",
+            answer: "No. Crates are earned in the game or bought with coins, and coins can't be bought. Slimy has no in-app purchases."),
+    ])
+
+    private static let care = HelpTopic(id: "care", title: "Care Together", items: [
+        HelpItem(
+            id: "care.how",
+            question: "How can two people look after one slime?",
+            answer: "Open Care Together in Friends or Settings and go online. One of you shares a code, the other enters it within 10 minutes. From then on both iPhones show the same slime, and when either of you feeds it, plays with it, gives it a bath, pets it, puts it to bed, wakes it up or gives it a gift, it happens on the other iPhone too. You can see who did what and when."),
+        HelpItem(
+            id: "care.own",
+            question: "What happens to my own slime when I join?",
+            answer: "It's kept safe on your iPhone while you look after your partner's slime, and it comes back when you stop caring together. If you shared the code, the slime stays yours when you stop."),
+        HelpItem(
+            id: "care.personal",
+            question: "What stays my own?",
+            answer: "Your coins, the things you bought, your records, your challenges and your settings. Only the slime is shared. You can care for one slime together with one person at a time."),
+        HelpItem(
+            id: "care.stop",
+            question: "How do we stop caring together?",
+            answer: "Either of you can tap Stop Sharing in Care Together at any time, and the other iPhone stops sharing too. Whoever joined gets their own slime back; the slime you shared stays with the person who shared the code."),
+    ])
 
     private static let island = HelpTopic(id: "island", title: "Dynamic Island", items: [
         HelpItem(
@@ -155,9 +204,9 @@ private struct HelpTopic: Identifiable {
             question: "How do I add a friend?",
             answer: "Open Friends and go online. Then share your code, or enter your friend's code. A code works once and expires after 10 minutes, so if one doesn't work, ask for a new one."),
         HelpItem(
-            id: "friends.love",
-            question: "How does love work?",
-            answer: "Every friendship has a love meter from 0 to 100 that you both share. Hugs, visits and gifts fill it, and kisses unlock at 50. Each kind counts a few times a day, so a little every day goes furthest. At 100 your slimes fall in love for good."),
+            id: "friends.together",
+            question: "What can our slimes do together?",
+            answer: "Send hugs and gifts, say hello, visit each other, challenge each other to a game, grow your shared garden and compare scores on the leaderboard. To look after one slime together, use Care Together."),
         HelpItem(
             id: "friends.strangers",
             question: "Can strangers find me?",
@@ -172,7 +221,11 @@ private struct HelpTopic: Identifiable {
         HelpItem(
             id: "chat.data",
             question: "What happens to my chat messages?",
-            answer: "Nothing is sent until you agree in the chat before your first message. Then your message, the recent chat and a few facts about your slime, like its name, mood and needs, go to Cloudflare Workers AI and Groq, which write the reply. Your name and device ID are never passed on to them, and slime.hyprnode.de doesn't keep the messages. The chat itself stays on this iPhone. You can turn Talk with AI off any time in Settings under Privacy, or under About AI Chat in the chat menu."),
+            answer: "Nothing is sent until you agree in the chat before your first message. Then your message, the recent chat and a few facts about your slime, like its name, how it feels and its needs, go to Cloudflare Workers AI and Groq, which write the reply. Your name and device ID are never passed on to them, and slime.hyprnode.de doesn't keep the messages. The chat itself stays on this iPhone. You can turn Talk with AI off any time in Settings under Privacy, or under About AI Chat in the chat menu."),
+        HelpItem(
+            id: "chat.mood",
+            question: "Does the chat change how my slime feels?",
+            answer: "It can. Your slime answers in its current mood, and what you write can cheer it up, calm it down, make it shy or get it excited, just like caring for it does. Its new mood shows on the home screen."),
         HelpItem(
             id: "chat.sleepy",
             question: "My slime is too sleepy to talk.",
@@ -183,7 +236,7 @@ private struct HelpTopic: Identifiable {
         HelpItem(
             id: "data.delete",
             question: "How do I delete my data?",
-            answer: "Your slime, coins and things live only on this iPhone. If you went online, slime.hyprnode.de stores your online profile, your friends and what they sent you. To delete that, go to Settings, then Privacy, and tap Delete My Data on the Server. You'll find the same button in Friends under Privacy & blocked. To remove your slime from this iPhone, use Start over in Settings."),
+            answer: "Your slime, coins and things live on this iPhone. If you went online, slime.hyprnode.de stores your online profile, your friends and what they sent you, and while you use Care Together, the shared slime and what you both did for it. To delete that, go to Settings, then Privacy, and tap Delete My Data on the Server. You'll find the same button in Friends under Privacy & blocked. To remove your slime from this iPhone, use Start over in Settings."),
         HelpItem(
             id: "data.move",
             question: "How do I move my slime to a new iPhone?",
@@ -191,6 +244,6 @@ private struct HelpTopic: Identifiable {
         HelpItem(
             id: "data.cost",
             question: "Does Slimy cost anything?",
-            answer: "No. There are no purchases and no ads. Coins are earned in the app, by playing and from daily gifts, and can't be bought."),
+            answer: "No. There are no purchases and no ads. Coins are earned in the app, by playing and from daily gifts, and can't be bought. Crates are earned or bought with coins, never with real money."),
     ])
 }

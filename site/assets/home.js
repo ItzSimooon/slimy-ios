@@ -1,10 +1,11 @@
 // The home page is a toy. One slime is shared by every part of it: the phone
 // in the hero and its Dynamic Island, the island that follows you in the
-// header, the feature tiles, the friends scene and the photo booth.
+// header, the feelings tile, the crates, the two phones caring for it
+// together, the friends scene and the photo booth.
 import {
   loadSprites, sprites, SKINS, SKIN_TITLES, SKIN_LEVELS, calm,
   drawSlime, itemCanvas, drawAllItems, SlimeActor, Reel, onTick, watch, clockT,
-  savedLook, saveLook, itemSize,
+  savedLook, saveLook, itemSize, drawItemAt, paint,
 } from "./slime.js";
 import { drawHabitat, drawLockSky, HABITATS, ROOM_FURNITURE, season as seasonNow } from "./habitat.js";
 import { isDark, onTheme } from "./site.js";
@@ -58,12 +59,12 @@ const GAMES = [
 ];
 // Shared/Model/PhoneEvent.swift: reaction and lines.
 const EVENTS = [
-  { id: "battery", label: "Battery low", reel: "battery", base: "melt", anim: "melt", lines: ["battery 20%. i'm melting", "getting all runny", "plug me in. please."] },
-  { id: "zap", label: "Charging", reel: "zap", base: "zap", anim: "zap", lines: ["power. yum.", "tingly", "*slurps electricity*"] },
-  { id: "wifi", label: "Wi-Fi is back", reel: "wifi", base: "idle", anim: "celebrate", lines: ["wi-fi. zoom.", "hi router", "connected"] },
-  { id: "confused", label: "No internet", reel: "confused", base: "confused", anim: "confused", lines: ["no internet", "offline. so quiet.", "where did everyone go"] },
-  { id: "morning", label: "Good morning", reel: "morning", base: "stretch", anim: "wave", lines: ["good morning", "rise and shine", "new day. new goo."] },
-  { id: "night", label: "Good night", reel: "night", base: "sleep", anim: "sleep", lines: ["sleep well", "good night", "time for slime dreams"] },
+  { id: "battery", label: "Battery low", reel: "battery", base: "melt", anim: "melt", feel: ["sadness", 0.25], lines: ["battery 20%. i'm melting", "getting all runny", "plug me in. please."] },
+  { id: "zap", label: "Charging", reel: "zap", base: "zap", anim: "zap", feel: ["excitement", 0.3], lines: ["power. yum.", "tingly", "*slurps electricity*"] },
+  { id: "wifi", label: "Wi-Fi is back", reel: "wifi", base: "idle", anim: "celebrate", feel: ["joy", 0.18], lines: ["wi-fi. zoom.", "hi router", "connected"] },
+  { id: "confused", label: "No internet", reel: "confused", base: "confused", anim: "confused", feel: ["curiosity", 0.2], lines: ["no internet", "offline. so quiet.", "where did everyone go"] },
+  { id: "morning", label: "Good morning", reel: "morning", base: "stretch", anim: "wave", feel: ["joy", 0.2], lines: ["good morning", "rise and shine", "new day. new goo."] },
+  { id: "night", label: "Good night", reel: "night", base: "sleep", anim: "sleep", feel: ["sleepiness", 0.35], lines: ["sleep well", "good night", "time for slime dreams"] },
 ];
 // Shared/Model/Dialogue.swift
 const CHATTER = [
@@ -84,6 +85,73 @@ const TRAITS = {
   sleepy: { line: "i could sleep standing up. i don't have legs.", anim: "sleep" },
   curious: { line: "i studied a speck of dust. fascinating.", anim: "curious" },
 };
+// The eight colours this site shows, in the app's order. Listed by hand so
+// that no other colour from the sprites ever appears in a picker here.
+const PUBLIC_SKINS = ["lime", "bubblegum", "ocean", "grape", "lava", "gold", "ghost", "void"];
+const publicSkins = () => PUBLIC_SKINS.filter((id) => Object.hasOwn(SKINS, id));
+
+// Shared/Model: Emotion. Nine feelings from 0 to 1. They rise with what
+// happens and settle back toward a resting mood, and the strongest one
+// decides how the slime moves and what it talks about.
+// `words` are the app's mood words (SlimeMoodWord in LiveSlimeView.swift):
+// mild, then strong from FEEL_STRONG on; below FEEL_FAINT it's "calm".
+const EMOTIONS = [
+  { id: "joy", title: "Joy", words: ["content", "cheerful"], anim: "idle" },
+  { id: "sadness", title: "Sadness", words: ["glum", "sad"], anim: "sad" },
+  { id: "anger", title: "Anger", words: ["grumpy", "cross"], anim: "sulk" },
+  { id: "fear", title: "Fear", words: ["nervous", "scared"], anim: "hide" },
+  { id: "love", title: "Love", words: ["fond", "cuddly"], anim: "blush" },
+  { id: "curiosity", title: "Curiosity", words: ["curious", "fascinated"], anim: "curious" },
+  { id: "boredom", title: "Boredom", words: ["a bit bored", "bored"], anim: "melt" },
+  { id: "excitement", title: "Excitement", words: ["eager", "excited"], anim: "play" },
+  { id: "sleepiness", title: "Sleepiness", words: ["drowsy", "sleepy"], anim: "sleep" },
+];
+const FEEL_FAINT = 0.15;
+const FEEL_STRONG = 0.55;
+// Feeling one thing a lot quiets its opposites a little (Emotion.opposites in
+// Shared/Model/Emotions.swift; keep the two in step).
+const OPPOSITE = {
+  joy: ["sadness", "anger", "boredom"], sadness: ["joy", "excitement"], anger: ["love", "joy"], fear: ["joy", "curiosity"],
+  love: ["anger", "sadness", "fear"], curiosity: ["boredom"], boredom: ["excitement", "curiosity"],
+  excitement: ["boredom", "sleepiness", "sadness"], sleepiness: ["excitement"],
+};
+// What it says on its own, by feeling. Short, lowercase, never a guilt trip.
+const FEEL_LINES = {
+  joy: ["good day for wobbling", "everything's nice right now", "i feel bouncy", "hehe. just happy."],
+  sadness: ["a little blue. it'll pass.", "feeling soft and quiet", "a pet would be nice right now"],
+  anger: ["hmph.", "grumpy. give me a minute.", "okay. that's enough boo."],
+  fear: ["eek.", "was that a ghost?", "hiding. don't look."],
+  love: ["you're my favourite", "i like it when you're here", "warm and wobbly"],
+  curiosity: ["what's that?", "i studied a speck of dust. fascinating.", "how does the sky stay up?"],
+  boredom: ["counting my wobbles. 312.", "play something?", "quiet day. i'll make up a song."],
+  excitement: ["again! again!", "zoom zoom", "so much bounce right now"],
+  sleepiness: ["eyes. so. heavy.", "*yawns*", "five more minutes"],
+};
+// What it says about something that just happened.
+const EVENT_LINES = {
+  fed: ["that snack was good", "still tasting it. yum.", "tummy: happy"],
+  played: ["that was fun. again later?", "i'm still bouncing", "good game"],
+  bath: ["i smell like bubbles", "so shiny right now"],
+  crate: ["what's in the next crate?", "i like crates. they creak.", "shiny things. more please."],
+  friend: ["mochi says hi", "mochi's garden smells nice", "friends are good"],
+  partner: ["two people, one me. lucky.", "ana and ben take turns. i like turns.", "someone looked after me from the other phone"],
+};
+const PLACE_LINES = {
+  room: ["my room is the best room", "the lamp is cozy"],
+  garden: ["the grass tickles", "a bug waved at me"],
+  beach: ["sand in my goo", "the waves sound like slurping"],
+  space: ["zero gravity. zero problems.", "hi, stars"],
+  crystal: ["everything sparkles in here", "echo. echo."],
+};
+const SEASON_LINES = {
+  halloween: ["spooky season. boo.", "pumpkins everywhere. i approve."],
+  christmas: ["is it snowing yet?", "the little tree is blinking"],
+  newYear: ["new year. new goo.", "fireworks. so loud. so pretty."],
+  spring: ["flowers are back", "spring. everything smells green."],
+  summer: ["warm out. good jelly weather.", "summer wobble"],
+  autumn: ["leaves everywhere. crunchy.", "cozy sweater weather. i don't have a sweater."],
+  winter: ["cold out. good thing i'm jelly.", "snuggle weather"],
+};
 
 const state = {
   name: "Blob",
@@ -95,10 +163,12 @@ const state = {
   fav: rand(FOODS)[0],
   favFound: false,
   pets: 0, pokes: 0,
-  love: 30,
+  feel: { joy: 0.32, sadness: 0, anger: 0, fear: 0, love: 0.12, curiosity: 0.42, boredom: 0, excitement: 0.08, sleepiness: 0.05 },
+  event: null, // { kind, at }: the last thing that happened, for small talk
   sx: 0,
   line: "just wobbling along",
 };
+if (!Object.hasOwn(SKINS, state.look.skin) || !PUBLIC_SKINS.includes(state.look.skin)) state.look.skin = "lime";
 const homeNow = () => state.home ?? (isDark() ? "garden" : "room");
 
 // ----------------------------------------------------------------- scenes
@@ -231,6 +301,7 @@ class IslandView {
 let hero;
 let heroIsland;
 let navIsland;
+let feelActor;
 let heroVisible = true;
 const screen = () => $("#screen");
 const g = () => screen().clientWidth / 96;
@@ -240,17 +311,44 @@ const islands = () => [heroIsland, navIsland].filter(Boolean);
 
 function playAll(anim, loops = 2) {
   islands().forEach((i) => i.play(anim, loops));
+  feelActor?.play(anim, loops);
   return hero.play(anim, loops);
 }
 function setBaseAll(anim) {
   hero.setBase(anim);
   islands().forEach((i) => i.setBase(anim));
+  syncFeelBase();
+}
+
+// The last twelve things it said, so it never repeats itself too soon.
+const recentLines = [];
+function remember(text) {
+  const i = recentLines.indexOf(text);
+  if (i >= 0) recentLines.splice(i, 1);
+  recentLines.push(text);
+  if (recentLines.length > 12) recentLines.shift();
+}
+
+/// The bubble in the feelings tile shows whatever the slime said last.
+let feelSayTimer;
+function setFeelLine(text) {
+  const b = $("#feel-say");
+  if (!b || b.textContent === text) return;
+  b.textContent = text;
+  if (calm()) return;
+  b.classList.remove("is-new");
+  clearTimeout(feelSayTimer);
+  void b.offsetWidth;
+  b.classList.add("is-new");
+  feelSayTimer = setTimeout(() => b.classList.remove("is-new"), 400);
 }
 
 /// Speech: a bubble over the slime, or the header island when the phone is out of view.
 let bubbleTimer;
 function say(text, { alert = false, ms = 3400, announce = true } = {}) {
   state.line = text;
+  remember(text);
+  setFeelLine(text);
   const b = $("#bubble");
   b.textContent = text;
   b.classList.add("is-on");
@@ -375,6 +473,8 @@ function gainXP(x) {
   if (state.xp >= 1) {
     state.xp -= 1;
     state.level++;
+    feel("excitement", 0.35);
+    feel("joy", 0.15);
     setText("[data-level]", String(state.level));
     if (state.level === 12) {
       state.look.stage = "grown";
@@ -521,6 +621,9 @@ function wakeUp(line = "who woke me up") {
   screen().classList.remove("is-asleep");
   $$('[data-act="sleep"] span').forEach((n) => (n.textContent = "Sleep"));
   $('.key[data-act="sleep"]').classList.remove("is-on");
+  const bed = $('[data-feel="sleep"]');
+  if (bed) bed.textContent = "Bedtime";
+  feel("sleepiness", -0.4);
   setBaseAll("idle");
   playAll("stretch", 1);
   say(line);
@@ -532,6 +635,8 @@ function poke() {
   squish();
   state.pokes++;
   if (state.asleep) return wakeUp(rand(["who woke me up", "five more minutes …"]));
+  feel("curiosity", 0.08);
+  feel("joy", 0.04);
   bump("fun", 3);
   if (state.pokes % 5 === 0) return pet();
   playAll(["curious", "blush", "celebrate", "confused", "wave"][state.pokes % 5], 1);
@@ -544,6 +649,8 @@ function pet() {
   if (state.asleep) return wakeUp();
   state.pets++;
   bump("love", 14);
+  feel("love", 0.2);
+  feel("joy", 0.1);
   gainXP(0.1);
   hearts(3);
   flashReel("love", 4000);
@@ -565,6 +672,9 @@ async function feed(id) {
     return;
   }
   bump("hunger", 18);
+  feel("joy", id === state.fav ? 0.3 : 0.15);
+  if (id === state.fav) feel("love", 0.15);
+  noteEvent("fed");
   gainXP(0.14);
   flashReel("happyA", 3000);
   showStatus("hunger");
@@ -596,6 +706,9 @@ function play() {
   const score = 30 + Math.floor(Math.random() * 60);
   bump("fun", 24);
   bump("energy", -8);
+  feel("excitement", 0.32);
+  feel("joy", 0.1);
+  noteEvent("played");
   gainXP(0.16);
   ball();
   flashReel("fun", 3500);
@@ -614,6 +727,8 @@ function bath() {
     return;
   }
   setNeed("clean", 100);
+  feel("joy", 0.14);
+  noteEvent("bath");
   gainXP(0.12);
   bubbles();
   flashReel("clean", 3500);
@@ -627,10 +742,26 @@ function sleep() {
   screen().classList.add("is-asleep");
   $$('[data-act="sleep"] span').forEach((n) => (n.textContent = "Wake"));
   $('.key[data-act="sleep"]').classList.add("is-on");
+  const bed = $('[data-feel="sleep"]');
+  if (bed) bed.textContent = "Wake up";
+  feel("sleepiness", 0.45);
   setBaseAll("sleep");
   say(rand(["good night", "sleep well. me too.", "lights out"]));
   syncStatus();
   renderNeeds();
+}
+
+/// "Say boo" in the feelings tile: a little scare, and grumpy if you keep at it.
+function boo() {
+  if (state.asleep) return wakeUp(rand(["eek. a dream?", "who said boo"]));
+  const already = state.feel.fear > 0.5;
+  feel("fear", 0.45);
+  if (already) feel("anger", 0.3);
+  flashReel("confused", 3000);
+  playAll("hide", 2).then(() => {
+    if (!state.asleep && state.feel.fear > 0.4) say(rand(already ? FEEL_LINES.anger : FEEL_LINES.fear));
+  });
+  squish();
 }
 
 const ACTIONS = { feed: () => toggleTray(), play, bath, sleep, pet };
@@ -898,7 +1029,7 @@ function setSkin(id, from) {
 
 function buildSwatches() {
   const box = $("#swatches");
-  for (const id of Object.keys(SKINS)) {
+  for (const id of publicSkins()) {
     const c = el("canvas", { width: 24, height: 14, "aria-hidden": "true" });
     drawSlime(c.getContext("2d"), { stage: "young", skin: id }, "idle", 0, 0, -6);
     const b = el("button", { type: "button", class: "swatch", "data-skin": id, "aria-pressed": String(id === state.look.skin) }, c, el("span", { text: SKIN_TITLES[id] }));
@@ -911,7 +1042,7 @@ function buildSwatches() {
 const HATCH_SKINS = ["lime", "bubblegum", "ocean"];
 function buildSkinRow() {
   const box = $("#skin-row");
-  for (const id of Object.keys(SKINS)) {
+  for (const id of publicSkins()) {
     const c = el("canvas", { width: 24, height: 20, "aria-hidden": "true" });
     const lvl = SKIN_LEVELS[id];
     const b = el("button", { type: "button", class: "skin", "data-skin": id, "aria-pressed": String(id === state.look.skin) },
@@ -1113,6 +1244,7 @@ function setupReacts() {
       playAll(ev.anim, 2);
       if (ev.id === "zap") bump("energy", 6);
       if (ev.id === "wifi") bump("fun", 4);
+      feel(...ev.feel);
       say(rand(ev.lines), { alert: true, ms: 3600 });
       clearTimeout(b.__t);
       b.__t = setTimeout(() => b.classList.remove("is-on"), 3600);
@@ -1354,7 +1486,569 @@ function setupTimer() {
   }, 1000);
 }
 
+// --------------------------------------------------------------- feelings
+
+function feel(id, amount) {
+  const f = state.feel;
+  if (!Object.hasOwn(f, id)) return;
+  f[id] = clamp(f[id] + amount, 0, 1);
+  if (amount > 0) for (const o of OPPOSITE[id]) f[o] = clamp(f[o] - amount * 0.3, 0, 1);
+  renderFeel();
+}
+
+/// The strongest feeling and how strong it is (Emotions.dominant, .intensity).
+function dominant() {
+  let best = EMOTIONS[0];
+  for (const e of EMOTIONS) if (state.feel[e.id] > state.feel[best.id]) best = e;
+  return { e: best, v: state.feel[best.id] };
+}
+
+function noteEvent(kind) {
+  state.event = { kind, at: Date.now() };
+}
+
+/// Where each feeling settles when nothing happens: a curious, mostly content
+/// slime, sleepier late at night and in bed, a little blue while it needs
+/// something, and bored after a while without you.
+function restingFeel(id) {
+  const h = new Date().getHours();
+  const night = h >= 22 || h < 6;
+  switch (id) {
+    case "joy": return wish() ? 0.18 : 0.3;
+    case "curiosity": return 0.24;
+    case "love": return 0.1;
+    case "sleepiness": return state.asleep ? 0.75 : night ? 0.3 : 0.05;
+    case "sadness": return wish() ? 0.2 : 0;
+    case "boredom": return Date.now() - lastTouch > 40000 ? 0.45 : 0;
+    default: return 0;
+  }
+}
+
+function settleFeel() {
+  const f = state.feel;
+  for (const e of EMOTIONS) {
+    const rate = e.id === "boredom" ? 0.02 : 0.04;
+    f[e.id] = clamp(f[e.id] + (restingFeel(e.id) - f[e.id]) * rate, 0, 1);
+  }
+  renderFeel();
+}
+
+let feelRows = null;
+let feelWord = null;
+let feelBase = "";
+
+/// The feelings tile's slime moves the way it feels, like LiveSlimeView.
+function syncFeelBase() {
+  if (!feelActor) return;
+  const d = dominant();
+  const base = state.asleep ? "sleep" : d.v >= 0.3 ? d.e.anim : "idle";
+  if (base === feelBase) return;
+  feelBase = base;
+  feelActor.setBase(base);
+}
+
+function renderFeel() {
+  if (!feelRows) return;
+  const d = dominant();
+  for (const e of EMOTIONS) {
+    const v = Math.round(state.feel[e.id] * 100);
+    const row = feelRows[e.id];
+    row.li.classList.toggle("is-top", e === d.e && d.v >= FEEL_FAINT);
+    if (row.v === v) continue;
+    row.v = v;
+    row.bar.style.width = v + "%";
+    row.li.setAttribute("aria-valuenow", String(v));
+    row.li.setAttribute("aria-valuetext", `${v} percent`);
+  }
+  const word = state.asleep ? "Asleep" : d.v < FEEL_FAINT ? "calm" : d.e.words[d.v >= FEEL_STRONG ? 1 : 0];
+  if (word !== feelWord) {
+    feelWord = word;
+    feelRows.now.replaceChildren(...(state.asleep ? [el("b", { text: word })] : ["Feeling ", el("b", { text: word })]));
+  }
+  syncFeelBase();
+}
+
+function setupFeelings() {
+  feelActor = new SlimeActor($("#feel-slime"), { look: () => state.look, base: "curious" });
+  lookActors.add(feelActor);
+  const ul = $("#feel-list");
+  feelRows = { now: $("#feel-now") };
+  for (const e of EMOTIONS) {
+    const bar = el("i");
+    const li = el("li", {
+      role: "meter", "aria-label": e.title, "aria-valuemin": "0", "aria-valuemax": "100", "aria-valuenow": "0", "data-feel-id": e.id,
+    }, el("span", { class: "fl-name", text: e.title }), el("span", { class: "fl-bar", "aria-hidden": "true" }, bar));
+    feelRows[e.id] = { li, bar, v: -1 };
+    ul.append(li);
+  }
+  const acts = { pet, play, boo, sleep };
+  $$("#feel-acts [data-feel]").forEach((b) => b.addEventListener("click", () => acts[b.dataset.feel]?.()));
+  setInterval(() => !document.hidden && settleFeel(), 1000);
+  renderFeel();
+}
+
+// ------------------------------------------------------------- small talk
+
+/// A line from `pool` it hasn't said among its last twelve, or null.
+function fresh(pool) {
+  const left = (pool ?? []).filter((l) => !recentLines.includes(l));
+  return left.length ? rand(left) : null;
+}
+
+function timeLines() {
+  const h = new Date().getHours();
+  if (h >= 5 && h < 10) return ["good morning", "morning stretch. done.", "new day. new goo."];
+  if (h >= 12 && h < 17) return ["afternoon wobble", "sun's high. i'm lounging."];
+  if (h >= 18 && h < 22) return ["evening. cozy.", "the light's all orange"];
+  if (h >= 22 || h < 5) return ["late. cozy.", "the moon is out. hi moon."];
+  return ["late morning. good time for a snack."];
+}
+
+/// What to say next, like GameStore.chatter(): what it needs, how it feels,
+/// what just happened, the time of day, the season, where it lives, or just
+/// something on its mind.
+function chatterLine() {
+  const pools = [];
+  const w = wish();
+  if (w) pools.push([WISH_LINES[w.id], 3]);
+  const d = dominant();
+  if (d.v >= 0.3) pools.push([FEEL_LINES[d.e.id], 4]);
+  if (state.event && Date.now() - state.event.at < 90000) pools.push([EVENT_LINES[state.event.kind], 3]);
+  pools.push([timeLines(), 1], [SEASON_LINES[seasonNow()], 1], [PLACE_LINES[homeNow()], 1], [CHATTER, 2]);
+  const options = pools.map(([lines, weight]) => [fresh(lines), weight]).filter(([line]) => line);
+  if (!options.length) return null;
+  let r = Math.random() * options.reduce((sum, [, weight]) => sum + weight, 0);
+  for (const [line, weight] of options) if ((r -= weight) < 0) return line;
+  return options[0][0];
+}
+
+/// It talks on its own while you watch, like the app with "Talks on its own"
+/// on: every 8 to 16 seconds, three times in four, never over you, in the
+/// hero or in the feelings tile, whichever is on screen.
+function startChatter() {
+  const next = () => setTimeout(tick, 8000 + Math.random() * 8000);
+  const tick = () => {
+    next();
+    if (document.hidden || state.asleep || Math.random() >= 0.75) return;
+    if (Date.now() - lastTouch < 4000) return;
+    const inHero = heroVisible && hero.visible;
+    const inTile = Boolean(feelActor?.visible);
+    if (!inHero && !inTile) return;
+    const line = chatterLine();
+    if (!line) return;
+    if (inHero) {
+      say(line, { announce: false });
+      if (Math.random() < 0.4) playAll(rand(["curious", "blush", "wave", "stretch"]), 1);
+    } else {
+      state.line = line;
+      remember(line);
+      setFeelLine(line);
+      islands().forEach((i) => i.sync());
+      if (Math.random() < 0.4 && !calm()) feelActor.play(rand(["curious", "blush", "wave"]), 1);
+    }
+  };
+  next();
+}
+
+// ------------------------------------------------------------------ crates
+
+// CrateKind in Shared/Model. The app draws crate.wooden, crate.golden and
+// crate.mystery from sprites.json; these pixel crates stand in until the
+// sprites have them.
+const CRATES = {
+  wooden: {
+    title: "Wooden crate", price: "80 coins",
+    colors: { d: "#6B4423", l: "#C98F55", b: "#A8733F" },
+    rows: [
+      ".dddddddddddd.", "dlllllllllllld", "dbbbbbbbbbbbbd", "dddddddddddddd",
+      "dbbdbbbbbbdbbd", "dbbbdbbbbdbbbd", "dbbbbdbbdbbbbd", "dbbbbbddbbbbbd",
+      "dbbbbdbbdbbbbd", "dbbbdbbbbdbbbd", "dbbdbbbbbbdbbd", "dddddddddddddd",
+    ],
+  },
+  golden: {
+    title: "Golden crate", price: "300 coins",
+    colors: { d: "#7A4A0E", y: "#FFF1B0", g: "#F2B630", k: "#5A3A10" },
+    rows: [
+      ".dddddddddddd.", "dyyyyyyyyyyyyd", "dggggggggggggd", "dddddddddddddd",
+      "dggggdkkdggggd", "dggggkyykggggd", "dggggkyykggggd", "dggggdkkdggggd",
+      "dggggggggggggd", "dyggggggggggyd", "dggggggggggggd", "dddddddddddddd",
+    ],
+  },
+  mystery: {
+    title: "Mystery crate", price: "Earned only",
+    colors: { d: "#23284F", l: "#8C9BE8", b: "#5763C2", q: "#FFFFFF" },
+    rows: [
+      ".dddddddddddd.", "dlllllllllllld", "dbbbbbbbbbbbbd", "dddddddddddddd",
+      "dbbbbqqqqbbbbd", "dbbbqbbbbqbbbd", "dbbbbbbbbqbbbd", "dbbbbbbbqbbbbd",
+      "dbbbbbbqbbbbbd", "dbbbbbbbbbbbbd", "dbbbbbbqbbbbbd", "dddddddddddddd",
+    ],
+  },
+};
+const RARITY_TITLES = { common: "Common", rare: "Rare", epic: "Epic" };
+// The odds of the crates on this page: the app's (Crates.dropRates) without
+// the legendary, which is never in these.
+const ODDS = {
+  wooden: [["common", 72], ["rare", 24], ["epic", 4]],
+  golden: [["common", 35], ["rare", 44.4], ["epic", 20]],
+  mystery: [["common", 50], ["rare", 33], ["epic", 15]],
+};
+// A sample of what each rarity holds in the app (Crates.items and
+// Crates.foods): common items cost 45 coins or less, rare ones more, epic
+// ones are the catalog's rare pieces. Prices from Shared/Model/Catalog.swift.
+const LOOT = {
+  common: [{ coins: true }, { food: "cookie", n: 3 }, { food: "berry", n: 3 }, { food: "carrot", n: 3 },
+    { item: "glasses.round", title: "Round glasses", price: 35 }, { item: "hat.beanie", title: "Beanie", price: 40 },
+    { item: "furn.plant", title: "Potted plant", price: 25 }],
+  rare: [{ coins: true }, { food: "cake", n: 2 }, { food: "pudding", n: 2 }, { item: "scarf.striped", title: "Striped scarf", price: 70 },
+    { item: "glasses.shades", title: "Sunglasses", price: 60 }, { crate: "wooden" }],
+  epic: [{ coins: true }, { item: "hat.crown", title: "Crown", price: 150 }, { item: "hat.wizard", title: "Wizard hat", price: 220 },
+    { item: "furn.aquarium", title: "Aquarium", price: 120 }, { skin: "void" }, { skin: "ghost" }, { crate: "golden" }],
+};
+// Coins by crate and rarity (Crates.coinRange), lowest and highest.
+const COIN_RANGES = {
+  wooden: { common: [20, 40], rare: [60, 100], epic: [150, 220] },
+  golden: { common: [60, 100], rare: [140, 220], epic: [320, 480] },
+  mystery: { common: [40, 70], rare: [100, 160], epic: [240, 360] },
+};
+// A duplicate turns into coins (CrateReward.convertedCoins): half its price,
+// but at least these per rarity (Crates.duplicateCoins); a colour always 150.
+const DUPLICATE_COINS = { common: 15, rare: 40, epic: 100 };
+const DUPLICATE_COLOUR_COINS = 150;
+const BURST_COLORS = { common: ["#C7C7CC", "#FFFFFF", "#FFD166"], rare: ["#0A84FF", "#7FD6F0", "#FFFFFF"], epic: ["#BF5AF2", "#FFD166", "#FFFFFF"] };
+
+/// The crate's pixels: the app's sprite when sprites.json has it, opened
+/// (crate.golden.open) when `open` and there is such a sprite.
+function crateArt(kind, open = false) {
+  const name = open && sprites()?.items?.[`crate.${kind}.open`] ? `crate.${kind}.open` : `crate.${kind}`;
+  if (sprites()?.items?.[name]) {
+    const [w, h] = itemSize(name);
+    return { w, h, draw: (ctx) => drawItemAt(ctx, name, 0, 0) };
+  }
+  const c = CRATES[kind];
+  return { w: c.rows[0].length, h: c.rows.length, draw: (ctx) => paint(ctx, c.rows, c.colors) };
+}
+
+function crateCanvas(kind, scale) {
+  const art = crateArt(kind);
+  const c = el("canvas", { width: art.w, height: art.h, "aria-hidden": "true" });
+  art.draw(c.getContext("2d"));
+  c.style.width = art.w * scale + "px";
+  c.style.height = art.h * scale + "px";
+  return c;
+}
+
+function slimeIcon(skin) {
+  const c = el("canvas", { width: 24, height: 20, "aria-hidden": "true", class: "cr-slime" });
+  drawSlime(c.getContext("2d"), { stage: "young", skin }, "idle", 0);
+  return c;
+}
+
+const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+function setupCrates() {
+  const stage = $(".crate-stage");
+  const btn = $("#crate");
+  const canvas = $("#crate-canvas");
+  const fxBox = $("#crate-fx");
+  const card = $("#crate-reward");
+  const hint = $("#crate-hint");
+  const label = $("#crate-label");
+  const price = $("#crate-price");
+  const live = $("#crate-status");
+  const chips = $$("#crate-kinds .chip");
+  const legend = $$(".rarities li");
+  // The room without the bed and the lamp, so the crate has the floor to itself.
+  const furniture = { ceiling: ROOM_FURNITURE.ceiling, wallLeft: ROOM_FURNITURE.wallLeft, rug: ROOM_FURNITURE.rug };
+  new Scene($("#crate-room"), () => ({ habitat: "room", rows: 56, floor: 0.7, furniture }));
+  // What this slime already has, so a second one turns into coins.
+  const owned = new Set([state.look.skin, state.look.hat, state.look.glasses, state.look.scarf].filter(Boolean));
+  let kind = "golden";
+  let taps = 0;
+  let opened = false;
+  let busy = false;
+
+  const fit = () => {
+    const art = crateArt(kind);
+    const k = Math.max(3, Math.floor((stage.clientWidth * 0.26) / art.w));
+    canvas.style.width = art.w * k + "px";
+    canvas.style.height = art.h * k + "px";
+  };
+  const drawCrate = (open = false) => {
+    const art = crateArt(kind, open);
+    canvas.width = art.w;
+    canvas.height = art.h;
+    const ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, art.w, art.h);
+    art.draw(ctx);
+    fit();
+  };
+  const describe = () => {
+    const title = CRATES[kind].title;
+    const left = ["Tap three times to open it.", "Two more taps.", "One more tap."][taps] ?? "";
+    label.textContent = opened ? `${title}, opened. Press for another one.` : `${title}. ${left}`;
+  };
+  const reset = () => {
+    taps = 0;
+    opened = false;
+    card.classList.remove("is-on");
+    card.hidden = true;
+    btn.classList.remove("is-open", "is-open-art");
+    stage.classList.remove("is-open");
+    drawCrate();
+    legend.forEach((li) => li.classList.remove("is-hit"));
+    hint.textContent = "Tap the crate three times.";
+    describe();
+  };
+  const choose = (next) => {
+    kind = next;
+    chips.forEach((c) => c.setAttribute("aria-pressed", String(c.dataset.crate === kind)));
+    price.textContent = CRATES[kind].price;
+    reset();
+  };
+  const shake = (n) => {
+    if (calm()) return;
+    const a = 2 + n * 2;
+    canvas.animate([
+      { transform: "translateX(0) scale(1, 1)" },
+      { transform: `translateX(${-a}px) scale(1.06, .94)`, offset: 0.2 },
+      { transform: `translateX(${a}px) scale(.96, 1.05)`, offset: 0.45 },
+      { transform: `translateX(${-a / 2}px) scale(1.02, .98)`, offset: 0.7 },
+      { transform: "translateX(0) scale(1, 1)" },
+    ], { duration: 360, easing: "ease-out" });
+  };
+  const burst = (rarity) => {
+    if (calm()) return;
+    const colors = BURST_COLORS[rarity];
+    const r = canvas.getBoundingClientRect();
+    const s = stage.getBoundingClientRect();
+    const cx = r.left - s.left + r.width / 2;
+    const cy = r.top - s.top + r.height / 2;
+    const px = Math.max(4, Math.round((s.width / 96) * 1.5));
+    for (let i = 0; i < 24; i++) {
+      const p = el("i");
+      p.style.width = p.style.height = px + "px";
+      p.style.background = colors[i % colors.length];
+      fxBox.append(p);
+      const angle = Math.random() * Math.PI * 2;
+      const dist = (0.22 + Math.random() * 0.4) * (s.width / 2);
+      p.animate([
+        { transform: `translate(${cx}px, ${cy}px)`, opacity: 1 },
+        { transform: `translate(${cx + Math.cos(angle) * dist}px, ${cy + Math.sin(angle) * dist * 0.6}px)`, opacity: 0 },
+      ], { duration: 700 + Math.random() * 400, easing: "cubic-bezier(.2, .7, .3, 1)" }).finished.then(() => p.remove());
+    }
+  };
+  const roll = () => {
+    const odds = ODDS[kind];
+    let r = Math.random() * odds.reduce((sum, [, p]) => sum + p, 0);
+    let rarity = odds[0][0];
+    for (const [name, p] of odds) {
+      if ((r -= p) < 0) {
+        rarity = name;
+        break;
+      }
+    }
+    const prize = rand(LOOT[rarity]);
+    if (prize.coins) {
+      const [lo, hi] = COIN_RANGES[kind][rarity];
+      return { rarity, coins: lo + Math.floor(Math.random() * (hi - lo + 1)) };
+    }
+    return { rarity, ...prize };
+  };
+  /// Fills the reward card; returns what to announce and what the slime says.
+  const present = (reward) => {
+    let icon = null;
+    let title = "";
+    let note = "";
+    let line = "ooh.";
+    let coins = 0;
+    if (reward.coins) {
+      icon = itemCanvas("coin", 3);
+      title = `${reward.coins} coins`;
+      note = "Added to your coins.";
+      coins = reward.coins;
+      line = rand(["coins. jingly.", "ka-ching"]);
+    } else if (reward.food) {
+      const food = FOODS.find((f) => f[0] === reward.food);
+      icon = itemCanvas(reward.food, 3);
+      title = `${food[1]} × ${reward.n}`;
+      note = "Free servings in the kitchen.";
+      line = `${foodName(reward.food)}. for later. maybe.`;
+    } else if (reward.item) {
+      const [w, h] = itemSize(reward.item);
+      icon = itemCanvas(reward.item, Math.max(2, Math.min(5, Math.floor(44 / Math.max(w, h, 1)))));
+      title = reward.title;
+      line = reward.item.startsWith("furn.") ? "where do we put it?" : `ooh. ${reward.title.toLowerCase()}.`;
+    } else if (reward.skin) {
+      icon = slimeIcon(reward.skin);
+      title = `${SKIN_TITLES[reward.skin]} colour`;
+      line = `${SKIN_TITLES[reward.skin].toLowerCase()}. i'd look good in that.`;
+    } else if (reward.crate) {
+      icon = crateCanvas(reward.crate, 3);
+      title = CRATES[reward.crate].title;
+      note = "Another crate to open.";
+      line = "a crate in a crate?";
+    }
+    const key = reward.item ?? reward.skin;
+    if (key) {
+      if (owned.has(key)) {
+        coins = reward.skin ? DUPLICATE_COLOUR_COINS : Math.max(DUPLICATE_COINS[reward.rarity], Math.floor((reward.price ?? 0) / 2));
+        note = `Already yours, so you get ${coins} coins instead.`;
+        line = rand(["we have that already. coins it is.", "a twin! turned into coins.", "already ours. shiny coins instead."]);
+      } else {
+        owned.add(key);
+        note = reward.skin ? "A new colour." : reward.item.startsWith("furn.") ? "New furniture for your home." : "Something new to wear.";
+      }
+    }
+    $("#cr-rarity").textContent = RARITY_TITLES[reward.rarity];
+    $("#cr-icon").replaceChildren(...(icon ? [icon] : []));
+    $("#cr-title").textContent = title;
+    $("#cr-note").textContent = note;
+    return { title, note, line, coins };
+  };
+
+  btn.addEventListener("click", async () => {
+    if (busy) return;
+    if (opened) return reset();
+    taps++;
+    if (taps < 3) {
+      shake(taps);
+      hint.textContent = taps === 1 ? "Two more taps." : "One more tap.";
+      describe();
+      return;
+    }
+    busy = true;
+    shake(3);
+    await wait(calm() ? 0 : 300);
+    const reward = roll();
+    const shown = present(reward);
+    // The opened crate stays under the reward when there is a sprite for it.
+    const hasOpenArt = Boolean(sprites()?.items?.[`crate.${kind}.open`]);
+    if (hasOpenArt) drawCrate(true);
+    btn.classList.add(hasOpenArt ? "is-open-art" : "is-open");
+    stage.classList.add("is-open");
+    card.dataset.rarity = reward.rarity;
+    card.hidden = false;
+    burst(reward.rarity);
+    requestAnimationFrame(() => card.classList.add("is-on"));
+    legend.forEach((li) => li.classList.toggle("is-hit", li.dataset.rarity === reward.rarity));
+    opened = true;
+    hint.textContent = "Tap again for another one.";
+    describe();
+    live.textContent = `${RARITY_TITLES[reward.rarity]}: ${shown.title}. ${shown.note}`;
+    if (shown.coins) addCoins(shown.coins, { pop: heroVisible });
+    feel("excitement", reward.rarity === "epic" ? 0.45 : 0.28);
+    feel("joy", reward.rarity === "common" ? 0.08 : 0.18);
+    noteEvent("crate");
+    playAll(reward.rarity === "epic" ? "celebrate" : "wave", 1);
+    say(shown.line, { announce: false });
+    await wait(calm() ? 0 : 450);
+    busy = false;
+  });
+  chips.forEach((c) => c.addEventListener("click", () => {
+    if (c.dataset.crate !== kind || opened || taps) choose(c.dataset.crate);
+  }));
+  new ResizeObserver(fit).observe(stage);
+  choose(kind);
+}
+
+// ------------------------------------------------------- caring together
+
+const CARE_VERBS = { feed: "fed", play: "played with", pet: "petted" };
+const CARE_ANIMS = { feed: "eat", play: "play", pet: "love" };
+const CARE_ICONS = { feed: "apple", play: "ball", pet: "heart" };
+const CARE_NEED = { feed: ["hunger", 18], play: ["fun", 22], pet: ["love", 14] };
+
+function setupCare() {
+  const tile = $("#care");
+  const log = $("#care-log");
+  const status = $("#care-status");
+  const needs = { hunger: 56, fun: 44, love: 62 };
+  const phones = $$(".cphone").map((root) => {
+    const slime = new SlimeActor($(".cphone-slime", root), { look: () => state.look });
+    lookActors.add(slime);
+    new Scene($(".cphone-scene", root), () => ({ habitat: "room", rows: 116, floor: 0.66, furniture: ROOM_FURNITURE }));
+    return { root, who: root.dataset.who, slime, toast: $(".cphone-toast", root), timer: 0 };
+  });
+  const now = Date.now();
+  const events = [
+    { who: "Ben", kind: "pet", at: now - 5 * 60000 },
+    { who: "Ana", kind: "feed", at: now - 47 * 60000 },
+    { who: "Ben", kind: "play", at: now - 3 * 3600000 },
+  ];
+  const text = (e) => `${e.who} ${CARE_VERBS[e.kind]} ${state.name}`;
+  const renderLog = () => {
+    log.replaceChildren(...events.slice(0, 4).map((e) => el("li", {},
+      itemCanvas(CARE_ICONS[e.kind], 2), el("span", { text: text(e) }), el("time", { text: ago(e.at) }))));
+  };
+  const paintNeeds = (phone) => {
+    for (const [id, v] of Object.entries(needs)) {
+      const bar = $(`.cphone-needs [data-need="${id}"] i`, phone.root);
+      if (bar) bar.style.width = Math.round(v) + "%";
+    }
+  };
+  const toast = (phone, line) => {
+    phone.toast.textContent = line;
+    phone.toast.classList.add("is-on");
+    clearTimeout(phone.timer);
+    phone.timer = setTimeout(() => phone.toast.classList.remove("is-on"), 3400);
+  };
+  let lastHand = 0;
+  const act = (from, kind, { auto = false } = {}) => {
+    const other = phones.find((p) => p !== from);
+    const e = { who: from.who, kind, at: Date.now() };
+    events.unshift(e);
+    events.length = Math.min(events.length, 8);
+    const [need, gain] = CARE_NEED[kind];
+    needs[need] = clamp(needs[need] + gain, FLOOR, 100);
+    from.slime.play(CARE_ANIMS[kind], 2);
+    paintNeeds(from);
+    // The other phone gets it a moment later, the way a care event arrives.
+    setTimeout(() => {
+      other.slime.play(CARE_ANIMS[kind], 2);
+      toast(other, `${text(e)} · just now`);
+      paintNeeds(other);
+    }, calm() ? 0 : 700);
+    renderLog();
+    feel("love", auto ? 0.03 : 0.08);
+    feel("joy", auto ? 0.03 : 0.06);
+    noteEvent("partner");
+    if (!auto) status.textContent = `${text(e)}. ${other.who}'s iPhone shows it too.`;
+  };
+  for (const p of phones) {
+    $$("[data-care]", p.root).forEach((b) => b.addEventListener("click", () => {
+      lastHand = Date.now();
+      act(p, b.dataset.care);
+    }));
+  }
+  // Now and then one of them looks after Blob without a click, so the sync
+  // is there to see.
+  const owner = {};
+  watch(tile, owner);
+  let turn = 1;
+  setInterval(() => {
+    if (document.hidden || !owner.visible || Date.now() - lastHand < 12000) return;
+    act(phones[turn++ % phones.length], rand(["feed", "play", "pet"]), { auto: true });
+  }, 8000);
+  setInterval(() => {
+    if (document.hidden) return;
+    for (const k of Object.keys(needs)) needs[k] = Math.max(FLOOR, needs[k] - 1);
+    phones.forEach(paintNeeds);
+  }, 5000);
+  setInterval(() => !document.hidden && renderLog(), 30000);
+  phones.forEach(paintNeeds);
+  renderLog();
+}
+
 // ---------------------------------------------------------------- friends
+
+/// "just now", "5 min ago", "2 h ago", "yesterday", like the app's activity rows.
+function ago(at) {
+  const s = Math.max(0, (Date.now() - at) / 1000);
+  if (s < 45) return "just now";
+  if (s < 3600) return `${Math.max(1, Math.round(s / 60))} min ago`;
+  if (s < 86400) return `${Math.round(s / 3600)} h ago`;
+  return s < 172800 ? "yesterday" : `${Math.round(s / 86400)} days ago`;
+}
 
 function setupFriends() {
   const friendLook = { stage: "young", skin: "bubblegum", hat: "hat.flower", glasses: null, scarf: null };
@@ -1362,28 +2056,33 @@ function setupFriends() {
   lookActors.add(me);
   const friend = new SlimeActor($("#meet-friend"), { look: friendLook, mirror: true });
   new Scene($("#meet-ground"), () => ({ habitat: "garden", rows: 52, floor: 0.7, season: "autumn" }));
-  const bar = $("#love-bar");
-  for (let i = 0; i < 10; i++) bar.append(el("i"));
-  const kiss = $('[data-friend="kiss"]');
-  const pct = $("#love-pct");
-  const note = $("#love-note");
   const bubble = $("#meet-bubble");
   const fx = $("#meet-fx");
+  const list = $("#moments");
+  const status = $("#moments-status");
+  const now = Date.now();
+  const moments = [
+    { text: "Mochi visited Blob", at: now - 2 * 3600000 },
+    { text: "Blob sent Mochi a cookie", at: now - 26 * 3600000 },
+    { text: "Blob and Mochi became friends", at: now - 4 * 86400000 },
+  ];
+  const name = () => state.name;
+  const render = () => {
+    list.replaceChildren(...moments.slice(0, 3).map((m) => el("li", {}, el("span", { text: m.text }), el("time", { text: ago(m.at) }))));
+  };
+  const add = (text) => {
+    moments.unshift({ text, at: Date.now() });
+    moments.length = Math.min(moments.length, 6);
+    render();
+    status.textContent = text + ".";
+  };
+  setInterval(() => !document.hidden && render(), 30000);
   let bt;
   const speak = (text) => {
     bubble.textContent = text;
     bubble.classList.add("is-on");
     clearTimeout(bt);
     bt = setTimeout(() => bubble.classList.remove("is-on"), 3000);
-  };
-  const render = () => {
-    $$("i", bar).forEach((s, i) => s.classList.toggle("on", i < Math.round(state.love / 10)));
-    pct.textContent = state.love + "%";
-    bar.setAttribute("aria-valuenow", String(state.love));
-    kiss.disabled = state.love < 50;
-    note.textContent = state.love >= 100 ? "Blob and Mochi are in love. For good."
-      : state.love >= 50 ? "Kiss unlocked. At 100% they fall in love."
-      : "Kiss unlocks at 50%. At 100% they fall in love.";
   };
   const heartsAt = (n) => {
     if (calm()) return;
@@ -1402,38 +2101,43 @@ function setupFriends() {
       ], { duration: 1600, delay: i * 150, easing: "ease-out", fill: "backwards" }).finished.then(() => c.remove());
     }
   };
-  const raise = (d) => {
-    const before = state.love;
-    state.love = clamp(state.love + d, 0, 100);
-    render();
-    if (state.love >= 100 && before < 100) {
-      me.setBase("love");
-      friend.setBase("love");
-      heartsAt(8);
-      speak("i think i'm in love. with mochi.");
-      flashReel("love", 8000);
-      if (!heroVisible) navIsland?.talk("i think i'm in love. with mochi.", 3600);
-    }
+  const tell = (text) => {
+    if (!heroVisible) navIsland?.talk(text, 3200);
   };
+  // MessagePreset in App/Online/HyprnodeAPI.swift: greetings are fixed phrases.
+  const GREETINGS = ["Hi!", "Let's play!", "Thank you!", "Good night!", "Good morning!", "I'm proud of you."];
+  let greeting = 0;
   let busy = false;
   $$(".meet-keys .btn").forEach((b) => b.addEventListener("click", async () => {
     if (busy) return;
     busy = true;
     const kind = b.dataset.friend;
     try {
+      noteEvent("friend");
       if (kind === "hug") {
+        feel("love", 0.15);
+        feel("joy", 0.1);
         speak("hug with mochi. soft.");
-        if (!heroVisible) navIsland?.talk("hug with mochi. soft.");
+        tell("hug with mochi. soft.");
         flashReel("love", 4000);
-        raise(10);
+        add(`${name()} hugged Mochi`);
         setTimeout(() => heartsAt(3), calm() ? 0 : 1600);
         await Promise.all([me.play("meet", 1), friend.play("meet", 1)]);
+      } else if (kind === "visit") {
+        feel("excitement", 0.2);
+        feel("curiosity", 0.1);
+        speak("knock knock. it's blob.");
+        tell("visiting mochi's garden");
+        add(`${name()} visited Mochi`);
+        await Promise.all([me.play("wave", 2), friend.play("celebrate", 2)]);
+        speak("come in. mind the flowers.");
       } else if (kind === "food") {
-        raise(5);
+        feel("joy", 0.1);
+        const food = rand(["cookie", "apple", "berry", "pudding"]);
         speak("a gift for mochi is on its way");
         if (!calm()) {
           const w = fx.clientWidth, h = fx.clientHeight, u = w / 96;
-          const c = itemCanvas("cookie", 1);
+          const c = itemCanvas(food, 1);
           c.style.width = c.style.height = 10 * u * 1.3 + "px";
           fx.append(c);
           const y = h * 0.5;
@@ -1445,14 +2149,18 @@ function setupFriends() {
           ], { duration: 900, easing: "ease-in-out" }).finished;
           c.remove();
         }
+        add(`${name()} sent Mochi ${food === "apple" ? "an apple" : `a ${foodName(food)}`}`);
         await friend.play("eat", 2);
-        speak("mail from blob. yum.");
+        speak(`mail from ${name().toLowerCase()}. yum.`);
         friend.play("love", 1);
-      } else if (kind === "kiss") {
-        speak(rand(["love you", "that's nice"]));
-        raise(15);
-        heartsAt(5);
-        await Promise.all([me.play("blush", 2), friend.play("blush", 2)]);
+      } else if (kind === "greet") {
+        const text = GREETINGS[greeting++ % GREETINGS.length];
+        feel("joy", 0.12);
+        speak(text);
+        tell(`to mochi: ${text.toLowerCase()}`);
+        add(`${name()} said “${text}” to Mochi`);
+        heartsAt(1);
+        await Promise.all([me.play("wave", 1), friend.play("wave", 2)]);
       }
     } finally {
       busy = false;
@@ -1586,6 +2294,9 @@ async function boot() {
   setupBooth();
   setupGet();
   setupTimer();
+  setupFeelings();
+  setupCrates();
+  setupCare();
   setupFriends();
   onTheme(() => {
     redrawWorld();
@@ -1616,12 +2327,10 @@ async function boot() {
 
   // Small talk and idle fidgets while you watch, like HomeView.
   ["pointerdown", "keydown"].forEach((t) => addEventListener(t, () => (lastTouch = Date.now()), { passive: true }));
+  startChatter();
   setInterval(() => {
     if (document.hidden || !heroVisible || !hero.visible || state.asleep || Date.now() - lastTouch < 9000) return;
-    if (state.sx && Math.random() < 0.5) return hopTo(0);
-    const w = wish();
-    if (Math.random() < 0.5) playAll(rand(["curious", "blush", "stretch", "wave"]), 1);
-    if (Math.random() < 0.6) say(w ? rand(WISH_LINES[w.id]) : rand(CHATTER), { announce: false });
+    if (state.sx && Math.random() < 0.5) hopTo(0);
   }, 11000);
 }
 

@@ -9,7 +9,8 @@
 //
 // Shapes and status codes follow server/src/admin.js: opaque device cursors,
 // bannedAt, resolvedAt, reporter { id: null, ownerName: null } once deleted,
-// 409 on resolving twice, games.plays7d always null.
+// 409 on resolving twice, games.plays7d always null, care.pairs and
+// carePartner (1.1). Banning or deleting a device ends its care pair.
 
 import { randomBytes } from "node:crypto";
 
@@ -101,6 +102,10 @@ Object.entries(special).forEach(([key, value], i) => {
   specialIds[key] = d.id;
 });
 
+// Two devices found the crate-only colour.
+devices[3].skin = "axolotl";
+devices[41].skin = "axolotl";
+
 const byId = new Map(devices.map((d) => [d.id, d]));
 
 // Friendships: pairs with love 0-100; full love can mean "in love".
@@ -114,6 +119,38 @@ for (let i = 0; i < 230; i++) {
   seen.add(pairKey(a.id, b.id));
   const love = Math.min(100, Math.floor(rand() ** 0.7 * 100));
   friendships.push({ a: a.id, b: b.id, love, inLove: love >= 92 && rand() < 0.7 });
+}
+
+// Care pairs (1.1): two devices sharing one slime. A separate random stream,
+// so the data above stays the same. The first pair includes a hand-picked
+// device, so its page shows a partner.
+const careRand = mulberry32(11);
+const carePairs = [];
+{
+  const taken = new Set();
+  const candidates = devices.filter((d) => d.level != null && !d.banned);
+  const free = (d) => d && !taken.has(d.id);
+  const add = (host, joiner) => {
+    if (!free(host) || !free(joiner) || host === joiner) return;
+    taken.add(host.id);
+    taken.add(joiner.id);
+    carePairs.push({ host: host.id, joiner: joiner.id });
+  };
+  add(byId.get(specialIds.requester), candidates[5]);
+  for (let i = 0; i < 40 && carePairs.length < 17; i++) {
+    add(candidates[Math.floor(careRand() * candidates.length)], candidates[Math.floor(careRand() * candidates.length)]);
+  }
+}
+const carePairOf = (id) => carePairs.find((p) => p.host === id || p.joiner === id) ?? null;
+function carePartnerOf(id) {
+  const pair = carePairOf(id);
+  if (!pair) return null;
+  const other = byId.get(pair.host === id ? pair.joiner : pair.host);
+  return other ? { id: other.id, ownerName: other.ownerName } : null;
+}
+function endCare(id) {
+  const pair = carePairOf(id);
+  if (pair) carePairs.splice(carePairs.indexOf(pair), 1);
 }
 
 // Best scores per game, like PUT /me/records stores them. A separate random
@@ -279,13 +316,14 @@ function stats() {
       banned: devices.filter((d) => d.banned).length,
     },
     friendships: { total: friendships.length, inLove: friendships.filter((f) => f.inLove).length },
+    care: { pairs: carePairs.length },
     events24h: EVENTS_24H,
     pairCodes24h: PAIR_CODES_24H,
     reports: { open: reports.filter((r) => r.status === "open").length, total: reports.length },
     chat: { today: { requests: reqToday, failures: failToday, byProvider }, last7 },
     games: { plays7d: PLAYS_7D },
     db: { bytes: 3_482_624 + devices.length * 2048 },
-    server: { version: "1.0.0", uptimeSec: Math.floor((Date.now() - STARTED) / 1000) + 3 * 86400 + 4 * 3600, node: process.version },
+    server: { version: "1.1.0", uptimeSec: Math.floor((Date.now() - STARTED) / 1000) + 3 * 86400 + 4 * 3600, node: process.version },
     providers: PROVIDERS,
   };
 }
@@ -428,6 +466,7 @@ async function route(req, res, url) {
     if (action === "ban") {
       if (!target.banned) target.bannedAt = Date.now();
       target.banned = true;
+      endCare(target.id);
       resolveOpen((r) => r.reportedId === target.id, "ban");
     }
     resolveOpen((r) => r === report, action);
@@ -469,6 +508,7 @@ async function route(req, res, url) {
       const against = reports.filter((r) => r.reportedId === device.id).sort((a, b) => b.id - a.id).map(reportJson);
       return send(res, 200, {
         device: deviceJson(device),
+        carePartner: carePartnerOf(device.id),
         friends,
         reports: against,
         reportsFiled: reports.filter((r) => r.reporterId === device.id).length,
@@ -476,6 +516,7 @@ async function route(req, res, url) {
       });
     }
     if (!action && method === "DELETE") {
+      endCare(device.id);
       devices.splice(devices.indexOf(device), 1);
       byId.delete(device.id);
       for (let i = friendships.length - 1; i >= 0; i--) {
@@ -492,6 +533,7 @@ async function route(req, res, url) {
       if (action === "ban" && !device.banned) {
         device.banned = true;
         device.bannedAt = Date.now();
+        endCare(device.id);
       }
       if (action === "unban") {
         device.banned = false;

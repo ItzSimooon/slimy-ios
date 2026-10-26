@@ -371,7 +371,7 @@ private enum BoothPose: String, CaseIterable, Identifiable, Hashable {
         switch self {
         case .wave: "Wave"
         case .idle: "Chill"
-        case .love: "Love"
+        case .love: "Hearts"
         case .celebrate: "Party"
         case .play: "Jump"
         case .blush: "Shy"
@@ -387,7 +387,7 @@ private enum BoothPose: String, CaseIterable, Identifiable, Hashable {
         switch self {
         case .wave: "waving"
         case .idle: "relaxing"
-        case .love: "in love"
+        case .love: "sending hearts"
         case .celebrate: "celebrating"
         case .play: "jumping"
         case .blush: "blushing"

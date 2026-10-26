@@ -22,6 +22,87 @@ struct ChatAvatar: View {
     }
 }
 
+/// How the chat puts the slime's feelings into words: the header says what
+/// the home screen says (`SlimeMoodWord`), and each reply carries the
+/// feeling it expressed.
+enum ChatMood {
+    /// From this intensity on, a feeling takes its stronger word.
+    private static let strong = 0.55
+
+    /// One feeling as a word that follows "feeling": "content" when mild,
+    /// "cheerful" when strong. `SlimeMoodWord` only words a whole slime, so
+    /// this mirrors its per-feeling words until it can word a single feeling.
+    static func word(_ emotion: Emotion, intensity: Double) -> String {
+        let isStrong = intensity >= strong
+        switch emotion {
+        case .joy: return isStrong ? "cheerful" : "content"
+        case .sadness: return isStrong ? "sad" : "glum"
+        case .anger: return isStrong ? "cross" : "grumpy"
+        case .fear: return isStrong ? "scared" : "nervous"
+        case .love: return isStrong ? "cuddly" : "fond"
+        case .curiosity: return isStrong ? "fascinated" : "curious"
+        case .boredom: return isStrong ? "bored" : "a bit bored"
+        case .excitement: return isStrong ? "excited" : "eager"
+        case .sleepiness: return isStrong ? "sleepy" : "drowsy"
+        }
+    }
+
+    /// A small touch of colour next to the word.
+    static func tint(_ emotion: Emotion) -> Color {
+        switch emotion {
+        case .joy, .excitement: Theme.gold
+        case .love: Theme.love
+        case .sadness, .fear: Theme.sky
+        case .anger: Theme.danger
+        case .curiosity: Theme.accent
+        case .boredom, .sleepiness: Theme.inkSoft
+        }
+    }
+
+    /// The line under the slime's name in the chat header: the same word
+    /// the home screen shows under its name.
+    static func status(of slime: Slime) -> String {
+        slime.isAsleep ? "Asleep" : "Feeling \(SlimeMoodWord.word(for: slime))"
+    }
+
+    /// The word under a reply. Replies saved before the server sent an
+    /// intensity count as mild.
+    static func word(for message: ChatMessage) -> String? {
+        guard let emotion = message.emotion else { return nil }
+        return word(emotion, intensity: message.intensity ?? 0.5)
+    }
+}
+
+/// The feeling a reply expressed, quietly under its bubble: one pixel in
+/// the feeling's colour and its word.
+struct ChatMoodLabel: View {
+    let emotion: Emotion
+    let word: String
+
+    @ScaledMetric(relativeTo: .caption2) private var pixel: CGFloat = 6
+
+    var body: some View {
+        HStack(spacing: 5) {
+            Rectangle()
+                .fill(ChatMood.tint(emotion))
+                .frame(width: pixel, height: pixel)
+            Text(word)
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(Theme.inkSoft)
+        }
+        .accessibilityHidden(true)
+    }
+}
+
+private extension VerticalAlignment {
+    /// The bottom of a slime bubble, below which its mood line may follow.
+    enum ChatBubbleBottom: AlignmentID {
+        static func defaultValue(in d: ViewDimensions) -> CGFloat { d[.bottom] }
+    }
+
+    static let chatBubbleBottom = VerticalAlignment(ChatBubbleBottom.self)
+}
+
 /// A message bubble. On the last message of a run, the corner nearest the
 /// sender is tighter, like a small tail.
 struct ChatBubbleShape: Shape {
@@ -84,7 +165,8 @@ struct ChatBubbleRow: View {
     }
 
     private var theirs: some View {
-        HStack(alignment: .bottom, spacing: 8) {
+        // The portrait sits by the bubble's tail, not by the line under it.
+        HStack(alignment: .chatBubbleBottom, spacing: 8) {
             Group {
                 if endsRun {
                     ChatAvatar(slime: slime, size: avatarSize)
@@ -103,22 +185,39 @@ struct ChatBubbleRow: View {
                             Button(action: onReport) { Label("Report Reply", systemImage: "exclamationmark.bubble") }
                         }
                     }
-                if message.reported {
-                    Text("Reported")
-                        .font(.caption2.weight(.semibold))
-                        .foregroundStyle(Theme.inkSoft)
-                        .padding(.leading, 8)
+                    .alignmentGuide(.chatBubbleBottom) { $0[.bottom] }
+                if message.emotion != nil || message.reported {
+                    HStack(spacing: 8) {
+                        if let emotion = message.emotion, let word = ChatMood.word(for: message) {
+                            ChatMoodLabel(emotion: emotion, word: word)
+                        }
+                        if message.reported {
+                            Text("Reported")
+                                .font(.caption2.weight(.semibold))
+                                .foregroundStyle(Theme.inkSoft)
+                        }
+                    }
+                    .padding(.leading, 8)
                 }
             }
             Spacer(minLength: 44)
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("\(slime.name): \(message.text)")
-        .accessibilityValue(message.reported ? "Reported" : "")
+        .accessibilityValue(accessibilityDetails)
         .accessibilityAction(named: "Copy", onCopy)
         .accessibilityAction(named: "Report reply") {
             if !message.reported { onReport() }
         }
+    }
+
+    /// What VoiceOver reads after a reply: how the slime felt saying it,
+    /// and whether you reported it.
+    private var accessibilityDetails: String {
+        var details: [String] = []
+        if let word = ChatMood.word(for: message) { details.append("Feeling \(word)") }
+        if message.reported { details.append("Reported") }
+        return details.joined(separator: ", ")
     }
 
     private func bubble(fill: Color, text: Color, mine: Bool) -> some View {

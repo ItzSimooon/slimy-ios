@@ -94,44 +94,52 @@ final class CoreStreakTests: XCTestCase {
         XCTAssertEqual(state.streak.opened, 3)
     }
 
-    func testSeventhGiftBringsTheNextSpecialItem() throws {
+    func testSeventhGiftIsAMysteryCrateAndItsCoins() throws {
         var state = hatchedState()
         var last: DailyGift?
+        var coinsBefore = state.wallet.coins
         for day in 4...10 {
+            coinsBefore = state.wallet.coins
             last = state.claimDailyGift(now: date(2026, 5, day), calendar: berlin)?.gift
         }
         let seventh = try XCTUnwrap(last)
         XCTAssertEqual(seventh.day, 7)
         XCTAssertTrue(seventh.isSpecial)
-        XCTAssertEqual(seventh.item, Streak.specialItems[0])
-        XCTAssertTrue(state.owns(Streak.specialItems[0]))
-        XCTAssertEqual(state.streak.lastItem, Streak.specialItems[0])
+        XCTAssertEqual(seventh.crate, .mystery)
+        XCTAssertNil(seventh.item)
+        XCTAssertEqual(seventh.coins, Streak.coins[6])
+        XCTAssertEqual(seventh.summary, "Mystery crate and \(Streak.coins[6]) coins")
+        XCTAssertEqual(seventh.icon, CrateKind.mystery.sprite)
+        XCTAssertEqual(state.crateCount(.mystery), 1)
+        XCTAssertGreaterThanOrEqual(state.wallet.coins, coinsBefore + Streak.coins[6])
         for id in ["streak3", "streak7", "gifts7"] {
             XCTAssertNotNil(state.progress.achievements[id], id)
         }
-        // The item is unlocked in the shop by that achievement, so it all agrees.
-        let chest = try XCTUnwrap(Catalog.item(Streak.specialItems[0]))
+        // The furniture that used to come on day seven is free in the shop
+        // once its achievement is earned.
+        let chest = try XCTUnwrap(Catalog.item("furn.chest"))
         XCTAssertTrue(state.isAvailable(chest.unlock, now: date(2026, 5, 10), calendar: berlin))
 
         // Still the 7th: the tile shows what it held.
         let sameDay = state.streakInfo(at: date(2026, 5, 10, 20), calendar: berlin)
         XCTAssertEqual(sameDay.today, 7)
-        XCTAssertEqual(sameDay.week[6].item, Streak.specialItems[0])
+        XCTAssertEqual(sameDay.week[6].crate, .mystery)
 
-        // A new week begins, with the next item waiting at its end.
+        // A new week begins, with another crate waiting at its end.
         let nextWeek = state.streakInfo(at: date(2026, 5, 11), calendar: berlin)
         XCTAssertEqual(nextWeek.today, 1)
         XCTAssertEqual(nextWeek.current, 7)
-        XCTAssertEqual(nextWeek.week[6].item, Streak.specialItems[1])
+        XCTAssertEqual(nextWeek.week[6].crate, .mystery)
     }
 
-    func testBonusCoinsOnceEveryItemIsOwned() {
-        var state = hatchedState()
-        state.inventory.owned.formUnion(Streak.specialItems)
+    func testOnlyTheSeventhGiftHoldsACrate() {
+        let state = hatchedState()
         let week = state.streakInfo(at: date(2026, 5, 4), calendar: berlin).week
-        XCTAssertNil(week[6].item)
-        XCTAssertEqual(week[6].coins, Streak.coins[6] + Streak.bonusWhenAllOwned)
         XCTAssertEqual(week.map(\.day), Array(1...7))
+        XCTAssertEqual(week.compactMap(\.crate), [.mystery])
+        XCTAssertNil(week[0].crate)
+        XCTAssertEqual(week.map(\.coins), Streak.coins)
+        XCTAssertEqual(week[0].title, "\(Streak.coins[0]) coins")
     }
 
     func testClockOneDayBackWaitsForTheDayAfter() {
@@ -213,12 +221,15 @@ final class CoreAchievementTests: XCTestCase {
     func testAchievementIDsAreUniqueAndPlenty() {
         let ids = Achievements.all.map(\.id)
         XCTAssertEqual(Set(ids).count, ids.count)
-        XCTAssertGreaterThanOrEqual(ids.count, 44)
+        XCTAssertGreaterThanOrEqual(ids.count, 49)
         for a in Achievements.all {
             XCTAssertFalse(a.title.isEmpty, a.id)
             XCTAssertTrue(a.detail.hasSuffix("."), a.id)
             XCTAssertGreaterThan(a.coins, 0, a.id)
         }
+        // Exactly one secret: the legendary find.
+        XCTAssertEqual(Achievements.all.filter(\.hidden).map(\.id), ["legendary"])
+        XCTAssertFalse(Achievements.all.filter { $0.crate != nil }.isEmpty)
     }
 
     func testFreshSlimeHasNoneOfTheNewOnes() {
@@ -234,7 +245,7 @@ final class CoreAchievementTests: XCTestCase {
                 XCTAssertNotNil(Achievements.achievement(id), item.id)
             }
         }
-        for id in Streak.specialItems + ["furn.cake", "furn.jackolantern", "furn.stars"] {
+        for id in ["furn.chest", "furn.crystal", "furn.flag", "furn.cake", "furn.jackolantern", "furn.stars"] {
             XCTAssertNotNil(Catalog.item(id), id)
         }
     }
@@ -318,5 +329,15 @@ final class CoreAchievementTests: XCTestCase {
             XCTAssertTrue(state.slime.isUnlocked(skin), skin.rawValue)
         }
         XCTAssertFalse(state.slime.isUnlocked(.grape))
+    }
+
+    func testTheSecretColourNeverUnlocksByLevel() {
+        var state = hatchedState()
+        state.slime.xp = Slime.xpNeeded(for: 200)
+        XCTAssertTrue(state.slime.isUnlocked(.void))
+        XCTAssertFalse(state.slime.isUnlocked(.axolotl))
+        XCTAssertTrue(Skin.axolotl.isSecret)
+        state.slime.colours.insert(.axolotl)
+        XCTAssertTrue(state.slime.isUnlocked(.axolotl))
     }
 }

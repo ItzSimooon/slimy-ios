@@ -88,6 +88,30 @@ enum PhoneEvent: String, Codable, CaseIterable, Identifiable, Hashable {
         }
     }
 
+    /// How it makes the slime feel.
+    var feeling: (emotion: Emotion, amount: Double)? {
+        switch self {
+        case .batteryLow: (.sadness, 0.1)
+        case .batteryCritical: (.fear, 0.3)
+        case .batteryFull: (.excitement, 0.2)
+        case .chargerConnected: (.joy, 0.15)
+        case .chargerDisconnected: (.curiosity, 0.1)
+        case .wifiConnected: (.curiosity, 0.15)
+        case .wifiDisconnected: (.fear, 0.1)
+        case .cellular: (.curiosity, 0.1)
+        case .offline: (.fear, 0.15)
+        case .backOnline: (.joy, 0.15)
+        case .airplaneOn: (.excitement, 0.2)
+        case .airplaneOff: (.joy, 0.1)
+        case .lowPowerOn: (.sleepiness, 0.15)
+        case .lowPowerOff: (.excitement, 0.1)
+        case .goodMorning: (.joy, 0.15)
+        case .goodNight: (.love, 0.1)
+        case .alarm: (.fear, 0.15)
+        case .newHour: nil
+        }
+    }
+
     /// Whether the island should pop open with a sound.
     var alerts: Bool {
         switch self {

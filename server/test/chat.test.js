@@ -1,6 +1,8 @@
 import { describe, test } from "node:test";
 import assert from "node:assert/strict";
-import { DEFAULTS, GENTLE, MAX_REPLY, SLEEPY, createChat, parseReply, providersFrom, systemPrompt } from "../src/chat.js";
+import {
+  DEFAULTS, GENTLE, MAX_REPLY, SLEEPY, createChat, describeFeelings, parseEmotion, parseReply, providersFrom, systemPrompt,
+} from "../src/chat.js";
 import { HttpError } from "../src/util.js";
 
 // The chat against a fake fetch: each provider answers what the test says,
@@ -55,7 +57,8 @@ describe("providers", () => {
     assert.equal(r.body.model, "@cf/test/model");
     assert.equal(r.body.max_tokens, 300);
     assert.equal(r.body.response_format.type, "json_schema");
-    assert.deepEqual(r.body.response_format.json_schema.schema.required, ["reply", "reaction"]);
+    // Strict structured output lists every key; the API answer leaves an unusable emotion out.
+    assert.deepEqual(r.body.response_format.json_schema.schema.required, ["reply", "reaction", "emotion"]);
     assert.ok(r.signal instanceof AbortSignal);
   });
 
@@ -227,9 +230,92 @@ describe("prompt", () => {
     assert.doesNotMatch(prompt, /\b(der|die|das|und|nicht|ist)\b/);
   });
 
+  test("without a partner it says nothing about friends and keeps the facts together", () => {
+    const prompt = systemPrompt(SLIME);
+    assert.doesNotMatch(prompt, /friends/);
+    assert.match(prompt, /- Favourite food: cake\n- Your human's local time: 12:00\n/);
+    assert.match(systemPrompt({ ...SLIME, localTime: "" }), /- Favourite food: cake\n\n/);
+  });
+
   test("no German is left in the request", async () => {
     const { requests, ask } = harness({ GROQ_API_KEY: "k" }, () => said('{"reply":"ok","reaction":"none"}'));
     await ask();
     assert.doesNotMatch(JSON.stringify(requests[0].body.response_format), /\b(die|der|das|dabei|zeigt)\b/);
+  });
+});
+
+describe("emotions", () => {
+  const FEELS = { ...SLIME, emotions: { joy: 0.82, sleepiness: 0.2, curiosity: 0.5, fear: 0.04 } };
+
+  test("the schema asks for the one feeling the reply expresses", async () => {
+    const { requests, ask } = harness({ GROQ_API_KEY: "k" }, () => said('{"reply":"ok","reaction":"none","emotion":{"name":"joy","intensity":0.5}}'));
+    await ask();
+    const schema = requests[0].body.response_format.json_schema.schema;
+    assert.deepEqual(schema.properties.emotion.properties.name.enum,
+      ["joy", "sadness", "anger", "fear", "love", "curiosity", "boredom", "excitement", "sleepiness"]);
+    assert.equal(schema.properties.emotion.properties.intensity.type, "number");
+    assert.deepEqual(schema.properties.emotion.required, ["name", "intensity"]);
+    assert.equal(schema.properties.emotion.additionalProperties, false);
+    assert.equal(requests[0].body.response_format.json_schema.strict, true);
+  });
+
+  test("the prompt names the feelings in plain words, strongest first, and asks to stay in the mood", () => {
+    const prompt = systemPrompt(FEELS);
+    // Fear at 0.04 is too faint to mention.
+    assert.equal(prompt.split("\n").find((line) => line.startsWith("How you feel")),
+      "How you feel right now, strongest first: very happy, curious, a little sleepy.");
+    assert.match(prompt, /Speak in that mood/);
+    assert.match(prompt, /words can change how you feel/);
+    assert.match(prompt, /never blame your human/);
+    assert.match(prompt, /"emotion": \{"name": "<one feeling>", "intensity": <0 to 1>\}/);
+    assert.match(prompt, /one of: joy, sadness, anger, fear, love, curiosity, boredom, excitement, sleepiness/);
+    assert.doesNotMatch(prompt, /\b(der|die|das|und|nicht|ist)\b/);
+  });
+
+  test("feelings: at most four, faint ones left out, calm when nothing is strong, nothing without emotions", () => {
+    assert.deepEqual(describeFeelings({ sadness: 0.9, anger: 0.5, boredom: 0.36, love: 0.34, fear: 0.2, joy: 0.09 }),
+      ["very sad", "grumpy", "bored", "a little loving"]);
+    assert.deepEqual(describeFeelings({ excitement: 0.6, joy: 0.6 }), ["happy", "excited"]);
+    assert.deepEqual(describeFeelings({ joy: "lots", love: Number.NaN }), []);
+    assert.deepEqual(describeFeelings(null), []);
+    assert.match(systemPrompt({ ...SLIME, emotions: { joy: 0.05 } }), /you feel calm/);
+    const old = systemPrompt(SLIME);
+    assert.doesNotMatch(old, /How you feel right now|you feel calm/);
+    // Old apps send no emotions; the slime may still change its mood and name it.
+    assert.match(old, /"emotion"/);
+  });
+
+  test("the reply carries the emotion the model named", async () => {
+    const { ask } = harness({ GROQ_API_KEY: "k" },
+      () => said('{"reply":"yawn... is it nap time?","reaction":"stretch","emotion":{"name":"sleepiness","intensity":0.7}}'));
+    assert.deepEqual(await ask(), { reply: "yawn... is it nap time?", reaction: "stretch", emotion: { name: "sleepiness", intensity: 0.7 } });
+  });
+
+  test("no emotion, an unknown one or a moderated reply means no emotion in the answer", async () => {
+    for (const content of [
+      '{"reply":"hi","reaction":"wave"}',
+      '{"reply":"hi","reaction":"wave","emotion":{"name":"rage","intensity":0.9}}',
+      '{"reply":"hi","reaction":"wave","emotion":null}',
+    ]) {
+      const { ask } = harness({ GROQ_API_KEY: "k" }, () => said(content));
+      assert.deepEqual(await ask(), { reply: "hi", reaction: "wave" }, content);
+    }
+    const { ask } = harness({ GROQ_API_KEY: "k" }, () => said('{"reply":"go to www.example.com","reaction":"wave","emotion":{"name":"joy","intensity":1}}'));
+    assert.deepEqual(await ask(), { reply: GENTLE.output[0], reaction: "confused" });
+  });
+
+  test("parsing is tolerant: flat fields, everyday words, percentages, broken JSON", () => {
+    assert.deepEqual(parseReply('{"reply":"hi","reaction":"wave","emotion":"Happy","intensity":"70%"}').emotion, { name: "joy", intensity: 0.7 });
+    assert.deepEqual(parseReply('{"reply":"hi","emotion":{"name":"sleepy", "intensity": 0.333},}').emotion, { name: "sleepiness", intensity: 0.33 });
+    assert.deepEqual(parseReply('```json\n{"reply":"boo","reaction":"hide","emotion":{"name":"fear","intensity":85}}\n```').emotion,
+      { name: "fear", intensity: 0.85 });
+    assert.deepEqual(parseReply({ reply: "hi", reaction: "wave", emotion: { name: "LOVE" } }).emotion, { name: "love", intensity: 0.5 });
+    assert.equal(parseReply("just a little blub.").emotion, undefined);
+    assert.deepEqual(parseEmotion("curious", 2.5), { name: "curiosity", intensity: 0.03 });
+    assert.deepEqual(parseEmotion({ emotion: "excited", intensity: -1 }), { name: "excitement", intensity: 0 });
+    assert.deepEqual(parseEmotion("bored", 1000), { name: "boredom", intensity: 1 });
+    assert.equal(parseEmotion("hungry", 0.5), null);
+    assert.equal(parseEmotion(42, 0.5), null);
+    assert.equal(parseEmotion(null), null);
   });
 });

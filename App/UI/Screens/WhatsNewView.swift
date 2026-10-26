@@ -12,23 +12,21 @@ enum WhatsNew {
         var id: String { title }
     }
 
-    static let version = "1.0"
+    static let version = "1.1"
 
     static let items: [Item] = [
-        Item(symbol: "paintbrush.pointed.fill", title: "A fresh look",
-             detail: "Clearer screens that follow Light and Dark Mode and your text size."),
-        Item(symbol: "gift.fill", title: "Daily gifts",
-             detail: "Open a gift every day. Come back day after day to build a streak."),
-        Item(symbol: "gamecontroller.fill", title: "Two new games",
-             detail: "Slime Stack and Jelly Dash join the arcade."),
-        Item(symbol: "camera.fill", title: "Photo booth",
-             detail: "Take pictures of your slime and save them to your photo library."),
-        Item(symbol: "trophy.fill", title: "Friends leaderboard",
-             detail: "See who has the best score in every game, you or your friends."),
-        Item(symbol: "bubble.left.and.bubble.right.fill", title: "Talk to your slime",
-             detail: "Free AI chat. It stays off until you say yes."),
-        Item(symbol: "leaf.fill", title: "Seasonal events",
-             detail: "The home changes with the seasons, with special items around Halloween and Christmas."),
+        Item(symbol: "shippingbox.fill", title: "Crates with a secret",
+             detail: "Earn crates or buy them with coins, then tap them open. The drop rates are listed in the app, and one legendary reward is a secret."),
+        Item(symbol: "person.2.fill", title: "Care Together",
+             detail: "Share your slime with one other person. Every meal, game, bath and cuddle shows up on both iPhones."),
+        Item(symbol: "bubble.left.fill", title: "A chattier slime",
+             detail: "It says what's on its mind every few seconds while you watch. You can turn this off in Settings."),
+        Item(symbol: "face.smiling", title: "Real feelings",
+             detail: "Your slime can be cheerful, curious, grumpy, sleepy and more. You see it in its mood, in how it moves and in what it says."),
+        Item(symbol: "bubble.left.and.bubble.right.fill", title: "Chats with feeling",
+             detail: "When you talk with your slime, it answers in its mood, and your words can cheer it up."),
+        Item(symbol: "figure.2.arms.open", title: "Friends, simpler",
+             detail: "The love meter and kisses are gone. Hugs, visits, gifts, greetings, challenges and the shared garden stay."),
     ]
 
     private static let seenKey = "slimy.whatsNew.seen"

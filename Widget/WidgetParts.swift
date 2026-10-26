@@ -103,7 +103,7 @@ struct StillSlime: View {
             if mode == .fullColor {
                 PixelSlime(frame: frame, skin: skin, accessories: accessories, stage: stage, anchor: anchor)
             } else {
-                MonoSlime(frame: frame, accessories: accessories, anchor: anchor)
+                MonoSlime(frame: frame, skin: skin, accessories: accessories, anchor: anchor)
                     .widgetAccentable()
             }
         }
@@ -113,9 +113,10 @@ struct StillSlime: View {
 
 /// One frame of the slime in shades of white, for the system to tint. The
 /// outline and eyes stay faint, the shine stays bright, so it reads as a
-/// slime and not as a flat blob.
+/// slime and not as a flat blob. The axolotl's gills stay bright too.
 private struct MonoSlime: View {
     let frame: [String]
+    let skin: Skin
     var accessories: Accessories
     var anchor: [Int]?
 
@@ -139,6 +140,12 @@ private struct MonoSlime: View {
     private var layers: [Layer] {
         var out = SpriteLayer.allCases.map {
             Layer(id: $0.rawValue, rows: frame, code: $0.code, opacity: Self.opacity(for: $0))
+        }
+        if let overlay = skin.overlay, let grid = SlimeSprites.overlay(skin, on: frame) {
+            for key in overlay.palette.keys.sorted() {
+                guard let code = key.first else { continue }
+                out.append(Layer(id: "skin.\(key)", rows: grid, code: code, opacity: 0.85))
+            }
         }
         guard let anchor, anchor.count >= 4 else { return out }
         for item in [accessories.scarf, accessories.glasses, accessories.hat].compactMap({ $0 }) {

@@ -35,6 +35,8 @@ struct SlimyApp: App {
                 becameActive()
             case .background:
                 Feedback.shared.updateMusic(active: false)
+                // Stops syncing the shared slime and sends what changed.
+                friends.enterBackground()
                 BackgroundRefresh.schedule()
                 PhoneMonitor.schedulePowerCheck()
             default:
@@ -58,6 +60,9 @@ struct SlimyApp: App {
             return
         }
         PhoneMonitor.shared.start()
+        // While Slimy is on screen, a slime cared for together syncs with
+        // the partner's phone every 20 seconds.
+        friends.startCarePolling()
         Task {
             if store.state.hatched { await island.ensureRunning() }
             await friends.refresh()
@@ -68,10 +73,10 @@ struct SlimyApp: App {
 }
 
 /// Every ~30 minutes (when iOS allows it; never guaranteed): age the slime,
-/// check friends, update the island, and let the slime say once that it
-/// needs something. iOS doesn't let a background run start a Live Activity,
-/// so this only updates the one that is running; opening the app or "Summon
-/// Slime" brings it back after iOS has ended it.
+/// check friends and what a care partner did, update the island, and let
+/// the slime say once that it needs something. iOS doesn't let a background
+/// run start a Live Activity, so this only updates the one that is running;
+/// opening the app or "Summon Slime" brings it back after iOS has ended it.
 enum BackgroundRefresh {
     static let id = "de.hyprnode.slimy.refresh"
 

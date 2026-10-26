@@ -2,15 +2,15 @@
 
 How Slimy runs today, how to change and deploy each part, and what is still open. For whoever operates **slime.hyprnode.de** next, including future you.
 
-State: **26 October 2026**, work on branch `website` (not yet merged into `main`).
+State: **26 October 2026**, Slimy **1.1** on branch `release-1.0` (1.0 is released as a sideloaded beta; 1.1 is not merged into `main` yet).
 
 | Part | Where | Status |
 |---|---|---|
-| iOS app 1.0 | `App/`, `Shared/`, `Widget/` | Built by CI, sideloaded beta on GitHub Releases. App Store submission is next (`appstore/`). |
-| API server | `server/` → CT 108 | Live at `https://slime.hyprnode.de/api/v1` (pre-1.0 version). Deploy 1.0 and add the AI keys (sections 2 and 4). |
-| Website | `site/` → CT 108 | Built from this repo, served by Caddy on CT 108. |
-| Admin area | `site/admin/` + `/api/v1/admin/*` | Needs the passphrase and the LAN-only Caddyfile (section 3). |
-| Store listing | `appstore/` | Texts, review notes, privacy and age rating ready. |
+| iOS app 1.1 | `App/`, `Shared/`, `Widget/` | Crates, Care Together, feelings, a slime that talks on its own; love between slimes removed. Built by CI. App Store submission is next (`appstore/`). |
+| API server | `server/` → CT 108 | Live at `https://slime.hyprnode.de/api/v1`. Deploy 1.1 **before** the 1.1 app reaches anyone: Care Together and chat feelings need it (sections 2 and 4). |
+| Website | `site/` → CT 108 | Built from this repo, served by Caddy on CT 108. 1.1 adds the "New in 1.1" section, crate, feelings and Care Together demos, support answers and the privacy policy for Care Together. |
+| Admin area | `site/admin/` + `/api/v1/admin/*` | Needs the passphrase and the LAN-only Caddyfile (section 3). 1.1 shows care pairs and a device's care partner. |
+| Store listing | `appstore/` | 1.1 texts, review notes, privacy and age rating ready. |
 
 Read `server/README.md` before touching the API; it is the contract between server, app and admin. Change it only together with `App/Online/HyprnodeAPI.swift` and, for admin routes, `site/admin/`. **`server/DEPLOY.md`** is the step-by-step for the container: environment file, AI tokens, admin passphrase, the complete Caddyfile, the systemd unit and a smoke test. This file gives the overview and the decisions around it.
 
@@ -18,8 +18,9 @@ Read `server/README.md` before touching the API; it is the contract between serv
 
 ## 1. How the pieces fit
 
-- **The app is offline first.** The slime, its needs, coins, items, records and chat history live on the iPhone (shared with the widgets through the App Group `group.de.hyprnode.slimy`). Nothing is sent until the user taps **Go Online** in Friends or Talk and accepts the Terms.
-- **The server** (Node, one SQLite file, zero npm dependencies) handles devices, friends, love, gifts, visits, greetings, challenges, the shared garden, records and the friends leaderboard, reports and bans, the chat proxy to free AI providers, and the admin API.
+- **The app is offline first.** The slime, its needs, coins, items, records and chat history live on the iPhone (shared with the widgets through the App Group `group.de.hyprnode.slimy`). Nothing is sent until the user taps **Go Online** in Friends, Care Together or Talk and accepts the Terms.
+- **The server** (Node, one SQLite file, zero npm dependencies) handles devices, friends, gifts, visits, greetings, challenges, the shared garden, records and the friends leaderboard, Care Together (care codes, the shared slime snapshot, care events), reports and bans, the chat proxy to free AI providers (with the slime's feelings), and the admin API. Love between slimes is gone from the 1.1 app; the server keeps the love fields and the kiss interaction working for 1.0 apps, and nothing new depends on them.
+- **Crates and feelings live on the phone.** Opening crates, drop rates, rewards and the slime's nine feelings are local. Only Care Together's snapshot carries the feelings to the partner's phone, and Talk sends them to the AI provider in plain words.
 - **The website** is static: landing page, install guide, invite pages (`/f/<CODE>`), privacy, terms, support, press kit, 404, and the admin area at `/admin`.
 - **CI** (GitHub Actions) builds every branch and pull request: it checks the pixel fonts and puzzles, tests the server, runs the iOS unit tests in a simulator, builds the IPAs and takes screenshots of every screen in light and dark. Only a push to `main` publishes a release (section 5).
 
@@ -48,7 +49,7 @@ Secrets are never in this repo: AI keys live only in `/etc/slimy/slimy.env`, the
 
 ### Deploying a new server version
 
-Follow `server/DEPLOY.md`, section 1. In short: copy `server/` to `/opt/slimy/server` with `tar` over SSH, run `npm test` there, back up the database, `systemctl restart slimy`, and check the log line, which names the chat providers in use. The server has no npm dependencies, so there is nothing to install. Migrations run on start; 1.0 adds reports, bans, records, chat usage and `last_seen_at`.
+Follow `server/DEPLOY.md`, section 1. In short: copy `server/` to `/opt/slimy/server` with `tar` over SSH, run `npm test` there, back up the database, `systemctl restart slimy`, and check the log line, which names the chat providers in use. The server has no npm dependencies, so there is nothing to install. Migrations run on start; 1.0 added reports, bans, records, chat usage and `last_seen_at`, and 1.1 (schema 3) adds the Care Together tables `care_codes`, `care_pairs` and `care_events`. The 1.0 app keeps working against the 1.1 server.
 
 ### Deploying the website
 
@@ -85,9 +86,9 @@ On CT 108, as root, in a real terminal: `cd /opt/slimy/server && node src/admin-
 
 ### What the admin does
 
-- **Overview:** devices (total, active 1/7/30 days, new this week, banned), friendships and couples in love, events and pair codes in the last 24 hours, open reports, chat requests and failures per provider today and for 7 days, database size, server version and uptime, which AI providers are configured.
+- **Overview:** devices (total, active 1/7/30 days, new this week, banned), friendships (with the couples in love, if any: love is a 1.0 feature the server still counts, since hugs, visits and gifts from any app raise it), pairs caring for one slime together, events and pair codes in the last 24 hours, open reports, chat requests and failures per provider today and for 7 days, database size, server version and uptime, which AI providers are configured.
 - **Reports:** the queue with reason, note, reported text, reporter and reported device. Resolve with Dismiss, Rename (resets names to "Slime friend" and "Slime") or Ban.
-- **Devices:** search by id prefix or name; see friends and reports; ban, unban, rename, delete (same cascade as a user deleting their data).
+- **Devices:** search by id prefix or name; see the care partner (with a link to their device), friends and reports; ban, unban, rename, delete (same cascade as a user deleting their data; banning or deleting either side ends caring together for both).
 - **Chat usage:** requests and failures per provider and day.
 - **About:** how access works, how to set the passphrase, light or dark appearance.
 
@@ -136,7 +137,7 @@ There is no Mac here: Swift only compiles in CI. Compile errors show up as annot
 
 ### Screenshots
 
-Screenshot mode is Debug-only and driven by launch arguments: `-SlimyScreenshot`, plus `-SlimySheet <name>` (kitchen, shop, journal, friends, settings, chat, gift) or `-SlimyCover <name>` (arcade, bath). It opens that screen with a demo slime called Mochi, without onboarding, What's New, toasts, celebrations, the Live Activity or network (`App/Core/ScreenshotMode.swift`). In Release builds the arguments do nothing. `tools/ci_screenshots.sh` shoots the home screen and every sheet and cover in light and dark on the newest iPhone Pro simulator with a 9:41 status bar. Every run keeps the set as its **`screenshots`** artifact; on pushes, `tools/ci_publish_screenshots.sh` also force-pushes it to the **`ci-screenshots`** branch with a README that shows light and dark side by side. Files: `light-<screen>.png`, `dark-<screen>.png`.
+Screenshot mode is Debug-only and driven by launch arguments: `-SlimyScreenshot`, plus `-SlimySheet <name>` (kitchen, shop, journal, friends, settings, chat, gift, crates, care) or `-SlimyCover <name>` (arcade, bath). It opens that screen with a demo slime called Mochi, without onboarding, What's New, toasts, celebrations, the Live Activity or network (`App/Core/ScreenshotMode.swift`). In Release builds the arguments do nothing. `tools/ci_screenshots.sh` shoots the home screen and every sheet and cover in light and dark (its list stops at gift for now; `crates` and `care` can be opened by hand with the same arguments) on the newest iPhone Pro simulator with a 9:41 status bar. Every run keeps the set as its **`screenshots`** artifact; on pushes, `tools/ci_publish_screenshots.sh` also force-pushes it to the **`ci-screenshots`** branch with a README that shows light and dark side by side. Files: `light-<screen>.png`, `dark-<screen>.png`.
 
 Use the branch to review UI changes without a phone, and as the raw material for the App Store images: `appstore/screenshots.md` says which file goes where and how to compose the 6.9" and 6.5" uploads.
 
@@ -158,24 +159,34 @@ curl -s $B/invites/$CODE
 REQ=$(curl -s -XPOST $B/friend-requests -H "authorization: Bearer $TB" -H 'content-type: application/json' -d "{\"code\":\"$CODE\"}" | jq -r .request.id)
 curl -s -XPOST $B/friend-requests/$REQ/accept -H "authorization: Bearer $TA" -H 'content-type: application/json' -d '{}'
 curl -s $B/friends/leaderboard -H "authorization: Bearer $TA"
+CARE=$(curl -s -XPOST $B/care/codes -H "authorization: Bearer $TA" -H 'content-type: application/json' -d '{}' | jq -r .code)
+curl -s -XPOST $B/care/join -H "authorization: Bearer $TB" -H 'content-type: application/json' -d "{\"code\":\"$CARE\"}"
+curl -s -XPOST $B/care/events -H "authorization: Bearer $TB" -H 'content-type: application/json' \
+  -d "{\"kind\":\"feed\",\"food\":\"apple\",\"at\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}"
+curl -s $B/care -H "authorization: Bearer $TA"
 curl -s -XPOST $B/chat -H "authorization: Bearer $TA" -H 'content-type: application/json' \
-  -d '{"message":"hi","history":[],"slime":{"name":"Blob","ageDays":3,"level":2,"mood":"idle","needs":{"hunger":60,"fun":60,"energy":60,"clean":60,"love":60},"favorite":"cake","localTime":"12:00"}}'
+  -d '{"message":"hi","history":[],"slime":{"name":"Blob","ageDays":3,"level":2,"mood":"idle","needs":{"hunger":60,"fun":60,"energy":60,"clean":60,"love":60},"favorite":"cake","localTime":"12:00","emotions":{"joy":0.6,"sleepiness":0.3}}}'
 curl -s -XDELETE $B/me -H "authorization: Bearer $TA" -o /dev/null -w '%{http_code}\n'
 curl -s -XDELETE $B/me -H "authorization: Bearer $TB" -o /dev/null -w '%{http_code}\n'
 ```
 
-Then on two iPhones: Friends → **Go Online** on both, **Get My Code** on one, type the code and **Connect** on the other, accept, hug and send a gift. The love goes up on both phones and the gift arrives on the other one.
+`GET /care` on A should list B's feed event, and the chat answer should carry an `emotion`. Deleting the two devices at the end also ends their care pair.
+
+Then on two iPhones: Friends → **Go Online** on both, **Get My Code** on one, type the code and **Connect** on the other, accept, hug and send a gift; the gift arrives on the other phone. Then **Care Together** on both: **Get a Care Code** on one, enter it and **Join** on the other, feed the slime on one phone and watch "… fed …" appear on the other, then **Stop Sharing** and check the joiner has their own slime back.
 
 ## 8. Where the app talks to the server
 
 | App file | What it does |
 |---|---|
 | `App/Online/HyprnodeAPI.swift` | every request and response type, error mapping, idempotency keys |
-| `App/Online/FriendsStore.swift` | opt-in **Go Online** (only after the user accepts the Terms) and Go Offline (stops syncing, keeps friends on the phone); the device token in the Keychain, this device only (`TokenVault`); profile, friends, requests, blocks, reports, privacy, inbox, interactions, greetings, challenges, shared garden, records upload and the friends leaderboard, offline queue. There is no demo friend: the betas' test friend and its saved state are removed on first launch of 1.0. |
-| `App/Online/ChatStore.swift` | AI chat with consent (`slimy.chat.aiConsent`, withdrawable), gated on Go Online, retry after errors, reporting a reply |
+| `App/Online/FriendsStore.swift` | opt-in **Go Online** (only after the user accepts the Terms) and Go Offline (stops syncing, keeps friends on the phone); the device token in the Keychain, this device only (`TokenVault`); profile, friends, requests, blocks, reports, privacy, inbox, interactions, greetings, challenges, shared garden, records upload and the friends leaderboard, Care Together (codes, joining, sending and applying care events, snapshot sync, stopping), offline queue. There is no demo friend: the betas' test friend and its saved state are removed on first launch of 1.0. |
+| `App/UI/Screens/CareTogetherView.swift` | Care Together: get or enter a care code, the partner, recent activity, Stop Sharing |
+| `App/Online/ChatStore.swift` | AI chat with consent (`slimy.chat.aiConsent`, withdrawable), gated on Go Online, sends the slime's feelings and applies the feeling of the reply, retry after errors, reporting a reply |
 | `App/Arcade/ArcadeView.swift`, `App/Arcade/GameHost.swift` | challenge rounds (same seed), shared-garden points and record uploads after a round |
 
 ## 9. Open items
+
+**Order for 1.1:** deploy server 1.1 (schema 3) first, then the website, then ship the 1.1 app. A 1.1 app against a 1.0 server shows Care Together errors, and its chat feelings are ignored.
 
 For the owner:
 
@@ -191,6 +202,9 @@ For the owner:
 10. **Moderation routine:** check reports daily once real users are online.
 
 Known limits:
+
+- **The secret legendary.** The crate-only legendary is the axolotl colour (`Skin.axolotl`, golden crates 0.6 %, mystery crates 2 %, never in wooden ones). Public texts (website, App Store, press, social posts) never name it; they say "Golden crates hide a secret legendary. Nobody's telling." The website still has to draw it on an invite page when someone's slime wears it, so `site/assets/slime.js` carries its colours as a hidden, non-enumerable skin that no picker lists. Anyone reading the source code (app or website) can find it; that's accepted.
+- Care Together needs both phones online. Events made offline are queued and sent later; the joiner's copy of the slime arrives while the host has Slimy open.
 
 - iOS ends Live Activities after about 8 hours. Slimy starts or renews one only when the app is opened or Summon Slime runs; background refresh can only update a running activity, and nothing uses push.
 - A `.slimysave` backup moves the slime, not the online identity: the device token never leaves the phone's Keychain and friends live outside the save. On a new iPhone the user restores the save, goes online again as a new device and reconnects with friends by code.

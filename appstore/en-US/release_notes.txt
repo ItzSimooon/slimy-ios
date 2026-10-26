@@ -1,13 +1,11 @@
-Slimy 1.0 is here.
+Slimy 1.1 brings crates, caring together and a slime with feelings.
 
-• A pixel slime that lives in your Dynamic Island, on the Lock Screen and in widgets
-• 12 arcade games, including the new Slime Stack and Jelly Dash, plus a new game every day
-• Daily streaks and a small gift every day
-• Photo booth: pose your slime and share the picture
-• Friends leaderboard for every game
-• Invite friends with a link
-• Talk to your slime, with a clear choice before anything is sent
-• Light and dark mode
-• Back up your slime to a file and restore it
+• Crates: buy wooden and golden crates with coins, earn mystery crates, and tap them open for coins, food, outfits, furniture and new colours. Golden crates hide a secret legendary. Nobody's telling.
+• The app shows the drop rates for every crate, and duplicates turn into coins
+• Care Together: share your slime with one person and look after it together, each on your own iPhone
+• Your slime has real feelings now. They change how it moves, what it says and how it answers in chat
+• It talks on its own while the app is open. Prefer a quieter slime? Turn off Talks on its own in Settings
+• The chat answers in your slime's mood, and what you say can change it
+• Friends are all about hugs, visits, gifts, greetings, challenges and the shared garden
 
-Thank you to everyone who tested the beta.
+Thank you for looking after your slime.

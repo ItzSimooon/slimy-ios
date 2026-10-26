@@ -151,6 +151,40 @@ export const migrations = [
     PRIMARY KEY (day, provider)
   );
   `,
+  // 3: caring for one slime together (codes, pairs with the shared snapshot, care events).
+  `
+  CREATE TABLE care_codes (
+    code TEXT PRIMARY KEY,
+    device_id TEXT NOT NULL REFERENCES devices(id) ON DELETE CASCADE,
+    created_at INTEGER NOT NULL,
+    expires_at INTEGER NOT NULL,
+    used_at INTEGER
+  );
+  CREATE INDEX care_codes_device ON care_codes(device_id);
+  CREATE TABLE care_pairs (
+    id TEXT PRIMARY KEY,
+    host TEXT NOT NULL UNIQUE REFERENCES devices(id) ON DELETE CASCADE,
+    joiner TEXT NOT NULL UNIQUE REFERENCES devices(id) ON DELETE CASCADE,
+    snapshot TEXT,
+    version INTEGER NOT NULL DEFAULT 0,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL,
+    CHECK (host <> joiner)
+  );
+  CREATE TABLE care_events (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    pair_id TEXT NOT NULL REFERENCES care_pairs(id) ON DELETE CASCADE,
+    device_id TEXT NOT NULL,
+    kind TEXT NOT NULL,
+    food TEXT,
+    game TEXT,
+    amount REAL,
+    at INTEGER NOT NULL,
+    created_at INTEGER NOT NULL
+  );
+  CREATE INDEX care_events_pair ON care_events(pair_id, id);
+  CREATE INDEX care_events_created ON care_events(created_at);
+  `,
 ];
 
 export function openDatabase(path = ":memory:") {

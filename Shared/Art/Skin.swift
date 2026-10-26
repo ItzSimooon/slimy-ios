@@ -1,8 +1,9 @@
 import SwiftUI
 
-/// Jelly colours. New ones unlock as the slime levels up.
+/// Jelly colours. New ones unlock as the slime levels up; the secret ones
+/// (`isSecret`) only come out of crates.
 enum Skin: String, Codable, CaseIterable, Identifiable, Hashable {
-    case lime, bubblegum, ocean, grape, lava, gold, ghost, void
+    case lime, bubblegum, ocean, grape, lava, gold, ghost, void, axolotl
 
     var id: String { rawValue }
 
@@ -16,9 +17,12 @@ enum Skin: String, Codable, CaseIterable, Identifiable, Hashable {
         case .gold: "Gold"
         case .ghost: "Ghost"
         case .void: "Hypr Void"
+        case .axolotl: "Axolotl"
         }
     }
 
+    /// The level that unlocks this colour. Secret colours never unlock by
+    /// level (`Int.max`); check `isSecret` before showing a level for one.
     var unlockLevel: Int {
         switch self {
         case .lime: 1
@@ -29,8 +33,16 @@ enum Skin: String, Codable, CaseIterable, Identifiable, Hashable {
         case .gold: 8
         case .ghost: 10
         case .void: 15
+        case .axolotl: Int.max
         }
     }
+
+    /// A colour that is never listed in the shop or among the colours still
+    /// to unlock. It only comes from crates and shows once it's owned.
+    var isSecret: Bool { self == .axolotl }
+
+    /// Every colour that unlocks with levels, in order: all but the secret ones.
+    static var regular: [Skin] { allCases.filter { !$0.isSecret } }
 
     private var hexes: (body: UInt32, shade: UInt32, ink: UInt32, shine: UInt32) {
         switch self {
@@ -42,6 +54,8 @@ enum Skin: String, Codable, CaseIterable, Identifiable, Hashable {
         case .gold: (0xFFD86B, 0xE0A42F, 0x3A2A08, 0xFFFBEA)
         case .ghost: (0xE8F0FF, 0xA9B6D8, 0x2A3048, 0xFFFFFF)
         case .void: (0x2A2540, 0x1A1630, 0x9B7BFF, 0xD9CCFF)
+        // tools/art_items.py, AXOLOTL_SKIN
+        case .axolotl: (0xFFC4D8, 0xF08DB0, 0x4A1736, 0xFFFFFF)
         }
     }
 
@@ -60,6 +74,12 @@ enum Skin: String, Codable, CaseIterable, Identifiable, Hashable {
         case .warm: Brand.warm
         case .cool: Brand.cool
         }
+    }
+
+    /// Pixels this colour adds on top of every frame (the axolotl's gills and
+    /// cheeks), from the sprite data. Nil for plain colours.
+    var overlay: SkinOverlaySprite? {
+        SlimeSprites.data.skinOverlays?[rawValue]
     }
 }
 

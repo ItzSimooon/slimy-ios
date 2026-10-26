@@ -3,6 +3,7 @@
 
 Outputs
   Widget/Fonts/Slime-<Stage>-<Anim>-<Layer>.ttf   island animation fonts
+  Widget/Fonts/Slime-<Stage>-<Anim>-Gills.ttf     the axolotl skin's gills and cheeks
   Widget/Fonts/Acc-<item>-<Stage>-<Anim>.ttf       accessories that move with the slime
   Widget/Fonts/Emote-<reel>.ttf                    emote reels (see emotes.py)
   Widget/Info.plist                                widget Info.plist listing the fonts
@@ -16,7 +17,8 @@ How the island animation works
   right-aligned in a wide box and clips it to one glyph, so only the seconds
   digit shows and the frame changes once a second in a ten-step loop. One
   timer per colour layer, anchored to the same date, stacks into a colour
-  slime. (iOS doesn't apply ligatures to timer text, so none are used.)
+  slime; the axolotl skin adds one more for its gills. (iOS doesn't apply
+  ligatures to timer text, so none are used.)
 """
 import os
 import plistlib
@@ -26,7 +28,9 @@ from fontTools.fontBuilder import FontBuilder
 from fontTools.pens.ttGlyphPen import TTGlyphPen
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from art_items import ACCESSORIES, FURNITURE, ITEMS  # noqa: E402
+from art_items import (  # noqa: E402
+    ACCESSORIES, AXOLOTL_ISLAND, AXOLOTL_OVERLAY, AXOLOTL_SKIN, FURNITURE, ITEMS,
+)
 from emotes import ICONS, REELS  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -169,7 +173,7 @@ def slime(stage, dw=0, dh=0, lift=0, eyes=None, mouth="smile", look=0, blush=Fal
     left = min(x for (x, y) in shape) if shape else round(CX)
     neck = min(ground - 1, my + 2)
     f.anchor = {"top": top - (len(CREST) - 1 if crest else 0), "headTop": top, "ey": ey, "neck": neck,
-                "look": look, "lift": lift}
+                "look": look, "lift": lift, "exl": exl, "exr": exr}
     return f, {"top": top, "ground": ground, "ey": ey, "exl": exl, "exr": exr, "left": left, "right": right,
                "w": w, "h": h}
 
@@ -561,6 +565,112 @@ def ten_step(n):
     return [i % n for i in range(10)]
 
 
+# ----------------------------------------------------------- skin overlays
+# The axolotl skin draws extra pixels on every frame: frilly gills on both
+# sides of the head and pink cheeks. They are worked out here once, from each
+# frame's own outline and face, so they follow every squash, hop and slide,
+# and app, widgets, island and website all draw the same pixels.
+
+OVERLAY_LAYER = "Gills"    # font layer: Slime-<Stage>-<Anim>-Gills
+
+# The right-hand gills as (dx, dy, code), counted from the first empty pixel
+# beside the head's outline on the attach row; the left ones are mirrored.
+# Three fronds: one straight up with a forked tip, one up and out, one out.
+GILLS = [
+    (0, -1, "d"), (0, -2, "d"), (1, -3, "g"), (0, -4, "g"),
+    (0, 0, "d"), (1, -1, "d"), (2, -1, "g"), (3, -2, "g"),
+    (1, 1, "d"), (2, 1, "g"), (3, 1, "g"),
+]
+GILLS_REACH = max(dx for dx, _, _ in GILLS)
+GILLS_RISE = -min(dy for _, dy, _ in GILLS)
+
+
+def axolotl_overlay(f):
+    """{(x, y): code} drawn over frame f for the axolotl skin. Gills only take
+    empty pixels at least one pixel away from anything that isn't the body
+    (hearts, zzz, arms, the ground shadow), so effects stay readable. Cheeks
+    only take plain body pixels, so eyes, mouth and a blush stay as drawn."""
+    out = {}
+    if not f.shape:
+        return out
+    spans = {}
+    for x, y in f.shape:
+        lo, hi = spans.get(y, (x, x))
+        spans[y] = (min(lo, x), max(hi, x))
+    top, bottom = min(spans), max(spans)
+    foreign = {p for p in f.px if p not in f.shape}
+
+    for side in (1, -1):
+        def root(row):
+            lo, hi = spans[row]
+            return hi + 1 if side > 0 else lo - 1
+
+        # Two rows below the top of the head; higher up when a wide squash
+        # leaves no room at the side, lower when a hop nears the top edge.
+        a = top + 2
+        while a > top and not 0 <= root(a) + side * GILLS_REACH < W:
+            a -= 1
+        a = min(max(a, GILLS_RISE), bottom)
+        x0 = root(a)
+        for dx, dy, code in GILLS:
+            x, y = x0 + side * dx, a + dy
+            if not (0 <= x < W and 0 <= y < H) or (x, y) in f.px:
+                continue
+            if any((x + i, y + j) in foreign for i in (-1, 0, 1) for j in (-1, 0, 1)):
+                continue
+            out[(x, y)] = code
+
+    # Cheeks where a blush would go (see slime()).
+    shift = f.anchor.get("dx", 0)
+    cheek_row = f.anchor["ey"] + 2
+    exl, exr = f.anchor["exl"] + shift, f.anchor["exr"] + shift
+    for x in (exl - 1, exl, exr + 1, exr + 2):
+        if f.px.get((x, cheek_row)) in ("body", "shade"):
+            out[(x, cheek_row)] = "p"
+    return out
+
+
+def overlay_rows(overlay):
+    return ["".join(overlay.get((x, y), ".") for x in range(W)) for y in range(H)]
+
+
+OVERLAYS = {stage: {name: [axolotl_overlay(fr) for fr in frames] for name, frames in anims.items()}
+            for stage, anims in ANIMS.items()}
+
+
+def _check_overlays():
+    """The app finds a frame's overlay by the frame's pixels, so two frames
+    that look the same must get the same overlay."""
+    seen = {}
+    for stage, anims in ANIMS.items():
+        for name, frames in anims.items():
+            for fr, ov in zip(frames, OVERLAYS[stage][name]):
+                key = tuple(fr.rows())
+                rows = overlay_rows(ov)
+                assert seen.setdefault(key, rows) == rows, (stage, name)
+                assert all(fr.px.get(p) in (None, "body", "shade") for p in ov), (stage, name)
+
+
+_check_overlays()
+
+
+def axolotl_icon():
+    """The reward icon: the baby axolotl, cropped to its pixels."""
+    fr = ANIMS["baby"]["idle"][0]
+    px = {p: CODE[layer] for p, layer in fr.px.items()}
+    px.update(OVERLAYS["baby"]["idle"][0])
+    xs = [x for x, _ in px]
+    ys = [y for _, y in px]
+    rows = ["".join(px.get((x, y), ".") for x in range(min(xs), max(xs) + 1))
+            for y in range(min(ys), max(ys) + 1)]
+    palette = {"b": AXOLOTL_SKIN["body"], "s": AXOLOTL_SKIN["shade"], "k": AXOLOTL_SKIN["ink"],
+               "w": AXOLOTL_SKIN["shine"]}
+    palette.update(AXOLOTL_OVERLAY)
+    used = {ch for row in rows for ch in row if ch != "."}
+    assert used <= set(palette), used
+    return {k: v for k, v in palette.items() if k in used}, rows
+
+
 # ------------------------------------------------------------- accessories
 
 def place_accessory(item, frame):
@@ -709,10 +819,25 @@ def write_sprites_json(path):
                   for name, (palette, rows) in list(ITEMS.items()) + list(FURNITURE.items())},
         "emoteIcons": ICONS,
         "emoteReels": REELS,
+        # Pixels a skin draws over every frame, one grid per frame in the same
+        # order as "frames"; "island" is the one colour the island's font
+        # layer ("layer") is drawn in, "skin" the skin's four layer colours.
+        "skinOverlays": {
+            "axolotl": {
+                "layer": OVERLAY_LAYER,
+                "island": AXOLOTL_ISLAND,
+                "palette": dict(AXOLOTL_OVERLAY),
+                "skin": dict(AXOLOTL_SKIN),
+                "frames": {f"{stage}.{name}": [overlay_rows(ov) for ov in overlays]
+                           for stage, anims in OVERLAYS.items() for name, overlays in anims.items()},
+            },
+        },
     }
     for name, (kind, palette, rows) in ACCESSORIES.items():
         shop_rows = rows if rows else ["aabaabaabaab", "baabaabaabaa", ".a..........", ".b.........."]
         data["items"][name] = {"palette": dict(palette), "rows": shop_rows}
+    icon_palette, icon_rows = axolotl_icon()
+    data["items"]["axolotl"] = {"palette": icon_palette, "rows": icon_rows}
     with open(path, "w") as fh:
         json.dump(data, fh, separators=(",", ":"), sort_keys=True)
 
@@ -745,22 +870,29 @@ def rgb(v):
     return ((v >> 16) & 255, (v >> 8) & 255, v & 255)
 
 
-def write_sheet(path, stage, scale=6, accessories=()):
+def write_sheet(path, stage, scale=6, accessories=(), axolotl=False):
     from PIL import Image, ImageDraw
     pad = 4
     anims = ANIMS[stage]
     cols = max(len(f) for f in anims.values())
     img = Image.new("RGB", (80 + cols * (W * scale + pad), len(anims) * (H * scale + pad) + pad), (16, 20, 17))
     d = ImageDraw.Draw(img)
+    colors = dict(PREVIEW)
+    if axolotl:
+        colors.update({CODE[layer]: rgb(AXOLOTL_SKIN[layer]) for layer in ("body", "shade", "ink", "shine")})
+        colors.update({k: rgb(v) for k, v in AXOLOTL_OVERLAY.items()})
     for r, (name, frames) in enumerate(anims.items()):
         oy = pad + r * (H * scale + pad)
         d.text((4, oy + 4), name, fill=(200, 210, 200))
         for c, fr in enumerate(frames):
             ox = 80 + c * (W * scale + pad)
             d.rectangle([ox, oy, ox + W * scale - 1, oy + H * scale - 1], fill=(0, 0, 0))
-            for (x, y), layer in fr.px.items():
+            px = {p: CODE[layer] for p, layer in fr.px.items()}
+            if axolotl:
+                px.update(OVERLAYS[stage][name][c])
+            for (x, y), ch in px.items():
                 d.rectangle([ox + x * scale, oy + y * scale, ox + (x + 1) * scale - 1, oy + (y + 1) * scale - 1],
-                            fill=PREVIEW[CODE[layer]])
+                            fill=colors[ch])
             for item in accessories:
                 pal = ACCESSORIES[item][1]
                 for (x, y), ch in place_accessory(item, fr).items():
@@ -772,6 +904,7 @@ def write_sheet(path, stage, scale=6, accessories=()):
 def write_items_sheet(path):
     from PIL import Image, ImageDraw
     allitems = list(ITEMS.items()) + list(FURNITURE.items()) + [(k, (v[1], v[2])) for k, v in ACCESSORIES.items() if v[2]]
+    allitems.append(("axolotl", axolotl_icon()))
     cell = 110
     per_row = 8
     rows_n = (len(allitems) + per_row - 1) // per_row
@@ -826,6 +959,10 @@ def main():
                 digit_pixels = [{p for p, l in frames[seq[d]].px.items() if l == layer} for d in range(10)]
                 save(f"Slime-{cap(stage)}-{cap(name)}-{cap(layer)}", f"Slime {stage} {name} {layer}",
                      digit_pixels, PX, W, H)
+            # The axolotl's gills and cheeks, all in one colour.
+            overlays = OVERLAYS[stage][name]
+            save(f"Slime-{cap(stage)}-{cap(name)}-{OVERLAY_LAYER}", f"Slime {stage} {name} {OVERLAY_LAYER.lower()}",
+                 [set(overlays[seq[d]]) for d in range(10)], PX, W, H)
             for item, (kind, _, _) in ACCESSORIES.items():
                 placed = [place_accessory(item, fr) for fr in frames]
                 # One colour in the island; highlights are left out so shapes still read.
@@ -847,6 +984,7 @@ def main():
     os.makedirs(out, exist_ok=True)
     for stage in STAGES:
         write_sheet(os.path.join(out, f"sheet-{stage}.png"), stage)
+        write_sheet(os.path.join(out, f"sheet-axolotl-{stage}.png"), stage, axolotl=True)
     write_sheet(os.path.join(out, "sheet-accessories.png"), "young",
                 accessories=("hat.party", "glasses.round", "scarf.red"))
     write_items_sheet(os.path.join(out, "items.png"))

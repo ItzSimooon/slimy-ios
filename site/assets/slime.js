@@ -23,6 +23,22 @@ export const SKIN_TITLES = {
 /// Skin.unlockLevel
 export const SKIN_LEVELS = { lime: 1, bubblegum: 2, ocean: 3, grape: 4, lava: 6, gold: 8, ghost: 10, void: 15 };
 
+// Secret colours (Skin.isSecret) only come out of crates in the app. They are
+// own properties of SKINS and SKIN_TITLES, so Object.hasOwn() accepts them
+// (an invite or the admin can show one), but not enumerable, so pickers and
+// lists built from Object.keys() never reveal them. No unlock level.
+function defineSecretSkin(id, colors, title) {
+  Object.defineProperty(SKINS, id, { value: colors, writable: true, configurable: true, enumerable: false });
+  Object.defineProperty(SKIN_TITLES, id, { value: title, writable: true, configurable: true, enumerable: false });
+}
+// tools/art_items.py, AXOLOTL_SKIN; replaced by sprites.json's copy once loaded.
+defineSecretSkin("axolotl", ["#FFC4D8", "#F08DB0", "#4A1736", "#FFFFFF"], "Axolotl");
+
+export const SECRET_SKINS = Object.freeze(["axolotl"]);
+
+/// Whether `id` names a skin the app knows, secret ones included.
+export const isSkin = (id) => typeof id === "string" && Object.hasOwn(SKINS, id);
+
 // Shared/Art/Brand.swift
 export const WARM = "#F07A9A";
 export const COOL = "#7FD6F0";
@@ -50,7 +66,16 @@ export function loadSprites() {
       if (!r.ok) throw new Error("sprites " + r.status);
       return r.json();
     })
-    .then((d) => (DATA = d));
+    .then((d) => {
+      // A skin with an overlay brings its own layer colours; follow them.
+      for (const [id, o] of Object.entries(d.skinOverlays ?? {})) {
+        const c = o?.skin;
+        if (Object.hasOwn(SKINS, id) && c && [c.body, c.shade, c.ink, c.shine].every(Number.isInteger)) {
+          SKINS[id] = [c.body, c.shade, c.ink, c.shine].map(hex);
+        }
+      }
+      return (DATA = d);
+    });
   return pending;
 }
 export const sprites = () => DATA;
@@ -92,6 +117,18 @@ export function paint(ctx, rows, colors, ox = 0, oy = 0, mirror = false) {
 export function frames(stage, anim) {
   const f = DATA.frames;
   return f[`${stage}.${anim}`] ?? f[`${stage}.idle`] ?? f["young.idle"];
+}
+
+/// The extra pixels `skin` draws over frame `i` of an animation (the
+/// axolotl's gills and cheeks) as {rows, colors} for paint(), or null for a
+/// plain skin. Like PixelSlime in Shared/Art/PixelSprites.swift.
+export function overlayFor(skin, stage, anim, i) {
+  const o = DATA?.skinOverlays && Object.hasOwn(DATA.skinOverlays, skin ?? "") ? DATA.skinOverlays[skin] : null;
+  if (!o) return null;
+  const key = DATA.frames[`${stage}.${anim}`] ? `${stage}.${anim}` : DATA.frames[`${stage}.idle`] ? `${stage}.idle` : "young.idle";
+  const list = o.frames?.[key];
+  if (!list?.length) return null;
+  return { rows: list[i % list.length], colors: palette(o.palette) };
 }
 
 /// [top, eyeY, neckY, look, dx] for a frame, like the app's anchors.
@@ -147,6 +184,8 @@ export function drawSlime(ctx, look, anim, i, ox = 0, oy = 0, mirror = false) {
   const n = i % list.length;
   const rows = list[n];
   paint(ctx, rows, skinColors(look.skin), ox, oy, mirror);
+  const overlay = overlayFor(look.skin, stage, anim, n);
+  if (overlay) paint(ctx, overlay.rows, overlay.colors, ox, oy, mirror);
   const anchor = anchorFor(stage, anim, n);
   if (!anchor) return;
   for (const item of [look.scarf, look.glasses, look.hat]) {
@@ -413,8 +452,11 @@ export class Slime {
   draw() {
     if (!this.data) return;
     const list = this.frames();
+    const n = this.frame % list.length;
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-    paint(this.ctx, list[this.frame % list.length], skinColors(this.skin));
+    paint(this.ctx, list[n], skinColors(this.skin));
+    const overlay = overlayFor(this.skin, this.stage, this.anim, n);
+    if (overlay) paint(this.ctx, overlay.rows, overlay.colors);
   }
   tick() {
     if (calm() && this.anim === this.base) return;

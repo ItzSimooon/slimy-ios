@@ -51,7 +51,7 @@ struct PetSlimeControl: ControlWidget {
             }
         }
         .displayName("Pet Slime")
-        .description("Gives your slime a little love without opening the app.")
+        .description("Pets your slime without opening the app.")
     }
 }
 

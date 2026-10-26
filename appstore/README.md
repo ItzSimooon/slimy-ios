@@ -1,6 +1,6 @@
 # App Store listing
 
-Everything App Store Connect asks for Slimy 1.0, ready to paste. The folder layout follows fastlane `deliver` (`<locale>/<field>.txt`), so it can also be uploaded with `fastlane deliver --metadata_path appstore` later.
+Everything App Store Connect asks for Slimy 1.1, ready to paste. The folder layout follows fastlane `deliver` (`<locale>/<field>.txt`), so it can also be uploaded with `fastlane deliver --metadata_path appstore` later.
 
 | File | What |
 |---|---|
@@ -38,11 +38,17 @@ The home screen name stays **Slimy** (`CFBundleDisplayName`). "Dynamic Island" i
 
 ## Things App Store Connect handles differently than you'd expect
 
-- **What's New** is not shown for an app's first version. Use `release_notes.txt` as the TestFlight "What to Test" text for 1.0 and as the starting point for 1.0.1.
+- **What's New** is not shown for an app's first version. If 1.1 is the first version on the store (1.0 was only a sideloaded beta), paste `release_notes.txt` as the TestFlight "What to Test" text and keep it as the starting point for 1.1.1.
 - **Promotional text** can be changed at any time without a new review. Seasonal versions are in the marketing plan.
 - **Keywords** are a single comma-separated field of 100 characters. Words already in the name or subtitle are indexed anyway, so they are not repeated. Never add other apps' or companies' names (Guideline 2.3.7).
 - **EU trader status** (Digital Services Act) must be declared before the app is available in the EU. A trader's address, phone and email are shown on the product page in the EU.
 - **Seller name** on the product page is the Apple Developer account holder: your legal name for an individual membership, the company for an organization membership (needs a D-U-N-S number).
+
+## Writing about 1.1
+
+- **The legendary stays a secret.** Store texts, screenshots, previews and review notes say that golden crates hide a secret legendary and never say what it is. The review notes explain the "???" row in Drop rates.
+- **No love between slimes.** 1.1 removed the love meter, kisses and falling in love. Friends hug, visit, send gifts and greetings; the love need (petting) stays.
+- **Crates never cost money.** Always say they are bought with coins earned in the game or earned outright.
 
 ## Order of work for the first submission
 

@@ -15,10 +15,10 @@ enum ChatDisclosure {
         [
             Point(systemImage: "text.bubble",
                   title: "What is sent",
-                  text: "Your message, the recent chat and a few facts about \(name): its name, age, level, mood, needs and favourite food, the time of day, and its partner slime's name if it has one. Your name and your device ID are never passed on to the AI services."),
+                  text: "Your message, the recent chat and a few facts about \(name): its name, age, level, mood, how it feels, its needs and favourite food, and the time of day. Your name and your device ID are never passed on to the AI services."),
             Point(systemImage: "cpu",
                   title: "Who writes the reply",
-                  text: "An AI service writes \(name)'s replies. Cloudflare Workers AI and Groq process your message to do that."),
+                  text: "An AI service writes \(name)'s replies in the mood it's in, and the chat can change how it feels. Cloudflare Workers AI and Groq process your message to do that."),
             Point(systemImage: "lock",
                   title: "What is kept",
                   text: "Slimy's server doesn't keep your messages. The chat stays on this iPhone until you clear it. Please don't share personal details."),

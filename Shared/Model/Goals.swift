@@ -7,6 +7,10 @@ struct Achievement: Identifiable {
     let title: String
     let detail: String
     let coins: Int
+    /// A secret until it's earned: lists show it as "???".
+    var hidden = false
+    /// A crate that comes with it.
+    var crate: CrateKind? = nil
     let check: (GameState) -> Bool
 }
 
@@ -20,29 +24,28 @@ enum Achievements {
         .init(id: "sleepyhead", title: "Good night", detail: "Put it to bed 10 times.", coins: 30) { $0.progress.stats.sleeps >= 10 },
         .init(id: "arcadeRookie", title: "First game", detail: "Play a round in the arcade.", coins: 10) { $0.progress.stats.plays >= 1 },
         // A finished round, not just a look at the tutorial (which also creates a record).
-        .init(id: "allGames", title: "Tried them all", detail: "Play every game once.", coins: 80) { state in
+        .init(id: "allGames", title: "Tried them all", detail: "Play every game once.", coins: 80, crate: .mystery) { state in
             GameID.classics.allSatisfy { (state.progress.records[$0]?.plays ?? 0) > 0 }
         },
         .init(id: "arcadeFan", title: "Regular", detail: "Play 50 rounds.", coins: 60) { $0.progress.stats.plays >= 50 },
-        .init(id: "arcadeStar", title: "Arcade star", detail: "Play 25 really good rounds.", coins: 100) { $0.progress.stats.goodGames >= 25 },
+        .init(id: "arcadeStar", title: "Arcade star", detail: "Play 25 really good rounds.", coins: 100, crate: .mystery) { $0.progress.stats.goodGames >= 25 },
         .init(id: "level5", title: "Level 5", detail: "Reach level 5.", coins: 30) { $0.slime.level >= 5 },
         .init(id: "level10", title: "Level 10", detail: "Reach level 10.", coins: 60) { $0.slime.level >= 10 },
         .init(id: "grown", title: "All grown up", detail: "Become a big slime.", coins: 100) { $0.slime.stage == .grown },
         .init(id: "close", title: "Close bond", detail: "Build a close bond.", coins: 50) { $0.slime.bond >= 50 },
-        .init(id: "inseparable", title: "Inseparable", detail: "The closest bond there is.", coins: 120) { $0.slime.bond >= 80 },
+        .init(id: "inseparable", title: "Inseparable", detail: "The closest bond there is.", coins: 120, crate: .mystery) { $0.slime.bond >= 80 },
         .init(id: "collector", title: "Collector", detail: "Own 12 things.", coins: 80) { $0.inventory.owned.count >= 12 },
         .init(id: "decorator", title: "Decorator", detail: "Put something on every spot.", coins: 60) { $0.inventory.furniture.count == FurnitureSlot.allCases.count },
         .init(id: "traveler", title: "Globetrotter", detail: "Own three homes.", coins: 80) { $0.inventory.habitats.count >= 3 },
         .init(id: "firstFriend", title: "First friend", detail: "Connect with someone.", coins: 40) { $0.progress.stats.friends >= 1 },
         .init(id: "giftGiver", title: "Generous", detail: "Give away 10 gifts.", coins: 60) { $0.progress.stats.giftsSent >= 10 },
-        .init(id: "inLove", title: "In love", detail: "Two slimes, one heart.", coins: 100) { $0.memory.last(.inLove) != nil },
         .init(id: "eventWatcher", title: "Attentive", detail: "React to 10 things on your iPhone.", coins: 30) { $0.progress.stats.eventsSeen >= 10 },
         .init(id: "week", title: "One week", detail: "Visit on 7 different days.", coins: 50) { $0.player.daysActive.count >= 7 },
         .init(id: "rich", title: "Coin mountain", detail: "Earn 1000 coins in total.", coins: 50) { $0.wallet.earnedTotal >= 1000 },
         // Daily gifts and streaks
         .init(id: "streak3", title: "Three in a row", detail: "Open a daily gift three days in a row.", coins: 20) { $0.streak.best >= 3 },
         .init(id: "streak7", title: "Full week", detail: "Keep a seven-day streak.", coins: 50) { $0.streak.best >= 7 },
-        .init(id: "streak30", title: "Every single day", detail: "Keep a 30-day streak.", coins: 150) { $0.streak.best >= 30 },
+        .init(id: "streak30", title: "Every single day", detail: "Keep a 30-day streak.", coins: 150, crate: .mystery) { $0.streak.best >= 30 },
         .init(id: "gifts7", title: "Gift week", detail: "Open 7 daily gifts.", coins: 30) { $0.streak.opened >= 7 },
         .init(id: "gifts14", title: "Two weeks of gifts", detail: "Open 14 daily gifts.", coins: 40) { $0.streak.opened >= 14 },
         .init(id: "gifts21", title: "Three weeks of gifts", detail: "Open 21 daily gifts.", coins: 50) { $0.streak.opened >= 21 },
@@ -51,7 +54,7 @@ enum Achievements {
         .init(id: "spooky", title: "Spooky season", detail: "Visit your slime in October.", coins: 25) { $0.player.seasonsSeen.contains(Season.halloween.rawValue) },
         .init(id: "cozy", title: "Cozy season", detail: "Visit your slime in December.", coins: 25) { $0.player.seasonsSeen.contains(Season.christmas.rawValue) },
         .init(id: "newYear", title: "Happy New Year", detail: "Visit on New Year's Eve or New Year's Day.", coins: 30) { $0.player.seasonsSeen.contains(Season.newYear.rawValue) },
-        .init(id: "oldFriends", title: "Old friends", detail: "Visit on 30 different days.", coins: 100) { $0.player.daysActive.count >= 30 },
+        .init(id: "oldFriends", title: "Old friends", detail: "Visit on 30 different days.", coins: 100, crate: .mystery) { $0.player.daysActive.count >= 30 },
         // Games
         .init(id: "stackStar", title: "Tower builder", detail: "Play a really good round of Slime Stack.", coins: 50) { $0.isGood(.slimeStack) },
         .init(id: "dashStar", title: "Jelly sprinter", detail: "Play a really good round of Jelly Dash.", coins: 50) { $0.isGood(.jellyDash) },
@@ -65,6 +68,22 @@ enum Achievements {
         .init(id: "level20", title: "Level 20", detail: "Reach level 20.", coins: 120) { $0.slime.level >= 20 },
         .init(id: "popular", title: "Popular", detail: "Make 5 friends.", coins: 60) { $0.progress.stats.friends >= 5 },
         .init(id: "squishy", title: "Squishy", detail: "Hug friends 10 times.", coins: 30) { $0.progress.stats.hugs >= 10 },
+        // Crates and caring together
+        .init(id: "firstCrate", title: "Unboxed", detail: "Open your first crate.", coins: 15) { $0.progress.stats.cratesOpened >= 1 },
+        .init(id: "crates10", title: "Crate fan", detail: "Open 10 crates.", coins: 40) { $0.progress.stats.cratesOpened >= 10 },
+        .init(id: "crates50", title: "Crate collector", detail: "Open 50 crates.", coins: 120, crate: .mystery) { $0.progress.stats.cratesOpened >= 50 },
+        .init(id: "epicFind", title: "Epic find", detail: "Find something epic in a crate.", coins: 50) {
+            $0.hasFound(.epic)
+        },
+        .init(id: "legendary", title: "Legendary", detail: "Find the rarest thing a crate can hold.", coins: 200, hidden: true) {
+            $0.hasFound(.legendary)
+        },
+        .init(id: "careTogether", title: "Two caretakers", detail: "Care for a slime together with someone.", coins: 40) {
+            $0.care != nil || $0.progress.stats.partnerCare >= 1
+        },
+        .init(id: "careTeam", title: "Good team", detail: "Get 25 care actions from your Care Together partner.", coins: 60) {
+            $0.progress.stats.partnerCare >= 25
+        },
     ]
 
     static func achievement(_ id: String) -> Achievement? { all.first { $0.id == id } }
@@ -74,6 +93,15 @@ extension GameState {
     /// Whether the best round on record for a game counts as really good.
     func isGood(_ game: GameID) -> Bool {
         (progress.records[game]?.best ?? 0) >= game.goodScore
+    }
+
+    /// Whether you found something this rare (or rarer) in a crate
+    /// yourself. Epic and legendary finds are kept in the memory book.
+    func hasFound(_ rarity: Rarity) -> Bool {
+        memory.entries.contains { entry in
+            guard entry.kind == .crate, let find = CrateFind(detail: entry.detail) else { return false }
+            return find.rarity >= rarity
+        }
     }
 }
 

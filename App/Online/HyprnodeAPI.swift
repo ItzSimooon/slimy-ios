@@ -107,12 +107,27 @@ struct Friend: Codable, Hashable, Identifiable {
     var id: String
     var ownerName: String
     var slime: SlimeProfile
-    /// 0...100. The slimes fall in love at 100.
+    /// Kept for older app builds, which still show it. This app ignores it.
     var love: Int
+    /// Kept for older app builds, which still show it. This app ignores it.
     var inLove: Bool
     var since: Date
 
     var stage: Stage { slime.stage ?? Stage.forLevel(slime.level) }
+}
+
+extension Friend {
+    /// The love fields are optional on the way in, so a server that stops
+    /// sending them never hides a friend.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(String.self, forKey: .id)
+        ownerName = try c.decode(String.self, forKey: .ownerName)
+        slime = try c.decode(SlimeProfile.self, forKey: .slime)
+        since = try c.decode(Date.self, forKey: .since)
+        love = (try? c.decodeIfPresent(Int.self, forKey: .love)) ?? 0
+        inLove = (try? c.decodeIfPresent(Bool.self, forKey: .inLove)) ?? false
+    }
 }
 
 struct FriendRequest: Codable, Hashable, Identifiable {
@@ -140,15 +155,20 @@ struct PairCode: Codable, Hashable {
     var expiresAt: Date
 }
 
+/// What this app sends a friend. (The server still takes "kiss" from older
+/// app builds; this one never sends it.)
 enum InteractionKind: String, Codable, CaseIterable {
-    case hug, visit, gift, kiss
+    case hug, visit, gift
 }
 
+/// The server's answer to a hug, visit or gift. Its love fields are only
+/// for older app builds and are ignored here.
 struct InteractionResult: Codable {
-    var love: Int
-    var inLove: Bool
+    var love: Int?
+    var inLove: Bool?
     var gained: Int?
     var fellInLove: Bool?
+    /// Today's limit for this kind is reached: it didn't reach the friend.
     var capped: Bool?
     var message: String?
 }
@@ -189,8 +209,10 @@ struct InboxEvent: Codable, Identifiable {
     var id: String
     var friendId: String?
     var friendName: String?
-    /// request, accepted, hug, visit, gift, kiss, inLove, message, challenge,
-    /// challengeResult, coopDone. Unknown kinds from a newer server are ignored.
+    /// request, accepted, hug, visit, gift, message, challenge,
+    /// challengeResult, coopDone. Friends on older app builds can still send
+    /// kiss and inLove; a kiss arrives as a hug, inLove is skipped. Unknown
+    /// kinds from a newer server are ignored.
     var kind: String
     var food: Food?
     var preset: MessagePreset?
@@ -237,7 +259,7 @@ struct FriendDetail: Codable {
     var friend: Friend
     var memories: [FriendMemory]
     var coop: CoopStatus
-    /// Interactions left today that still raise love, by kind.
+    /// Hugs, visits and gifts that still reach the friend today, by kind.
     var today: [String: Int]
 }
 
@@ -375,7 +397,7 @@ struct Leaderboard: Codable {
 }
 
 /// Decodes a list element when it can and skips it otherwise.
-private struct LossyElement<T: Decodable>: Decodable {
+struct LossyElement<T: Decodable>: Decodable {
     var value: T?
 
     init(from decoder: Decoder) throws {
@@ -396,14 +418,267 @@ struct ChatContext: Codable {
     var mood: Mood
     var needs: Needs
     var favorite: Food
-    var partnerName: String?
     var localTime: String
+    /// How the slime feels right now, emotion name to 0...1 (`Emotions.wire`).
+    /// Left out when nil, so the server answers as before.
+    var emotions: [String: Double]? = nil
+}
+
+/// The one feeling a chat reply expresses, as the server returns it. `name`
+/// is an `Emotion` raw value when the AI kept to the list.
+struct ChatEmotion: Codable, Hashable {
+    var name: String
+    /// 0...1.
+    var intensity: Double
+}
+
+extension ChatEmotion {
+    /// Clamps the intensity; a missing or broken one counts as medium.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        name = try c.decode(String.self, forKey: .name).trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        let raw = (try? c.decodeIfPresent(Double.self, forKey: .intensity)) ?? 0.5
+        intensity = raw.isFinite ? min(1, max(0, raw)) : 0.5
+    }
 }
 
 struct ChatReply: Codable {
     var reply: String
     /// Optional animation the slime plays while saying it.
     var reaction: Reaction?
+    /// The feeling the reply expresses. Missing from older servers, and when
+    /// the AI gave none.
+    var emotion: ChatEmotion? = nil
+}
+
+extension ChatReply {
+    /// Only the reply is required: an unknown reaction or a broken emotion
+    /// leaves that part out instead of losing the answer.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        reply = try c.decode(String.self, forKey: .reply)
+        reaction = try? c.decodeIfPresent(Reaction.self, forKey: .reaction)
+        emotion = try? c.decodeIfPresent(ChatEmotion.self, forKey: .emotion)
+    }
+}
+
+// MARK: - Care together
+
+/// The person you care for a slime with, as the server describes them.
+struct CarePartner: Codable, Hashable {
+    var deviceId: String
+    var ownerName: String
+    /// The partner's own role, "host" or "joiner". Not in the join answer:
+    /// whoever joins is the joiner, the code's owner the host.
+    var role: String?
+
+    init(deviceId: String, ownerName: String, role: String? = nil) {
+        self.deviceId = deviceId
+        self.ownerName = ownerName
+        self.role = role
+    }
+
+    /// This phone's role, the opposite of the partner's.
+    var myRole: String? {
+        if role == CareRole.host { return CareRole.joiner }
+        if role == CareRole.joiner { return CareRole.host }
+        return nil
+    }
+}
+
+/// The two roles in caring together. The host's slime is the shared one.
+enum CareRole {
+    static let host = "host"
+    static let joiner = "joiner"
+}
+
+/// A care action the partner took, as `GET /care` lists it.
+struct CareEventWire: Codable, Hashable, Identifiable {
+    var id: String
+    var deviceId: String
+    var ownerName: String
+    var kind: CareKind
+    var food: Food?
+    var game: GameID?
+    var amount: Double?
+    var at: Date
+    var createdAt: Date
+
+    init(id: String, deviceId: String, ownerName: String, kind: CareKind, food: Food?, game: GameID?,
+         amount: Double?, at: Date, createdAt: Date) {
+        self.id = id
+        self.deviceId = deviceId
+        self.ownerName = ownerName
+        self.kind = kind
+        self.food = food
+        self.game = game
+        self.amount = amount
+        self.at = at
+        self.createdAt = createdAt
+    }
+
+    /// The kind must be one this app knows (otherwise the event is
+    /// skipped); food, game and amount from a newer app fall back to none.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decodeFlexibleString(forKey: .id)
+        deviceId = try c.decode(String.self, forKey: .deviceId)
+        ownerName = (try? c.decodeIfPresent(String.self, forKey: .ownerName)) ?? "Your partner"
+        kind = try c.decode(CareKind.self, forKey: .kind)
+        food = try? c.decodeIfPresent(Food.self, forKey: .food)
+        game = try? c.decodeIfPresent(GameID.self, forKey: .game)
+        let amount = try? c.decodeIfPresent(Double.self, forKey: .amount)
+        self.amount = amount.flatMap { $0.isFinite ? $0 : nil }
+        at = try c.decode(Date.self, forKey: .at)
+        createdAt = (try? c.decodeIfPresent(Date.self, forKey: .createdAt)) ?? at
+    }
+
+    /// The event as the game applies it.
+    var event: CareEvent {
+        CareEvent(id: id, kind: kind, food: food, game: game, amount: amount, by: ownerName, at: at)
+    }
+}
+
+/// `GET /care`: the partner (nil when not caring together), the newest
+/// shared snapshot, and the partner's actions after the cursor.
+struct CareStatus: Decodable {
+    var partner: CarePartner?
+    var snapshot: SlimeSnapshot?
+    /// The shared slime's name in the snapshot, read straight from its JSON.
+    var snapshotName: String?
+    var version: Int
+    var events: [CareEventWire]
+    var cursor: String?
+
+    init(partner: CarePartner?, snapshot: SlimeSnapshot?, snapshotName: String? = nil, version: Int,
+         events: [CareEventWire], cursor: String?) {
+        self.partner = partner
+        self.snapshot = snapshot
+        self.snapshotName = snapshotName
+        self.version = version
+        self.events = events
+        self.cursor = cursor
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case partner, snapshot, version, events, cursor
+    }
+
+    /// A snapshot this app version can't read counts as none (the next one
+    /// may be readable); events it doesn't know are skipped.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        partner = try? c.decodeIfPresent(CarePartner.self, forKey: .partner)
+        snapshot = try? c.decodeIfPresent(SlimeSnapshot.self, forKey: .snapshot)
+        snapshotName = (try? c.decodeIfPresent(SnapshotPeek.self, forKey: .snapshot))?.name
+        version = (try? c.decodeIfPresent(Int.self, forKey: .version)) ?? 0
+        events = ((try? c.decodeIfPresent([LossyElement<CareEventWire>].self, forKey: .events)) ?? [])
+            .compactMap { $0.value }
+        cursor = try? c.decodeFlexibleStringIfPresent(forKey: .cursor)
+    }
+}
+
+/// `POST /care/join`: who you now care with and their slime, if their
+/// phone already sent it.
+struct CareJoinResult: Decodable {
+    var partner: CarePartner
+    var snapshot: SlimeSnapshot?
+    var snapshotName: String?
+    var version: Int
+
+    private enum CodingKeys: String, CodingKey {
+        case partner, snapshot, version
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        var partner = try c.decode(CarePartner.self, forKey: .partner)
+        // Whoever owns the code hosts.
+        if partner.role == nil { partner.role = CareRole.host }
+        self.partner = partner
+        snapshot = try? c.decodeIfPresent(SlimeSnapshot.self, forKey: .snapshot)
+        snapshotName = (try? c.decodeIfPresent(SnapshotPeek.self, forKey: .snapshot))?.name
+        version = (try? c.decodeIfPresent(Int.self, forKey: .version)) ?? 0
+    }
+}
+
+/// Just the name inside a snapshot, whatever else it holds.
+private struct SnapshotPeek: Decodable {
+    var name: String?
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        name = try? c.decodeIfPresent(String.self, forKey: .name)
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case name
+    }
+}
+
+/// `POST /care/events`.
+struct CareEventBody: Codable, Equatable {
+    var kind: CareKind
+    var food: Food?
+    var game: GameID?
+    var amount: Double?
+    var at: Date
+
+    /// The most the server takes as an amount.
+    static let amountLimit = 200.0
+
+    init(kind: CareKind, food: Food?, game: GameID?, amount: Double?, at: Date) {
+        self.kind = kind
+        self.food = food
+        self.game = game
+        self.amount = amount.flatMap { $0.isFinite ? min(Self.amountLimit, max(0, $0)) : nil }
+        self.at = at
+    }
+
+    init(_ event: CareEvent) {
+        self.init(kind: event.kind, food: event.food, game: event.game, amount: event.amount, at: event.at)
+    }
+}
+
+/// What `PUT /care/snapshot` did.
+enum CareSnapshotResult: Equatable {
+    /// Stored; the shared slime is at this version now.
+    case saved(version: Int)
+    /// The other phone saved first (409). Carries the server's newest
+    /// version and snapshot; without a version, nobody is caring together.
+    case conflict(version: Int?, snapshot: SlimeSnapshot?)
+}
+
+/// The body of a 409 from `PUT /care/snapshot`.
+struct CareConflict: Decodable {
+    var error: String?
+    var version: Int?
+    var snapshot: SlimeSnapshot?
+
+    private enum CodingKeys: String, CodingKey {
+        case error, version, snapshot
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        error = try? c.decodeIfPresent(String.self, forKey: .error)
+        version = try? c.decodeIfPresent(Int.self, forKey: .version)
+        snapshot = try? c.decodeIfPresent(SlimeSnapshot.self, forKey: .snapshot)
+    }
+}
+
+extension KeyedDecodingContainer {
+    /// A string the server may also send as a number (ids, cursors).
+    func decodeFlexibleString(forKey key: Key) throws -> String {
+        if let text = try? decode(String.self, forKey: key) { return text }
+        if let number = try? decode(Int.self, forKey: key) { return String(number) }
+        return try decode(String.self, forKey: key)
+    }
+
+    func decodeFlexibleStringIfPresent(forKey key: Key) throws -> String? {
+        guard contains(key), try !decodeNil(forKey: key) else { return nil }
+        return try decodeFlexibleString(forKey: key)
+    }
 }
 
 // MARK: - Client
@@ -614,6 +889,67 @@ struct HyprnodeAPI {
                               slowAnswer: "Your slime took too long to answer. Try again in a moment.")
     }
 
+    // MARK: Care together
+
+    /// A code someone else enters to care for your slime with you (10
+    /// minutes, single use). 409 while you already care together.
+    func newCareCode() async throws -> PairCode {
+        try await send("POST", "care/codes", body: Empty())
+    }
+
+    /// Cares for the slime of the code's owner from now on. 404 unknown or
+    /// used, 410 expired, 400 your own code, 409 one of you already cares
+    /// together.
+    func joinCare(code: String) async throws -> CareJoinResult {
+        try await send("POST", "care/join", body: ["code": code.uppercased()])
+    }
+
+    /// The pair, the newest snapshot and the partner's actions after `cursor`.
+    func care(after cursor: String?) async throws -> CareStatus {
+        try await send("GET", Self.carePath(after: cursor))
+    }
+
+    static func carePath(after cursor: String?) -> String {
+        guard let cursor, !cursor.isEmpty,
+              let encoded = cursor.addingPercentEncoding(withAllowedCharacters: .alphanumerics) else { return "care" }
+        return "care?after=\(encoded)"
+    }
+
+    /// Sends one of your care actions to the partner's phone. The key makes
+    /// a resend count once. 409 when nobody cares together anymore.
+    func sendCare(_ body: CareEventBody, key: String) async throws {
+        try await sendNoContent("POST", "care/events", body: body, key: key)
+    }
+
+    /// Stores the shared slime. `version` must be the server's version + 1;
+    /// otherwise the answer is the server's newest state.
+    func putCareSnapshot(_ snapshot: SlimeSnapshot, version: Int) async throws -> CareSnapshotResult {
+        struct Body: Encodable { var snapshot: SlimeSnapshot; var version: Int }
+        struct Saved: Decodable { var version: Int }
+        let (data, status) = try await perform("PUT", "care/snapshot", body: Body(snapshot: snapshot, version: version),
+                                               key: nil, timeout: Self.defaultTimeout,
+                                               slowAnswer: Self.slowServerAnswer)
+        if (200..<300).contains(status) {
+            let saved = try? Self.decoder.decode(Saved.self, from: data)
+            return .saved(version: saved?.version ?? version)
+        }
+        if status == 409 {
+            let conflict = Self.careConflict(from: data)
+            return .conflict(version: conflict?.version, snapshot: conflict?.snapshot)
+        }
+        throw Self.failure(status: status, data: data)
+    }
+
+    /// Reads a 409 from `PUT /care/snapshot`.
+    static func careConflict(from data: Data) -> CareConflict? {
+        try? decoder.decode(CareConflict.self, from: data)
+    }
+
+    /// Stops caring together, for both of you.
+    func leaveCare() async throws {
+        try await sendNoContent("DELETE", "care", body: Optional<Empty>.none)
+    }
+
     // MARK: Plumbing
 
     /// How long a request may wait for the server's next bytes.
@@ -639,6 +975,23 @@ struct HyprnodeAPI {
     /// the answer didn't come in time. Like a 5xx it is worth trying again.
     private func raw<B: Encodable>(_ method: String, _ path: String, body: B?, key: String?,
                                    timeout: TimeInterval, slowAnswer: String) async throws -> Data {
+        let (data, status) = try await perform(method, path, body: body, key: key, timeout: timeout, slowAnswer: slowAnswer)
+        guard (200..<300).contains(status) else { throw Self.failure(status: status, data: data) }
+        return data
+    }
+
+    /// The error for an answer outside 2xx. A bare 404 means the server
+    /// isn't set up yet (Caddy answers without our JSON).
+    private static func failure(status: Int, data: Data) -> APIError {
+        let message = try? decoder.decode(ServerError.self, from: data).error
+        if status == 404, message == nil { return APIError.notReady }
+        return APIError.server(status: status, message: message)
+    }
+
+    /// Sends the request and returns the answer with its status, whatever
+    /// the status is. Only network problems throw.
+    private func perform<B: Encodable>(_ method: String, _ path: String, body: B?, key: String?,
+                                       timeout: TimeInterval, slowAnswer: String) async throws -> (Data, Int) {
         guard let url = URL(string: path, relativeTo: Self.base) else { throw APIError.notReady }
         var request = URLRequest(url: url, timeoutInterval: timeout)
         request.httpMethod = method
@@ -664,11 +1017,6 @@ struct HyprnodeAPI {
         }
 
         let status = (response as? HTTPURLResponse)?.statusCode ?? 0
-        guard (200..<300).contains(status) else {
-            let message = try? Self.decoder.decode(ServerError.self, from: data).error
-            if status == 404, message == nil { throw APIError.notReady }
-            throw APIError.server(status: status, message: message)
-        }
-        return data
+        return (data, status)
     }
 }

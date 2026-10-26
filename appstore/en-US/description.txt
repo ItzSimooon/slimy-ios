@@ -1,6 +1,12 @@
 A tiny pixel slime that lives in your Dynamic Island.
 
-It sits next to the camera all day. It wobbles, naps, gets hungry and reacts to what your iPhone is doing. Touch and hold the island to feed it, play with it, give it a bath or pet it, without opening the app.
+It sits next to the camera all day. It wobbles, naps, gets hungry, talks on its own and reacts to what your iPhone is doing. Touch and hold the island to feed it, play with it, give it a bath or pet it, without opening the app.
+
+NEW IN 1.1
+• Crates: buy wooden and golden crates with coins, earn mystery crates, and tap them open for coins, food, outfits, furniture and new colours. Golden crates hide a secret legendary. Nobody's telling.
+• Care Together: share your slime with one person, like your partner, a sibling or a roommate. You both look after the same slime on your own iPhones and see who fed it last.
+• Real feelings: joy, curiosity, boredom, sleepiness and more rise with what happens and change how your slime moves and what it says
+• It talks on its own, every few seconds, about its day, the weather, the time or you
 
 ALWAYS WITH YOU
 • Lives in the Dynamic Island and on the Lock Screen, and shows up in StandBy
@@ -23,18 +29,18 @@ Snack Catcher, Slime Jump, Bubble Pop, Memory Garden, Slime Racing, Rhythm Bounc
 DRESS UP AND DECORATE
 Hats, glasses, scarves, effects and furniture. Five homes to move into: a room, a garden, a beach, space and a crystal cave. Strike a pose in the photo booth and share the picture.
 
-Coins are earned in the app, from games, daily gifts and achievements. There is nothing to buy with real money.
+Coins are earned in the app, from games, daily gifts and achievements, and they buy crates too. The app shows the chances for every crate. There is nothing to buy with real money.
 
 FRIENDS, IF YOU WANT
-Send a code or a link and your slimes become friends. Hug, visit, send food and greetings, play the same board in a challenge, grow a shared garden every week and compare records on the friends leaderboard. Now and then a friend's slime drops by in your Dynamic Island. At 100% love, two slimes fall in love.
+Send a code or a link and your slimes become friends. Hug, visit, send food and greetings, play the same board in a challenge, grow a shared garden every week and compare records on the friends leaderboard. Now and then a friend's slime drops by in your Dynamic Island.
 
 TALK TO YOUR SLIME
-Ask it something and it answers in a few words, in character. Replies are written by an AI service. Slimy asks before your first message and tells you exactly what is sent. You can report any reply.
+Ask it something and it answers in a few words, in character and in the mood it's in. A kind word can cheer it up. Replies are written by an AI service. Slimy asks before your first message and tells you exactly what is sent. You can report any reply.
 
 PRIVATE BY DESIGN
 • No account, no ads, no tracking
 • Your slime lives on your iPhone and works offline
-• Friends and talking connect only after you choose to go online
+• Friends, caring together and talking connect only after you choose to go online
 • Delete your server data in the app at any time
 • Back up your slime to a file and restore it
 

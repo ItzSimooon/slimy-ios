@@ -167,6 +167,12 @@ struct Slime: Codable, Hashable {
     /// The need it last told you about, so it doesn't repeat itself.
     var lastNudged: Need?
     var lastNudgeAt = Date.distantPast
+    /// How it feels. Settles over time in `advance`; care, games, friends,
+    /// crates and the chat add to it.
+    var emotions = Emotions()
+    /// Colours it has besides the ones its level opens: found in crates.
+    /// The secret colour only ever comes this way.
+    var colours: Set<Skin> = []
 
     static func newborn(named name: String, skin: Skin, seed: UInt64) -> Slime {
         var rng = SplitMix(seed: seed)
@@ -204,7 +210,8 @@ struct Slime: Codable, Hashable {
 
     var mood: Mood {
         if isAsleep { return .sleep }
-        return needs.lowest.value < 25 ? .sad : .idle
+        if needs.lowest.value < 25 { return .sad }
+        return emotions.dominant == .sadness && emotions.intensity >= 0.5 ? .sad : .idle
     }
 
     /// The need it is asking for, if anything is getting low.
@@ -238,9 +245,12 @@ struct Slime: Codable, Hashable {
     }
 
     /// The colours offered at hatching are open from the start; the
-    /// others unlock with levels.
+    /// others unlock with levels or come out of crates. The secret colour
+    /// only ever comes out of a crate.
     func isUnlocked(_ skin: Skin) -> Bool {
-        Skin.hatchChoices.contains(skin) || level >= skin.unlockLevel
+        if colours.contains(skin) { return true }
+        guard !skin.isSecret else { return false }
+        return Skin.hatchChoices.contains(skin) || level >= skin.unlockLevel
     }
 
     /// How long a reaction plays in the island before it goes back to the mood.
@@ -269,6 +279,11 @@ struct Slime: Codable, Hashable {
         reactionAt = now
     }
 
+    /// Adds to a feeling (negative amounts take away).
+    mutating func feel(_ e: Emotion, _ amount: Double) {
+        emotions.feel(e, amount)
+    }
+
     mutating func sanitize(now: Date) {
         needs.sanitize()
         xp = max(0, xp)
@@ -286,8 +301,10 @@ struct Slime: Codable, Hashable {
     /// At most this much time is simulated (a longer gap counts as this).
     static let maxSimulated: TimeInterval = 21 * 24 * 3600
 
-    /// Runs the clock forward. Safe against clocks set backwards, huge gaps
-    /// and missed background runs: it only ever looks at the saved time.
+    /// Runs the clock forward: needs drain, it falls asleep and wakes up,
+    /// and its feelings settle toward the baseline its needs and character
+    /// give. Safe against clocks set backwards, huge gaps and missed
+    /// background runs: it only ever looks at the saved time.
     mutating func advance(to now: Date, schedule: SleepSchedule, calendar: Calendar = .current) {
         let elapsed = now.timeIntervalSince(lastUpdate)
         if elapsed < 0 {
@@ -308,6 +325,8 @@ struct Slime: Codable, Hashable {
                 if decay > 0 { value = max(value, min(needs[need], Self.restingFloor)) }
                 needs[need] = value
             }
+            emotions.settle(toward: .baseline(needs: needs, personality: personality, bond: bond, asleep: isAsleep),
+                            over: step)
             t = t.addingTimeInterval(step)
             remaining -= step
 
@@ -392,5 +411,16 @@ extension Slime {
         equipped = c.value(.equipped, d.equipped)
         lastNudged = c.value(.lastNudged, d.lastNudged)
         lastNudgeAt = c.value(.lastNudgeAt, d.lastNudgeAt)
+        emotions = c.value(.emotions, d.emotions)
+        colours = Skin.lossySet(c.value(.colours, [String]()))
+    }
+}
+
+extension Skin {
+    /// Colours from their names, leaving out any this version doesn't know
+    /// (a save or snapshot from a newer app), so one unknown colour can't
+    /// cost the others.
+    static func lossySet(_ names: [String]) -> Set<Skin> {
+        Set(names.compactMap { Skin(rawValue: $0) })
     }
 }

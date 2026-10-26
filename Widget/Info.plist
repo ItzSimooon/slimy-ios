@@ -33,6 +33,7 @@
 		<string>Slime-Baby-Idle-Shine.ttf</string>
 		<string>Slime-Baby-Idle-Warm.ttf</string>
 		<string>Slime-Baby-Idle-Cool.ttf</string>
+		<string>Slime-Baby-Idle-Gills.ttf</string>
 		<string>Acc-hatparty-Baby-Idle.ttf</string>
 		<string>Acc-hatbeanie-Baby-Idle.ttf</string>
 		<string>Acc-hatflower-Baby-Idle.ttf</string>
@@ -50,6 +51,7 @@
 		<string>Slime-Baby-Sad-Shine.ttf</string>
 		<string>Slime-Baby-Sad-Warm.ttf</string>
 		<string>Slime-Baby-Sad-Cool.ttf</string>
+		<string>Slime-Baby-Sad-Gills.ttf</string>
 		<string>Acc-hatparty-Baby-Sad.ttf</string>
 		<string>Acc-hatbeanie-Baby-Sad.ttf</string>
 		<string>Acc-hatflower-Baby-Sad.ttf</string>
@@ -67,6 +69,7 @@
 		<string>Slime-Baby-Sleep-Shine.ttf</string>
 		<string>Slime-Baby-Sleep-Warm.ttf</string>
 		<string>Slime-Baby-Sleep-Cool.ttf</string>
+		<string>Slime-Baby-Sleep-Gills.ttf</string>
 		<string>Acc-hatparty-Baby-Sleep.ttf</string>
 		<string>Acc-hatbeanie-Baby-Sleep.ttf</string>
 		<string>Acc-hatflower-Baby-Sleep.ttf</string>
@@ -84,6 +87,7 @@
 		<string>Slime-Baby-Eat-Shine.ttf</string>
 		<string>Slime-Baby-Eat-Warm.ttf</string>
 		<string>Slime-Baby-Eat-Cool.ttf</string>
+		<string>Slime-Baby-Eat-Gills.ttf</string>
 		<string>Acc-hatparty-Baby-Eat.ttf</string>
 		<string>Acc-hatbeanie-Baby-Eat.ttf</string>
 		<string>Acc-hatflower-Baby-Eat.ttf</string>
@@ -101,6 +105,7 @@
 		<string>Slime-Baby-Play-Shine.ttf</string>
 		<string>Slime-Baby-Play-Warm.ttf</string>
 		<string>Slime-Baby-Play-Cool.ttf</string>
+		<string>Slime-Baby-Play-Gills.ttf</string>
 		<string>Acc-hatparty-Baby-Play.ttf</string>
 		<string>Acc-hatbeanie-Baby-Play.ttf</string>
 		<string>Acc-hatflower-Baby-Play.ttf</string>
@@ -118,6 +123,7 @@
 		<string>Slime-Baby-Love-Shine.ttf</string>
 		<string>Slime-Baby-Love-Warm.ttf</string>
 		<string>Slime-Baby-Love-Cool.ttf</string>
+		<string>Slime-Baby-Love-Gills.ttf</string>
 		<string>Acc-hatparty-Baby-Love.ttf</string>
 		<string>Acc-hatbeanie-Baby-Love.ttf</string>
 		<string>Acc-hatflower-Baby-Love.ttf</string>
@@ -135,6 +141,7 @@
 		<string>Slime-Baby-Bath-Shine.ttf</string>
 		<string>Slime-Baby-Bath-Warm.ttf</string>
 		<string>Slime-Baby-Bath-Cool.ttf</string>
+		<string>Slime-Baby-Bath-Gills.ttf</string>
 		<string>Acc-hatparty-Baby-Bath.ttf</string>
 		<string>Acc-hatbeanie-Baby-Bath.ttf</string>
 		<string>Acc-hatflower-Baby-Bath.ttf</string>
@@ -152,6 +159,7 @@
 		<string>Slime-Baby-Melt-Shine.ttf</string>
 		<string>Slime-Baby-Melt-Warm.ttf</string>
 		<string>Slime-Baby-Melt-Cool.ttf</string>
+		<string>Slime-Baby-Melt-Gills.ttf</string>
 		<string>Acc-hatparty-Baby-Melt.ttf</string>
 		<string>Acc-hatbeanie-Baby-Melt.ttf</string>
 		<string>Acc-hatflower-Baby-Melt.ttf</string>
@@ -169,6 +177,7 @@
 		<string>Slime-Baby-Zap-Shine.ttf</string>
 		<string>Slime-Baby-Zap-Warm.ttf</string>
 		<string>Slime-Baby-Zap-Cool.ttf</string>
+		<string>Slime-Baby-Zap-Gills.ttf</string>
 		<string>Acc-hatparty-Baby-Zap.ttf</string>
 		<string>Acc-hatbeanie-Baby-Zap.ttf</string>
 		<string>Acc-hatflower-Baby-Zap.ttf</string>
@@ -186,6 +195,7 @@
 		<string>Slime-Baby-Confused-Shine.ttf</string>
 		<string>Slime-Baby-Confused-Warm.ttf</string>
 		<string>Slime-Baby-Confused-Cool.ttf</string>
+		<string>Slime-Baby-Confused-Gills.ttf</string>
 		<string>Acc-hatparty-Baby-Confused.ttf</string>
 		<string>Acc-hatbeanie-Baby-Confused.ttf</string>
 		<string>Acc-hatflower-Baby-Confused.ttf</string>
@@ -203,6 +213,7 @@
 		<string>Slime-Baby-Wave-Shine.ttf</string>
 		<string>Slime-Baby-Wave-Warm.ttf</string>
 		<string>Slime-Baby-Wave-Cool.ttf</string>
+		<string>Slime-Baby-Wave-Gills.ttf</string>
 		<string>Acc-hatparty-Baby-Wave.ttf</string>
 		<string>Acc-hatbeanie-Baby-Wave.ttf</string>
 		<string>Acc-hatflower-Baby-Wave.ttf</string>
@@ -220,6 +231,7 @@
 		<string>Slime-Baby-Celebrate-Shine.ttf</string>
 		<string>Slime-Baby-Celebrate-Warm.ttf</string>
 		<string>Slime-Baby-Celebrate-Cool.ttf</string>
+		<string>Slime-Baby-Celebrate-Gills.ttf</string>
 		<string>Acc-hatparty-Baby-Celebrate.ttf</string>
 		<string>Acc-hatbeanie-Baby-Celebrate.ttf</string>
 		<string>Acc-hatflower-Baby-Celebrate.ttf</string>
@@ -237,6 +249,7 @@
 		<string>Slime-Baby-Stretch-Shine.ttf</string>
 		<string>Slime-Baby-Stretch-Warm.ttf</string>
 		<string>Slime-Baby-Stretch-Cool.ttf</string>
+		<string>Slime-Baby-Stretch-Gills.ttf</string>
 		<string>Acc-hatparty-Baby-Stretch.ttf</string>
 		<string>Acc-hatbeanie-Baby-Stretch.ttf</string>
 		<string>Acc-hatflower-Baby-Stretch.ttf</string>
@@ -254,6 +267,7 @@
 		<string>Slime-Baby-Sulk-Shine.ttf</string>
 		<string>Slime-Baby-Sulk-Warm.ttf</string>
 		<string>Slime-Baby-Sulk-Cool.ttf</string>
+		<string>Slime-Baby-Sulk-Gills.ttf</string>
 		<string>Acc-hatparty-Baby-Sulk.ttf</string>
 		<string>Acc-hatbeanie-Baby-Sulk.ttf</string>
 		<string>Acc-hatflower-Baby-Sulk.ttf</string>
@@ -271,6 +285,7 @@
 		<string>Slime-Baby-Hide-Shine.ttf</string>
 		<string>Slime-Baby-Hide-Warm.ttf</string>
 		<string>Slime-Baby-Hide-Cool.ttf</string>
+		<string>Slime-Baby-Hide-Gills.ttf</string>
 		<string>Acc-hatparty-Baby-Hide.ttf</string>
 		<string>Acc-hatbeanie-Baby-Hide.ttf</string>
 		<string>Acc-hatflower-Baby-Hide.ttf</string>
@@ -288,6 +303,7 @@
 		<string>Slime-Baby-Curious-Shine.ttf</string>
 		<string>Slime-Baby-Curious-Warm.ttf</string>
 		<string>Slime-Baby-Curious-Cool.ttf</string>
+		<string>Slime-Baby-Curious-Gills.ttf</string>
 		<string>Acc-hatparty-Baby-Curious.ttf</string>
 		<string>Acc-hatbeanie-Baby-Curious.ttf</string>
 		<string>Acc-hatflower-Baby-Curious.ttf</string>
@@ -305,6 +321,7 @@
 		<string>Slime-Baby-Blush-Shine.ttf</string>
 		<string>Slime-Baby-Blush-Warm.ttf</string>
 		<string>Slime-Baby-Blush-Cool.ttf</string>
+		<string>Slime-Baby-Blush-Gills.ttf</string>
 		<string>Acc-hatparty-Baby-Blush.ttf</string>
 		<string>Acc-hatbeanie-Baby-Blush.ttf</string>
 		<string>Acc-hatflower-Baby-Blush.ttf</string>
@@ -322,6 +339,7 @@
 		<string>Slime-Baby-Meet-Shine.ttf</string>
 		<string>Slime-Baby-Meet-Warm.ttf</string>
 		<string>Slime-Baby-Meet-Cool.ttf</string>
+		<string>Slime-Baby-Meet-Gills.ttf</string>
 		<string>Acc-hatparty-Baby-Meet.ttf</string>
 		<string>Acc-hatbeanie-Baby-Meet.ttf</string>
 		<string>Acc-hatflower-Baby-Meet.ttf</string>
@@ -339,6 +357,7 @@
 		<string>Slime-Young-Idle-Shine.ttf</string>
 		<string>Slime-Young-Idle-Warm.ttf</string>
 		<string>Slime-Young-Idle-Cool.ttf</string>
+		<string>Slime-Young-Idle-Gills.ttf</string>
 		<string>Acc-hatparty-Young-Idle.ttf</string>
 		<string>Acc-hatbeanie-Young-Idle.ttf</string>
 		<string>Acc-hatflower-Young-Idle.ttf</string>
@@ -356,6 +375,7 @@
 		<string>Slime-Young-Sad-Shine.ttf</string>
 		<string>Slime-Young-Sad-Warm.ttf</string>
 		<string>Slime-Young-Sad-Cool.ttf</string>
+		<string>Slime-Young-Sad-Gills.ttf</string>
 		<string>Acc-hatparty-Young-Sad.ttf</string>
 		<string>Acc-hatbeanie-Young-Sad.ttf</string>
 		<string>Acc-hatflower-Young-Sad.ttf</string>
@@ -373,6 +393,7 @@
 		<string>Slime-Young-Sleep-Shine.ttf</string>
 		<string>Slime-Young-Sleep-Warm.ttf</string>
 		<string>Slime-Young-Sleep-Cool.ttf</string>
+		<string>Slime-Young-Sleep-Gills.ttf</string>
 		<string>Acc-hatparty-Young-Sleep.ttf</string>
 		<string>Acc-hatbeanie-Young-Sleep.ttf</string>
 		<string>Acc-hatflower-Young-Sleep.ttf</string>
@@ -390,6 +411,7 @@
 		<string>Slime-Young-Eat-Shine.ttf</string>
 		<string>Slime-Young-Eat-Warm.ttf</string>
 		<string>Slime-Young-Eat-Cool.ttf</string>
+		<string>Slime-Young-Eat-Gills.ttf</string>
 		<string>Acc-hatparty-Young-Eat.ttf</string>
 		<string>Acc-hatbeanie-Young-Eat.ttf</string>
 		<string>Acc-hatflower-Young-Eat.ttf</string>
@@ -407,6 +429,7 @@
 		<string>Slime-Young-Play-Shine.ttf</string>
 		<string>Slime-Young-Play-Warm.ttf</string>
 		<string>Slime-Young-Play-Cool.ttf</string>
+		<string>Slime-Young-Play-Gills.ttf</string>
 		<string>Acc-hatparty-Young-Play.ttf</string>
 		<string>Acc-hatbeanie-Young-Play.ttf</string>
 		<string>Acc-hatflower-Young-Play.ttf</string>
@@ -424,6 +447,7 @@
 		<string>Slime-Young-Love-Shine.ttf</string>
 		<string>Slime-Young-Love-Warm.ttf</string>
 		<string>Slime-Young-Love-Cool.ttf</string>
+		<string>Slime-Young-Love-Gills.ttf</string>
 		<string>Acc-hatparty-Young-Love.ttf</string>
 		<string>Acc-hatbeanie-Young-Love.ttf</string>
 		<string>Acc-hatflower-Young-Love.ttf</string>
@@ -441,6 +465,7 @@
 		<string>Slime-Young-Bath-Shine.ttf</string>
 		<string>Slime-Young-Bath-Warm.ttf</string>
 		<string>Slime-Young-Bath-Cool.ttf</string>
+		<string>Slime-Young-Bath-Gills.ttf</string>
 		<string>Acc-hatparty-Young-Bath.ttf</string>
 		<string>Acc-hatbeanie-Young-Bath.ttf</string>
 		<string>Acc-hatflower-Young-Bath.ttf</string>
@@ -458,6 +483,7 @@
 		<string>Slime-Young-Melt-Shine.ttf</string>
 		<string>Slime-Young-Melt-Warm.ttf</string>
 		<string>Slime-Young-Melt-Cool.ttf</string>
+		<string>Slime-Young-Melt-Gills.ttf</string>
 		<string>Acc-hatparty-Young-Melt.ttf</string>
 		<string>Acc-hatbeanie-Young-Melt.ttf</string>
 		<string>Acc-hatflower-Young-Melt.ttf</string>
@@ -475,6 +501,7 @@
 		<string>Slime-Young-Zap-Shine.ttf</string>
 		<string>Slime-Young-Zap-Warm.ttf</string>
 		<string>Slime-Young-Zap-Cool.ttf</string>
+		<string>Slime-Young-Zap-Gills.ttf</string>
 		<string>Acc-hatparty-Young-Zap.ttf</string>
 		<string>Acc-hatbeanie-Young-Zap.ttf</string>
 		<string>Acc-hatflower-Young-Zap.ttf</string>
@@ -492,6 +519,7 @@
 		<string>Slime-Young-Confused-Shine.ttf</string>
 		<string>Slime-Young-Confused-Warm.ttf</string>
 		<string>Slime-Young-Confused-Cool.ttf</string>
+		<string>Slime-Young-Confused-Gills.ttf</string>
 		<string>Acc-hatparty-Young-Confused.ttf</string>
 		<string>Acc-hatbeanie-Young-Confused.ttf</string>
 		<string>Acc-hatflower-Young-Confused.ttf</string>
@@ -509,6 +537,7 @@
 		<string>Slime-Young-Wave-Shine.ttf</string>
 		<string>Slime-Young-Wave-Warm.ttf</string>
 		<string>Slime-Young-Wave-Cool.ttf</string>
+		<string>Slime-Young-Wave-Gills.ttf</string>
 		<string>Acc-hatparty-Young-Wave.ttf</string>
 		<string>Acc-hatbeanie-Young-Wave.ttf</string>
 		<string>Acc-hatflower-Young-Wave.ttf</string>
@@ -526,6 +555,7 @@
 		<string>Slime-Young-Celebrate-Shine.ttf</string>
 		<string>Slime-Young-Celebrate-Warm.ttf</string>
 		<string>Slime-Young-Celebrate-Cool.ttf</string>
+		<string>Slime-Young-Celebrate-Gills.ttf</string>
 		<string>Acc-hatparty-Young-Celebrate.ttf</string>
 		<string>Acc-hatbeanie-Young-Celebrate.ttf</string>
 		<string>Acc-hatflower-Young-Celebrate.ttf</string>
@@ -543,6 +573,7 @@
 		<string>Slime-Young-Stretch-Shine.ttf</string>
 		<string>Slime-Young-Stretch-Warm.ttf</string>
 		<string>Slime-Young-Stretch-Cool.ttf</string>
+		<string>Slime-Young-Stretch-Gills.ttf</string>
 		<string>Acc-hatparty-Young-Stretch.ttf</string>
 		<string>Acc-hatbeanie-Young-Stretch.ttf</string>
 		<string>Acc-hatflower-Young-Stretch.ttf</string>
@@ -560,6 +591,7 @@
 		<string>Slime-Young-Sulk-Shine.ttf</string>
 		<string>Slime-Young-Sulk-Warm.ttf</string>
 		<string>Slime-Young-Sulk-Cool.ttf</string>
+		<string>Slime-Young-Sulk-Gills.ttf</string>
 		<string>Acc-hatparty-Young-Sulk.ttf</string>
 		<string>Acc-hatbeanie-Young-Sulk.ttf</string>
 		<string>Acc-hatflower-Young-Sulk.ttf</string>
@@ -577,6 +609,7 @@
 		<string>Slime-Young-Hide-Shine.ttf</string>
 		<string>Slime-Young-Hide-Warm.ttf</string>
 		<string>Slime-Young-Hide-Cool.ttf</string>
+		<string>Slime-Young-Hide-Gills.ttf</string>
 		<string>Acc-hatparty-Young-Hide.ttf</string>
 		<string>Acc-hatbeanie-Young-Hide.ttf</string>
 		<string>Acc-hatflower-Young-Hide.ttf</string>
@@ -594,6 +627,7 @@
 		<string>Slime-Young-Curious-Shine.ttf</string>
 		<string>Slime-Young-Curious-Warm.ttf</string>
 		<string>Slime-Young-Curious-Cool.ttf</string>
+		<string>Slime-Young-Curious-Gills.ttf</string>
 		<string>Acc-hatparty-Young-Curious.ttf</string>
 		<string>Acc-hatbeanie-Young-Curious.ttf</string>
 		<string>Acc-hatflower-Young-Curious.ttf</string>
@@ -611,6 +645,7 @@
 		<string>Slime-Young-Blush-Shine.ttf</string>
 		<string>Slime-Young-Blush-Warm.ttf</string>
 		<string>Slime-Young-Blush-Cool.ttf</string>
+		<string>Slime-Young-Blush-Gills.ttf</string>
 		<string>Acc-hatparty-Young-Blush.ttf</string>
 		<string>Acc-hatbeanie-Young-Blush.ttf</string>
 		<string>Acc-hatflower-Young-Blush.ttf</string>
@@ -628,6 +663,7 @@
 		<string>Slime-Young-Meet-Shine.ttf</string>
 		<string>Slime-Young-Meet-Warm.ttf</string>
 		<string>Slime-Young-Meet-Cool.ttf</string>
+		<string>Slime-Young-Meet-Gills.ttf</string>
 		<string>Acc-hatparty-Young-Meet.ttf</string>
 		<string>Acc-hatbeanie-Young-Meet.ttf</string>
 		<string>Acc-hatflower-Young-Meet.ttf</string>
@@ -645,6 +681,7 @@
 		<string>Slime-Grown-Idle-Shine.ttf</string>
 		<string>Slime-Grown-Idle-Warm.ttf</string>
 		<string>Slime-Grown-Idle-Cool.ttf</string>
+		<string>Slime-Grown-Idle-Gills.ttf</string>
 		<string>Acc-hatparty-Grown-Idle.ttf</string>
 		<string>Acc-hatbeanie-Grown-Idle.ttf</string>
 		<string>Acc-hatflower-Grown-Idle.ttf</string>
@@ -662,6 +699,7 @@
 		<string>Slime-Grown-Sad-Shine.ttf</string>
 		<string>Slime-Grown-Sad-Warm.ttf</string>
 		<string>Slime-Grown-Sad-Cool.ttf</string>
+		<string>Slime-Grown-Sad-Gills.ttf</string>
 		<string>Acc-hatparty-Grown-Sad.ttf</string>
 		<string>Acc-hatbeanie-Grown-Sad.ttf</string>
 		<string>Acc-hatflower-Grown-Sad.ttf</string>
@@ -679,6 +717,7 @@
 		<string>Slime-Grown-Sleep-Shine.ttf</string>
 		<string>Slime-Grown-Sleep-Warm.ttf</string>
 		<string>Slime-Grown-Sleep-Cool.ttf</string>
+		<string>Slime-Grown-Sleep-Gills.ttf</string>
 		<string>Acc-hatparty-Grown-Sleep.ttf</string>
 		<string>Acc-hatbeanie-Grown-Sleep.ttf</string>
 		<string>Acc-hatflower-Grown-Sleep.ttf</string>
@@ -696,6 +735,7 @@
 		<string>Slime-Grown-Eat-Shine.ttf</string>
 		<string>Slime-Grown-Eat-Warm.ttf</string>
 		<string>Slime-Grown-Eat-Cool.ttf</string>
+		<string>Slime-Grown-Eat-Gills.ttf</string>
 		<string>Acc-hatparty-Grown-Eat.ttf</string>
 		<string>Acc-hatbeanie-Grown-Eat.ttf</string>
 		<string>Acc-hatflower-Grown-Eat.ttf</string>
@@ -713,6 +753,7 @@
 		<string>Slime-Grown-Play-Shine.ttf</string>
 		<string>Slime-Grown-Play-Warm.ttf</string>
 		<string>Slime-Grown-Play-Cool.ttf</string>
+		<string>Slime-Grown-Play-Gills.ttf</string>
 		<string>Acc-hatparty-Grown-Play.ttf</string>
 		<string>Acc-hatbeanie-Grown-Play.ttf</string>
 		<string>Acc-hatflower-Grown-Play.ttf</string>
@@ -730,6 +771,7 @@
 		<string>Slime-Grown-Love-Shine.ttf</string>
 		<string>Slime-Grown-Love-Warm.ttf</string>
 		<string>Slime-Grown-Love-Cool.ttf</string>
+		<string>Slime-Grown-Love-Gills.ttf</string>
 		<string>Acc-hatparty-Grown-Love.ttf</string>
 		<string>Acc-hatbeanie-Grown-Love.ttf</string>
 		<string>Acc-hatflower-Grown-Love.ttf</string>
@@ -747,6 +789,7 @@
 		<string>Slime-Grown-Bath-Shine.ttf</string>
 		<string>Slime-Grown-Bath-Warm.ttf</string>
 		<string>Slime-Grown-Bath-Cool.ttf</string>
+		<string>Slime-Grown-Bath-Gills.ttf</string>
 		<string>Acc-hatparty-Grown-Bath.ttf</string>
 		<string>Acc-hatbeanie-Grown-Bath.ttf</string>
 		<string>Acc-hatflower-Grown-Bath.ttf</string>
@@ -764,6 +807,7 @@
 		<string>Slime-Grown-Melt-Shine.ttf</string>
 		<string>Slime-Grown-Melt-Warm.ttf</string>
 		<string>Slime-Grown-Melt-Cool.ttf</string>
+		<string>Slime-Grown-Melt-Gills.ttf</string>
 		<string>Acc-hatparty-Grown-Melt.ttf</string>
 		<string>Acc-hatbeanie-Grown-Melt.ttf</string>
 		<string>Acc-hatflower-Grown-Melt.ttf</string>
@@ -781,6 +825,7 @@
 		<string>Slime-Grown-Zap-Shine.ttf</string>
 		<string>Slime-Grown-Zap-Warm.ttf</string>
 		<string>Slime-Grown-Zap-Cool.ttf</string>
+		<string>Slime-Grown-Zap-Gills.ttf</string>
 		<string>Acc-hatparty-Grown-Zap.ttf</string>
 		<string>Acc-hatbeanie-Grown-Zap.ttf</string>
 		<string>Acc-hatflower-Grown-Zap.ttf</string>
@@ -798,6 +843,7 @@
 		<string>Slime-Grown-Confused-Shine.ttf</string>
 		<string>Slime-Grown-Confused-Warm.ttf</string>
 		<string>Slime-Grown-Confused-Cool.ttf</string>
+		<string>Slime-Grown-Confused-Gills.ttf</string>
 		<string>Acc-hatparty-Grown-Confused.ttf</string>
 		<string>Acc-hatbeanie-Grown-Confused.ttf</string>
 		<string>Acc-hatflower-Grown-Confused.ttf</string>
@@ -815,6 +861,7 @@
 		<string>Slime-Grown-Wave-Shine.ttf</string>
 		<string>Slime-Grown-Wave-Warm.ttf</string>
 		<string>Slime-Grown-Wave-Cool.ttf</string>
+		<string>Slime-Grown-Wave-Gills.ttf</string>
 		<string>Acc-hatparty-Grown-Wave.ttf</string>
 		<string>Acc-hatbeanie-Grown-Wave.ttf</string>
 		<string>Acc-hatflower-Grown-Wave.ttf</string>
@@ -832,6 +879,7 @@
 		<string>Slime-Grown-Celebrate-Shine.ttf</string>
 		<string>Slime-Grown-Celebrate-Warm.ttf</string>
 		<string>Slime-Grown-Celebrate-Cool.ttf</string>
+		<string>Slime-Grown-Celebrate-Gills.ttf</string>
 		<string>Acc-hatparty-Grown-Celebrate.ttf</string>
 		<string>Acc-hatbeanie-Grown-Celebrate.ttf</string>
 		<string>Acc-hatflower-Grown-Celebrate.ttf</string>
@@ -849,6 +897,7 @@
 		<string>Slime-Grown-Stretch-Shine.ttf</string>
 		<string>Slime-Grown-Stretch-Warm.ttf</string>
 		<string>Slime-Grown-Stretch-Cool.ttf</string>
+		<string>Slime-Grown-Stretch-Gills.ttf</string>
 		<string>Acc-hatparty-Grown-Stretch.ttf</string>
 		<string>Acc-hatbeanie-Grown-Stretch.ttf</string>
 		<string>Acc-hatflower-Grown-Stretch.ttf</string>
@@ -866,6 +915,7 @@
 		<string>Slime-Grown-Sulk-Shine.ttf</string>
 		<string>Slime-Grown-Sulk-Warm.ttf</string>
 		<string>Slime-Grown-Sulk-Cool.ttf</string>
+		<string>Slime-Grown-Sulk-Gills.ttf</string>
 		<string>Acc-hatparty-Grown-Sulk.ttf</string>
 		<string>Acc-hatbeanie-Grown-Sulk.ttf</string>
 		<string>Acc-hatflower-Grown-Sulk.ttf</string>
@@ -883,6 +933,7 @@
 		<string>Slime-Grown-Hide-Shine.ttf</string>
 		<string>Slime-Grown-Hide-Warm.ttf</string>
 		<string>Slime-Grown-Hide-Cool.ttf</string>
+		<string>Slime-Grown-Hide-Gills.ttf</string>
 		<string>Acc-hatparty-Grown-Hide.ttf</string>
 		<string>Acc-hatbeanie-Grown-Hide.ttf</string>
 		<string>Acc-hatflower-Grown-Hide.ttf</string>
@@ -900,6 +951,7 @@
 		<string>Slime-Grown-Curious-Shine.ttf</string>
 		<string>Slime-Grown-Curious-Warm.ttf</string>
 		<string>Slime-Grown-Curious-Cool.ttf</string>
+		<string>Slime-Grown-Curious-Gills.ttf</string>
 		<string>Acc-hatparty-Grown-Curious.ttf</string>
 		<string>Acc-hatbeanie-Grown-Curious.ttf</string>
 		<string>Acc-hatflower-Grown-Curious.ttf</string>
@@ -917,6 +969,7 @@
 		<string>Slime-Grown-Blush-Shine.ttf</string>
 		<string>Slime-Grown-Blush-Warm.ttf</string>
 		<string>Slime-Grown-Blush-Cool.ttf</string>
+		<string>Slime-Grown-Blush-Gills.ttf</string>
 		<string>Acc-hatparty-Grown-Blush.ttf</string>
 		<string>Acc-hatbeanie-Grown-Blush.ttf</string>
 		<string>Acc-hatflower-Grown-Blush.ttf</string>
@@ -934,6 +987,7 @@
 		<string>Slime-Grown-Meet-Shine.ttf</string>
 		<string>Slime-Grown-Meet-Warm.ttf</string>
 		<string>Slime-Grown-Meet-Cool.ttf</string>
+		<string>Slime-Grown-Meet-Gills.ttf</string>
 		<string>Acc-hatparty-Grown-Meet.ttf</string>
 		<string>Acc-hatbeanie-Grown-Meet.ttf</string>
 		<string>Acc-hatflower-Grown-Meet.ttf</string>

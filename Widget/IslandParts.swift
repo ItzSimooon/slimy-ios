@@ -126,17 +126,18 @@ extension IslandSlime {
         self.init(stage: friend.stage, anim: state.moment?.anim ?? SpriteAnim(friend.mood), anchor: state.anchor,
                   skin: friend.skin, accessories: friend.equipped ?? Accessories(), height: height,
                   animated: state.isAnimated, mirrored: true,
-                  label: "\(friend.name), \(friend.owner)'s slime\(friend.inLove ? ", in love" : "")")
+                  label: "\(friend.name), \(friend.owner)'s slime")
     }
 }
 
 /// The right side of the compact island: a small animated pixel emote, or
-/// the friend you are meeting (or are in love with), facing your slime.
+/// the friend sharing a moment with you (a hug, a visit, a meetup), facing
+/// your slime.
 struct CompactBadge: View {
     let state: IslandState
 
     var body: some View {
-        if let p = state.partner, state.moment != nil || p.inLove {
+        if let p = state.partner {
             IslandSlime(friend: p, state: state, height: 22)
         } else {
             EmoteView(reel: state.emote, anchor: state.anchor, size: 18, animated: state.isAnimated)
@@ -145,7 +146,7 @@ struct CompactBadge: View {
     }
 }
 
-/// Friends standing next to each other, the partner first.
+/// Friends standing next to each other, the one sharing a moment first.
 struct FriendGroup: View {
     let state: IslandState
     var height: CGFloat

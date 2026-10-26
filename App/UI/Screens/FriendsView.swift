@@ -6,11 +6,13 @@ enum FriendsRoute: Hashable {
     case friend(String)
     case leaderboard
     case privacy
+    case care
 }
 
 /// Friends: requests, challenges, the friends themselves, pairing with a
-/// code, the leaderboard and privacy. Offline it explains what going online
-/// means and shows the friends from last time.
+/// code, caring for one slime together, the leaderboard and privacy.
+/// Offline it explains what going online means and shows the friends from
+/// last time.
 struct FriendsView: View {
     @EnvironmentObject private var friends: FriendsStore
     @EnvironmentObject private var store: GameStore
@@ -76,6 +78,8 @@ struct FriendsView: View {
             LeaderboardView()
         case .privacy:
             FriendPrivacyView()
+        case .care:
+            CareTogetherView()
         }
     }
 
@@ -168,13 +172,12 @@ struct FriendsView: View {
         }
     }
 
+    /// The friend in your island first, then by name.
     private var sortedFriends: [Friend] {
         let partnerID = friends.partner?.id
         return friends.friends.sorted { a, b in
             if a.id == partnerID { return true }
             if b.id == partnerID { return false }
-            if a.inLove != b.inLove { return a.inLove }
-            if a.love != b.love { return a.love > b.love }
             return a.slime.name.localizedCaseInsensitiveCompare(b.slime.name) == .orderedAscending
         }
     }
@@ -206,7 +209,7 @@ struct FriendsView: View {
                 }
             }
         } footer: {
-            Text(verbatim: "Hugs, visits and gifts fill up the love. At 100% your slimes fall in love for good.")
+            Text("Hug, visit, send gifts and greetings. Swipe a friend for more.")
         }
     }
 
@@ -245,7 +248,7 @@ struct FriendsView: View {
                 } label: {
                     Label("Island", systemImage: "sparkles")
                 }
-                .tint(Theme.love)
+                .tint(Theme.accent)
             }
         }
         .contextMenu {
@@ -405,11 +408,27 @@ struct FriendsView: View {
 
     private var moreSection: some View {
         Section {
+            careLink
             NavigationLink(value: FriendsRoute.leaderboard) {
                 Label("Leaderboard", systemImage: "trophy")
             }
             NavigationLink(value: FriendsRoute.privacy) {
                 Label("Privacy & blocked", systemImage: "hand.raised")
+            }
+        }
+    }
+
+    /// Care Together, with who you share your slime with.
+    private var careLink: some View {
+        NavigationLink(value: FriendsRoute.care) {
+            LabeledContent {
+                if let link = store.state.care {
+                    Text(link.partnerName)
+                } else if friends.pendingCare != nil || friends.activeCareCode != nil {
+                    Text("Waiting")
+                }
+            } label: {
+                Label("Care Together", systemImage: "person.2.fill")
             }
         }
     }
@@ -426,7 +445,7 @@ struct FriendsView: View {
                 Text("Play with friends")
                     .font(.title2.bold())
                     .foregroundStyle(Theme.ink)
-                Text("Connect with people who have Slimy. Your slimes can hug, visit, send gifts, challenge each other and fall in love.")
+                Text("Connect with people who have Slimy. Your slimes can hug, visit, send gifts and challenge each other, and you can care for one slime together.")
                     .font(.subheadline)
                     .foregroundStyle(Theme.inkSoft)
                     .multilineTextAlignment(.center)
@@ -467,12 +486,15 @@ struct FriendsView: View {
 
     @ViewBuilder
     private var offlineMoreSection: some View {
-        if friends.hasServerAccount {
-            Section {
+        Section {
+            careLink
+            if friends.hasServerAccount {
                 NavigationLink(value: FriendsRoute.privacy) {
                     Label("Privacy & your data", systemImage: "hand.raised")
                 }
-            } footer: {
+            }
+        } footer: {
+            if friends.hasServerAccount {
                 Text("You can delete what slime.hyprnode.de keeps about you at any time.")
             }
         }

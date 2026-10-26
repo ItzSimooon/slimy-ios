@@ -1,11 +1,12 @@
 import { checkChatInput, checkChatOutput } from "./moderation.js";
 import { ENUMS, HttpError } from "./util.js";
 
-// Talking to your slime. The app sends what the slime knows about itself;
-// the server adds the keys (never in the app) and asks a hosted model to
-// answer in character, short and in English. Providers are tried in order:
-// Cloudflare Workers AI, then Groq, then any OpenAI-compatible server.
-// Nothing anyone says is stored or logged.
+// Talking to your slime. The app sends what the slime knows about itself,
+// including how it feels; the server adds the keys (never in the app) and
+// asks a hosted model to answer in character and in that mood, short and in
+// English, and to name the feeling its reply expresses. Providers are tried
+// in order: Cloudflare Workers AI, then Groq, then any OpenAI-compatible
+// server. Nothing anyone says is stored or logged.
 
 export const SLEEPY = "Your slime is sleepy from all the talking. Try again later.";
 export const NOT_SET_UP = "Talking isn't set up on the server right now.";
@@ -18,13 +19,52 @@ export const DEFAULTS = {
   groqFallback: "openai/gpt-oss-120b",
 };
 
+/** The slime's feelings in plain words, for the prompt. */
+export const FEELING_WORDS = {
+  joy: "happy",
+  sadness: "sad",
+  anger: "grumpy",
+  fear: "scared",
+  love: "loving",
+  curiosity: "curious",
+  boredom: "bored",
+  excitement: "excited",
+  sleepiness: "sleepy",
+};
+
+/** Words a model may use instead of the emotion names. */
+const EMOTION_ALIASES = {
+  happy: "joy", happiness: "joy", glad: "joy", cheerful: "joy",
+  sad: "sadness", unhappy: "sadness", lonely: "sadness",
+  angry: "anger", grumpy: "anger", mad: "anger", annoyed: "anger",
+  scared: "fear", afraid: "fear", fearful: "fear", nervous: "fear", anxious: "fear",
+  loving: "love", affection: "love", affectionate: "love",
+  curious: "curiosity",
+  bored: "boredom",
+  excited: "excitement",
+  sleepy: "sleepiness", tired: "sleepiness",
+};
+
+// Strict structured output wants every key, so the model always names a
+// feeling; the API answer still leaves `emotion` out when it isn't usable.
+// Ranges stay in the descriptions: not every provider accepts minimum/maximum.
 const REPLY_SCHEMA = {
   type: "object",
   properties: {
     reply: { type: "string", description: "What the slime says. Two short sentences at most." },
     reaction: { type: "string", enum: ENUMS.reaction, description: "The animation the slime plays while saying it." },
+    emotion: {
+      type: "object",
+      description: "The one feeling the reply expresses.",
+      properties: {
+        name: { type: "string", enum: ENUMS.emotion, description: "The feeling." },
+        intensity: { type: "number", description: "How strong it is, from 0 (barely) to 1 (completely)." },
+      },
+      required: ["name", "intensity"],
+      additionalProperties: false,
+    },
   },
-  required: ["reply", "reaction"],
+  required: ["reply", "reaction", "emotion"],
   additionalProperties: false,
 };
 
@@ -85,6 +125,39 @@ export function providersFrom(env = process.env) {
 const clamp = (value, min, max, fallback) =>
   (typeof value === "number" && Number.isFinite(value) ? Math.round(Math.max(min, Math.min(max, value))) : fallback);
 
+/**
+ * The slime's feelings as plain words, strongest first: "very happy",
+ * "curious", "a little sleepy". Faint ones (below 0.1) are left out, and at
+ * most four are named.
+ */
+export function describeFeelings(emotions) {
+  if (!emotions || typeof emotions !== "object") return [];
+  return ENUMS.emotion
+    .map((name, order) => ({ name, order, value: emotions[name] }))
+    .filter(({ value }) => typeof value === "number" && Number.isFinite(value) && value >= 0.1)
+    .sort((x, y) => y.value - x.value || x.order - y.order)
+    .slice(0, 4)
+    .map(({ name, value }) => `${value >= 0.7 ? "very " : value < 0.35 ? "a little " : ""}${FEELING_WORDS[name]}`);
+}
+
+/** The prompt lines about the slime's mood. Without emotions from the app there's no "right now" line. */
+function moodLines(emotions) {
+  const lines = [];
+  if (emotions && typeof emotions === "object") {
+    const feelings = describeFeelings(emotions);
+    lines.push(feelings.length
+      ? `How you feel right now, strongest first: ${feelings.join(", ")}.`
+      : "Right now you feel calm, nothing strong either way.");
+    lines.push("Speak in that mood, and keep it the same through your whole reply.");
+  }
+  lines.push(
+    "Your human's words can change how you feel, the way a pet's mood shifts: kind words cheer you up, "
+      + "a surprise excites you, a scary story makes you a bit scared, talk of bedtime makes you sleepy.",
+    "Even when you feel sad, grumpy or scared you stay gentle and never blame your human.",
+  );
+  return lines;
+}
+
 export function systemPrompt(slime) {
   const needs = slime.needs ?? {};
   const need = (key) => clamp(needs[key], 0, 100, 50);
@@ -102,12 +175,41 @@ export function systemPrompt(slime) {
     `- Age: ${slime.ageDays} days, level ${slime.level}, mood: ${slime.mood}`,
     `- Needs (0 to 100): food ${need("hunger")}, fun ${need("fun")}, energy ${need("energy")}, clean ${need("clean")}, love ${need("love")}`,
     `- Favourite food: ${slime.favorite}`,
-    slime.partnerName ? `- You are friends with ${slime.partnerName}.` : "- You don't have any slime friends yet.",
-    slime.localTime ? `- Your human's local time: ${slime.localTime}` : "",
+    // Only old builds send a partner; 1.1 sends none, which says nothing about friends.
+    ...(slime.partnerName ? [`- You are friends with ${slime.partnerName}.`] : []),
+    ...(slime.localTime ? [`- Your human's local time: ${slime.localTime}`] : []),
     "",
-    'Answer with JSON only: {"reply": "<what you say>", "reaction": "<one reaction>"}.',
+    ...moodLines(slime.emotions),
+    "",
+    'Answer with JSON only: {"reply": "<what you say>", "reaction": "<one reaction>", '
+      + '"emotion": {"name": "<one feeling>", "intensity": <0 to 1>}}.',
     `The reaction is one of: ${ENUMS.reaction.join(", ")}.`,
+    `The emotion is the one feeling your reply expresses, one of: ${ENUMS.emotion.join(", ")}; `
+      + "intensity goes from 0 (barely) to 1 (completely).",
   ].filter((line, i, lines) => line !== "" || lines[i - 1] !== "").join("\n");
+}
+
+/**
+ * Reads the feeling a reply expresses: `{name, intensity}`, a bare name with
+ * the intensity next to it, everyday words ("happy", "sleepy") or a
+ * percentage. Returns `{name, intensity}` (0 to 1, two decimals) or null.
+ * A known feeling without a usable intensity counts as 0.5.
+ */
+export function parseEmotion(value, intensity) {
+  let name = value;
+  let level = intensity;
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    name = value.name ?? value.emotion;
+    level = value.intensity ?? intensity;
+  }
+  if (typeof name !== "string") return null;
+  const key = name.trim().toLowerCase();
+  const emotion = ENUMS.emotion.includes(key) ? key : EMOTION_ALIASES[key];
+  if (!emotion) return null;
+  let n = typeof level === "string" ? Number.parseFloat(level) : level;
+  if (typeof n !== "number" || !Number.isFinite(n)) n = 0.5;
+  else if (n > 1 && n <= 100) n /= 100;
+  return { name: emotion, intensity: Math.round(Math.max(0, Math.min(1, n)) * 100) / 100 };
 }
 
 /** Cuts a reply to MAX_REPLY characters at a word boundary. */
@@ -124,16 +226,19 @@ function unquote(value) {
 }
 
 /**
- * Reads `{reply, reaction}` out of whatever the model sent: strict JSON, JSON
- * in a code fence or with trailing commas, an already parsed object, or plain
- * text. Returns null when there is nothing usable.
+ * Reads `{reply, reaction, emotion?}` out of whatever the model sent: strict
+ * JSON, JSON in a code fence or with trailing commas, an already parsed
+ * object, or plain text. Returns null when there is nothing usable;
+ * `emotion` is only there when the model named a known feeling.
  */
 export function parseReply(content) {
   let reply = null;
   let reaction = null;
+  let emotion = null;
   if (content && typeof content === "object" && !Array.isArray(content)) {
     reply = content.reply;
     reaction = content.reaction;
+    emotion = parseEmotion(content.emotion, content.intensity);
   } else if (Array.isArray(content)) {
     return parseReply(content.map((part) => (typeof part === "string" ? part : part?.text ?? "")).join(""));
   } else if (typeof content === "string") {
@@ -146,11 +251,15 @@ export function parseReply(content) {
         const parsed = JSON.parse(candidate);
         reply = parsed?.reply;
         reaction = parsed?.reaction;
+        emotion = parseEmotion(parsed?.emotion, parsed?.intensity);
       } catch {
         const r = candidate.match(/["']?reply["']?\s*:\s*"((?:[^"\\]|\\.)*)"/);
         const a = candidate.match(/["']?reaction["']?\s*:\s*"?([A-Za-z]+)/);
+        const e = candidate.match(/["']?emotion["']?\s*:\s*(?:\{[^{}]*?["']?(?:name|emotion)["']?\s*:\s*["']?([A-Za-z]+)|["']?([A-Za-z]+))/);
+        const i = candidate.match(/["']?intensity["']?\s*:\s*["']?(-?\d+(?:\.\d+)?)/);
         reply = r ? unquote(r[1]) : null;
         reaction = a?.[1] ?? null;
+        emotion = parseEmotion(e?.[1] ?? e?.[2] ?? null, i ? Number(i[1]) : null);
       }
     } else if (body && !/^[[{"]/.test(body)) {
       reply = body.replace(/^["']+|["']+$/g, "");
@@ -159,7 +268,9 @@ export function parseReply(content) {
   if (typeof reply !== "string") return null;
   const said = reply.replace(/\s+/g, " ").trim();
   if (!said) return null;
-  return { reply: cap(said), reaction: ENUMS.reaction.includes(reaction) ? reaction : "none" };
+  const out = { reply: cap(said), reaction: ENUMS.reaction.includes(reaction) ? reaction : "none" };
+  if (emotion) out.emotion = emotion;
+  return out;
 }
 
 /** Builds the chat. `fetch`, `env`, `timeoutMs` and `random` can be replaced in tests. */

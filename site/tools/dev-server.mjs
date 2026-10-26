@@ -5,7 +5,9 @@
 //   node site/tools/dev-server.mjs            → http://localhost:4310
 //   PORT=4400 node site/tools/dev-server.mjs
 //
-// Mocks: GET /api/v1/invites/ABC123 answers a sample invite, any other code 404.
+// Mocks: GET /api/v1/invites/ABC123 answers a sample invite, XYZ789 one whose
+// slime wears the crate-only colour (to check the invite page draws it), any
+// other code 404.
 // GET /release.json answers a sample release.
 //
 // The admin: /admin, /admin/ and /admin/* come straight from site/admin/ (so
@@ -86,6 +88,13 @@ function api(req, res, url) {
         expiresAt: iso(Date.now() + 9 * 60 * 1000 + 30 * 1000),
       });
     }
+    if (code.toUpperCase() === "XYZ789") {
+      return json(res, 200, {
+        ownerName: "Ben",
+        slime: { name: "Pebble", skin: "axolotl", stage: "grown" },
+        expiresAt: iso(Date.now() + 6 * 60 * 1000),
+      });
+    }
     return json(res, 404, { error: "This code doesn't work. It may have expired or been used already." });
   }
   return json(res, 404, { error: "This address doesn't exist." });
@@ -93,12 +102,12 @@ function api(req, res, url) {
 
 function release(res) {
   json(res, 200, {
-    name: "Slimy 1.0 (build 128)",
-    tag: "build-128",
-    url: "https://github.com/ItzSimooon/slimy-ios/releases/tag/build-128",
-    ipa: "https://github.com/ItzSimooon/slimy-ios/releases/download/build-128/Slimy.ipa",
-    unsigned: "https://github.com/ItzSimooon/slimy-ios/releases/download/build-128/Slimy-unsigned.ipa",
-    published: "2026-10-25T18:42:00Z",
+    name: "Slimy 1.1 (build 141)",
+    tag: "build-141",
+    url: "https://github.com/ItzSimooon/slimy-ios/releases/tag/build-141",
+    ipa: "https://github.com/ItzSimooon/slimy-ios/releases/download/build-141/Slimy.ipa",
+    unsigned: "https://github.com/ItzSimooon/slimy-ios/releases/download/build-141/Slimy-unsigned.ipa",
+    published: "2026-10-26T17:05:00Z",
   });
 }
 

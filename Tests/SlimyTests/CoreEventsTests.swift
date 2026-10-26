@@ -141,8 +141,9 @@ final class CoreBirthdayTests: XCTestCase {
 
     func testMemoryBookDescribesEveryKind() {
         let kinds: [MemoryEntry.Kind] = [.hatched, .fed, .favoriteFound, .played, .highScore, .bath, .levelUp, .stageUp,
-                                         .achievement, .gift, .giftReceived, .visit, .friendMade, .inLove, .event,
-                                         .reunion, .birthday, .streak, .holiday]
+                                         .achievement, .gift, .giftReceived, .visit, .friendMade, .event,
+                                         .reunion, .birthday, .streak, .holiday, .crate, .partnerCare,
+                                         .careStarted, .careEnded]
         for kind in kinds {
             let entry = MemoryEntry(kind: kind, at: date(2026, 5, 4), detail: "1")
             XCTAssertFalse(entry.summary.isEmpty, kind.rawValue)
@@ -166,7 +167,14 @@ final class CoreBirthdayTests: XCTestCase {
 }
 
 final class CoreDialogueTests: XCTestCase {
-    private let newCategories: [LineCategory] = [.dailyGift, .giftWeek, .streak, .streakFresh, .spooky, .cozy, .newYear, .birthday]
+    private let newCategories: [LineCategory] = [
+        .dailyGift, .giftWeek, .streak, .streakFresh, .spooky, .cozy, .newYear, .birthday,
+        .feelJoy, .feelSad, .feelAngry, .feelScared, .feelLove, .feelCurious, .feelBored, .feelExcited, .feelSleepy,
+        .afterFood, .afterGame, .afterFriend, .afterCrate, .partnerCared, .careStarted, .careEnded,
+        .crateOpened, .crateDuplicate, .crateLegendary, .bathGrumpy,
+        .spring, .summer, .autumn, .winter, .roomTalk, .gardenTalk, .beachTalk, .spaceTalk, .crystalTalk,
+        .rainTalk, .snowTalk, .cloudTalk,
+    ]
 
     func testNewCategoriesHaveLowercaseLines() {
         for category in newCategories {
@@ -182,7 +190,31 @@ final class CoreDialogueTests: XCTestCase {
     func testLineIDsAreUnique() {
         let ids = Dialogue.lines.values.flatMap { $0.map(\.id) }
         XCTAssertEqual(Set(ids).count, ids.count)
-        XCTAssertGreaterThanOrEqual(ids.count, 200)
+        XCTAssertGreaterThanOrEqual(ids.count, 400)
+    }
+
+    func testEveryCategoryHasLines() {
+        for category in LineCategory.allCases {
+            XCTAssertFalse((Dialogue.lines[category] ?? []).isEmpty, category.rawValue)
+        }
+    }
+
+    func testFeelingsHabitatsAndSeasonsHaveTheirOwnTalk() {
+        for emotion in Emotion.allCases {
+            XCTAssertGreaterThanOrEqual(Dialogue.lines[Dialogue.category(for: emotion)]?.count ?? 0, 10, emotion.rawValue)
+        }
+        for habitat in Habitat.allCases {
+            XCTAssertGreaterThanOrEqual(Dialogue.lines[Dialogue.category(for: habitat)]?.count ?? 0, 5, habitat.rawValue)
+        }
+        for season in Season.allCases {
+            XCTAssertGreaterThanOrEqual(Dialogue.lines[season.talk]?.count ?? 0, 5, season.rawValue)
+        }
+    }
+
+    func testLoveBetweenSlimesIsGone() {
+        XCTAssertNil(LineCategory(rawValue: "inLove"))
+        XCTAssertNil(MemoryEntry.Kind(rawValue: "inLove"))
+        XCTAssertNil(Achievements.achievement("inLove"))
     }
 
     func testStreakAndYearPlaceholders() {

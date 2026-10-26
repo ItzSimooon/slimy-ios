@@ -3,7 +3,7 @@ import SwiftUI
 /// Consent before anything goes to slime.hyprnode.de: what friends see, what
 /// the server keeps, the names, and the Terms. Nothing is sent before the
 /// player agrees and taps Go Online. Dismisses itself once the device is
-/// online. Shown from Friends, Chat and the leaderboard.
+/// online. Shown from Friends, Chat, Care Together and the leaderboard.
 struct GoOnlineView: View {
     @ObservedObject private var friends = FriendsStore.shared
     @ObservedObject private var store = GameStore.shared
@@ -80,7 +80,7 @@ struct GoOnlineView: View {
                     .font(.title3.bold())
                     .foregroundStyle(Theme.ink)
                     .multilineTextAlignment(.center)
-                Text("Slimy works fully offline. Going online lets your slime meet friends, compare scores and talk with you. Here is exactly what that shares.")
+                Text("Slimy works fully offline. Going online lets your slime meet friends, compare scores, be cared for by two people and talk with you. Here is exactly what that shares.")
                     .font(.subheadline)
                     .foregroundStyle(Theme.inkSoft)
                     .multilineTextAlignment(.center)
@@ -96,8 +96,10 @@ struct GoOnlineView: View {
                     detail: "The name you enter below, next to your slime.")
             GoOnlineInfoRow(symbol: "drop.fill", title: "Your slime",
                     detail: "Its name, colour, outfit, level and mood. You can hide the mood later.")
-            GoOnlineInfoRow(symbol: "heart.fill", title: "What you do together",
-                    detail: "Hugs, visits, gifts, greetings, love, challenge scores and your best game scores.")
+            GoOnlineInfoRow(symbol: "figure.2.arms.open", title: "What you do together",
+                    detail: "Hugs, visits, gifts, greetings, challenge scores and your best game scores.")
+            GoOnlineInfoRow(symbol: "person.2.fill", title: "Care Together, if you use it",
+                    detail: "The one person you share a slime with sees that slime and everything either of you does for it.")
         } header: {
             Text("What friends see")
         }
@@ -106,7 +108,7 @@ struct GoOnlineView: View {
     private var serverKeeps: some View {
         Section {
             GoOnlineInfoRow(symbol: "server.rack", title: "Stored on slime.hyprnode.de",
-                    detail: "A random device ID, the names and slime details above, your friendships, best scores and reports you send, and what friends sent you for 30 days.")
+                    detail: "A random device ID, the names and slime details above, your friendships, best scores and reports you send, and what friends sent you for 30 days. While you care for a slime together, also that slime and your care actions for 30 days.")
             GoOnlineInfoRow(symbol: "eye.slash", title: "Never collected",
                     detail: "No Apple ID, phone number, email, contacts, location, advertising ID or tracking.")
             GoOnlineInfoRow(symbol: "bubble.left.and.bubble.right", title: "Chat",

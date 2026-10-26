@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// One friend: love, what's left today, the shared garden and memories,
-/// with the same actions as the list.
+/// One friend: how their slime is doing, what's left today, the shared
+/// garden and memories, with the same actions as the list.
 struct FriendDetailView: View {
     let friendID: String
 
@@ -76,27 +76,9 @@ struct FriendDetailView: View {
                         .multilineTextAlignment(.center)
                 }
                 .accessibilityElement(children: .combine)
-                if friend.inLove || friends.partner?.id == friend.id {
-                    HStack(spacing: 6) {
-                        if friend.inLove { Tag(text: "In love", color: Theme.love) }
-                        if friends.partner?.id == friend.id { Tag(text: "In your island", color: Theme.accent) }
-                    }
+                if friends.partner?.id == friend.id {
+                    Tag(text: "In your island", color: Theme.accent)
                 }
-                VStack(alignment: .leading, spacing: 6) {
-                    HStack {
-                        Text("Love")
-                        Spacer()
-                        Text(friend.love, format: .percent)
-                            .monospacedDigit()
-                    }
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(Theme.love)
-                    Meter(value: Double(friend.love) / 100, color: Theme.love, height: 8)
-                    Text(loveHint(friend))
-                        .font(.footnote)
-                        .foregroundStyle(Theme.inkSoft)
-                }
-                .accessibilityElement(children: .combine)
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 8)
@@ -152,7 +134,7 @@ struct FriendDetailView: View {
         } header: {
             Text("Left today")
         } footer: {
-            Text("Each kind raises love a few times a day per friend. The counts start over tomorrow.")
+            Text("Hugs, visits and gifts reach each friend a few times a day. The counts start over tomorrow.")
         }
     }
 
@@ -185,8 +167,9 @@ struct FriendDetailView: View {
         }
     }
 
-    private func memories(_ memories: [FriendMemory]) -> some View {
-        Section {
+    private func memories(_ all: [FriendMemory]) -> some View {
+        let memories = all.filter(\.isShown)
+        return Section {
             if memories.isEmpty {
                 Text("No memories yet. A hug is a good start.")
                     .foregroundStyle(Theme.inkSoft)
@@ -228,20 +211,12 @@ struct FriendDetailView: View {
 
     // MARK: Helpers
 
-    private func loveHint(_ friend: Friend) -> String {
-        if friend.inLove { return "Your slimes are in love. That stays for good." }
-        let left = max(0, 100 - friend.love)
-        if friend.love < 50 { return "\(left)% to go until they fall in love. Kisses unlock at 50%." }
-        return "\(left)% to go until they fall in love."
-    }
-
     private func moodDetail(_ friend: Friend) -> String {
         guard let happiness = friend.slime.happiness else { return "Hidden by \(friend.ownerName)" }
         return "Happiness \(happiness)%"
     }
 
     private func leftText(_ kind: InteractionKind, detail: FriendDetail, friend: Friend) -> String {
-        if kind == .kiss, friend.love < 50 { return "Unlocks at 50%" }
         let left = max(0, detail.today[kind.rawValue] ?? 0)
         return left == 0 ? "Done for today" : "\(left) left"
     }

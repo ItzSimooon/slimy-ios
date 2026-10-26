@@ -36,6 +36,56 @@ enum Season: String, CaseIterable {
         default: nil
         }
     }
+
+    /// What it says about the time of year, in every season.
+    var talk: LineCategory {
+        switch self {
+        case .spring: .spring
+        case .summer: .summer
+        case .autumn: .autumn
+        case .winter: .winter
+        case .halloween: .spooky
+        case .christmas: .cozy
+        case .newYear: .newYear
+        }
+    }
+}
+
+/// What the sky is doing, the same for everyone in three-hour blocks.
+/// Worked out exactly like the habitat scene's weather, so the slime talks
+/// about the rain or snow you can see over the garden, the beach and
+/// through the room's window.
+enum Sky: String, CaseIterable {
+    case clear, cloudy, rain, snow
+
+    static func at(_ date: Date, calendar: Calendar = .current) -> Sky {
+        let g = Calendar.gregorian(like: calendar)
+        let block = g.component(.hour, from: date) / 3
+        var rng = SplitMix(seed: SplitMix.seed(Challenges.dayKey(date, calendar: g) + "w\(block)"))
+        let roll = rng.unit()
+        switch g.component(.month, from: date) {
+        case 12:
+            // December snows more often.
+            if roll < 0.4 { return .clear }
+            return roll < 0.55 ? .cloudy : .snow
+        case 1, 2:
+            if roll < 0.6 { return .clear }
+            return roll < 0.8 ? .cloudy : .snow
+        default:
+            if roll < 0.6 { return .clear }
+            return roll < 0.8 ? .cloudy : .rain
+        }
+    }
+
+    /// What the slime says about it; nothing for a clear sky.
+    var talk: LineCategory? {
+        switch self {
+        case .clear: nil
+        case .cloudy: .cloudTalk
+        case .rain: .rainTalk
+        case .snow: .snowTalk
+        }
+    }
 }
 
 /// A day with a small gift, once a year.

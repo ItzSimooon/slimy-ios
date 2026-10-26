@@ -1,8 +1,9 @@
 import StoreKit
 import SwiftUI
+import UIKit
 
 enum HomeSheet: String, Identifiable {
-    case kitchen, shop, journal, friends, settings, chat, gift
+    case kitchen, shop, journal, friends, settings, chat, gift, crates, care
     var id: String { rawValue }
 }
 
@@ -15,13 +16,15 @@ enum HomeCover: String, Identifiable {
 private let homeSpace = "home"
 
 /// The slime's home: its habitat, the slime and what it's saying, and around
-/// them the HUD (name and level, coins, friends, chat, settings), today's
-/// pills and the needs dock.
+/// them the HUD (name, level and mood, coins, friends, chat, settings), who
+/// it's cared for with, today's pills, crates to open and the needs dock.
+/// While you watch, the slime talks to itself every few seconds.
 struct HomeView: View {
     @EnvironmentObject private var store: GameStore
     @EnvironmentObject private var friends: FriendsStore
     @EnvironmentObject private var daily: DailyStore
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.accessibilityVoiceOverEnabled) private var voiceOver
     @Environment(\.scenePhase) private var phase
 
     @State private var sheet: HomeSheet?
@@ -68,10 +71,14 @@ struct HomeView: View {
                             .frame(width: min(geo.size.width * 0.72, 320))
                             .fixedSize(horizontal: false, vertical: true)
                             .alignmentGuide(.top) { d in d[.bottom] }
-                            .id(line)
+                            // With VoiceOver the bubble stays the same element
+                            // and only its words change, so focus stays on it.
+                            .id(voiceOver ? "speech" : line)
                             .transition(.opacity)
                     }
-                    .animation(reduceMotion ? nil : Animation.easeOut(duration: 0.2), value: line)
+                    // A soft cross-fade from one thought to the next; with
+                    // Reduce Motion the words just change.
+                    .animation(reduceMotion ? nil : Animation.easeInOut(duration: 0.35), value: line)
                     .position(x: geo.size.width / 2, y: feet - slimeFrame / 2)
 
                 if let visit = friends.visitor, visit.until > now {
@@ -80,7 +87,10 @@ struct HomeView: View {
                 }
 
                 VStack(spacing: 10) {
-                    topBar
+                    VStack(alignment: .leading, spacing: 0) {
+                        topBar
+                        partnerChip
+                    }
                     pills
                     Spacer(minLength: 0)
                     dock
@@ -105,6 +115,14 @@ struct HomeView: View {
             case .settings: SettingsView()
             case .chat: ChatView()
             case .gift: StreakView()
+            case .crates: CrateShelfView()
+            case .care:
+                // Care Together lives in its caller's stack (Friends and
+                // Settings push it); here it gets a stack and a Done button.
+                NavigationStack {
+                    CareTogetherView()
+                        .sheetTitle("Care Together", inline: true)
+                }
             }
         }
         .fullScreenCover(item: $cover) { cover in
@@ -139,15 +157,45 @@ struct HomeView: View {
                 openFriends(forInvite: code)
             }
         }
-        .task(id: phase) {
-            // Small talk now and then while you watch.
-            guard phase == .active, !ScreenshotMode.isActive else { return }
-            while !Task.isCancelled {
-                // Cancelled (the app left the front): no last line on the way out.
-                do { try await Task.sleep(for: .seconds(40)) } catch { return }
-                if store.state.slime.currentLine(at: .now) == nil { _ = store.chatter() }
-            }
+        .task(id: chatterOn) { await chatterLoop() }
+    }
+
+    // MARK: Small talk
+
+    /// The slime talks to itself only while home is in front with nothing
+    /// over it, and only if it's allowed to (Settings, Talks on its own).
+    private var chatterOn: Bool {
+        phase == .active && sheet == nil && cover == nil
+            && store.state.settings.chatty && !ScreenshotMode.isActive
+    }
+
+    /// Every 8 to 16 seconds it most likely says something. Restarts whenever
+    /// a sheet opens or closes or the app leaves the front, so a line never
+    /// lands right after coming back.
+    private func chatterLoop() async {
+        guard chatterOn else { return }
+        while !Task.isCancelled {
+            // Cancelled (the app left the front, a sheet opened): no last line on the way out.
+            do { try await Task.sleep(for: .seconds(Double.random(in: 8...16))) } catch { return }
+            guard Double.random(in: 0..<1) < 0.75, mayChatter(at: .now) else { continue }
+            _ = store.chatter()
         }
+    }
+
+    private func mayChatter(at now: Date) -> Bool {
+        // A celebration card or a sheet from elsewhere (What's New) is on top.
+        guard store.celebrations.isEmpty, !somethingPresented else { return false }
+        // A line it just said (thanks for food, a pet) stays up long enough to read.
+        if let said = store.state.slime.say?.at, now.timeIntervalSince(said) < 6 { return false }
+        return true
+    }
+
+    /// Whether anything is presented over the app, whoever presented it.
+    private var somethingPresented: Bool {
+        let windows = UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .flatMap { $0.windows }
+        return windows.first(where: { $0.isKeyWindow })?.rootViewController?.presentedViewController != nil
     }
 
     /// An invite link (slime.hyprnode.de/f/CODE) opens Friends, which fills
@@ -162,11 +210,20 @@ struct HomeView: View {
         if sheet != .friends { sheet = .friends }
     }
 
-    /// Screenshot runs: a demo slime, then the sheet or cover asked for.
+    /// Screenshot runs: a demo slime with a few crates to open, then the
+    /// sheet or cover asked for (`-SlimySheet crates`, `-SlimySheet care` …).
     private func stageScreenshot() {
         guard ScreenshotMode.isActive, !screenshotStaged else { return }
         screenshotStaged = true
         store.prepareScreenshotDemo()
+        // Once per demo save, so relaunches for the next screenshot match.
+        if !store.state.wallet.hasClaimed("screenshot:crates") {
+            store.update { s in
+                s.wallet.claim("screenshot:crates", coins: 0, at: .now)
+                s.crates[.wooden, default: 0] += 2
+                s.crates[.golden, default: 0] += 1
+            }
+        }
         let firstSheet = ScreenshotMode.initialSheet
         let firstCover = ScreenshotMode.initialCover
         guard firstSheet != nil || firstCover != nil else { return }
@@ -185,6 +242,7 @@ struct HomeView: View {
 
     private var topBar: some View {
         let s = store.state
+        let mood = SlimeMoodWord.word(for: s.slime)
         return HStack(spacing: 8) {
             Button {
                 Feedback.shared.play(.tap)
@@ -195,13 +253,18 @@ struct HomeView: View {
                         .font(.headline)
                         .foregroundStyle(Theme.ink)
                         .lineLimit(1)
+                    // The mood goes first when room runs short, then the bar.
                     ViewThatFits(in: .horizontal) {
                         HStack(spacing: 6) {
-                            levelText(s.slime.level)
-                            Meter(value: s.slime.levelProgress, height: 4)
-                                .frame(width: 56)
+                            levelText(s.slime.level, mood: mood)
+                            levelMeter(s.slime.levelProgress)
                         }
-                        levelText(s.slime.level)
+                        levelText(s.slime.level, mood: mood)
+                        HStack(spacing: 6) {
+                            levelText(s.slime.level, mood: nil)
+                            levelMeter(s.slime.levelProgress)
+                        }
+                        levelText(s.slime.level, mood: nil)
                     }
                 }
                 .padding(.horizontal, 14)
@@ -212,7 +275,7 @@ struct HomeView: View {
             }
             .buttonStyle(.plain)
             .accessibilityElement(children: .ignore)
-            .accessibilityLabel("\(s.slime.name), level \(s.slime.level)")
+            .accessibilityLabel("\(s.slime.name), level \(s.slime.level), \(SlimeMoodWord.phrase(for: s.slime))")
             .accessibilityValue("\(Int((s.slime.levelProgress * 100).rounded())) percent to the next level")
             .accessibilityHint("Opens the journal")
             .accessibilityAddTraits(.isButton)
@@ -228,34 +291,108 @@ struct HomeView: View {
         .padding(.top, 4)
     }
 
-    private func levelText(_ level: Int) -> some View {
-        Text("Level \(level)")
+    /// "Level 3 · cheerful", or just "Level 3".
+    private func levelText(_ level: Int, mood: String?) -> some View {
+        let text: String = mood.map { "Level \(level) · \($0)" } ?? "Level \(level)"
+        return Text(text)
             .font(.caption.weight(.semibold))
             .foregroundStyle(Theme.inkSoft)
             .lineLimit(1)
             .fixedSize()
     }
 
-    /// Today's gift and today's game, side by side when they fit. Looked at
-    /// again every minute, so a new day's gift shows up on its own.
+    private func levelMeter(_ progress: Double) -> some View {
+        Meter(value: progress, height: 4)
+            .frame(width: 56)
+    }
+
+    /// Who this slime is cared for with, under its name while it's shared.
+    /// Opens Care Together.
+    @ViewBuilder private var partnerChip: some View {
+        if store.isSharing {
+            let partner = (store.state.care?.partnerName ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+            Button {
+                Feedback.shared.play(.tap)
+                sheet = .care
+            } label: {
+                HStack(spacing: 5) {
+                    Image(systemName: "person.2.fill")
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(Theme.accent)
+                    Text(partner.isEmpty ? "Cared for together" : "with \(partner)")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(Theme.ink)
+                        .lineLimit(1)
+                }
+                .padding(.horizontal, 12)
+                .frame(minHeight: 30)
+                .background(.regularMaterial, in: Capsule())
+                // Transparent margin: 44 pt to tap, 30 pt to see.
+                .padding(.vertical, 7)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(partner.isEmpty ? "Cared for together" : "Cared for together with \(partner)")
+            .accessibilityHint("Opens Care Together")
+        }
+    }
+
+    private enum Pill: Hashable {
+        case gift, today, crates
+    }
+
+    /// Today's gift, today's game and crates waiting to be opened, side by
+    /// side when they fit. Looked at again every minute, so a new day's gift
+    /// shows up on its own.
     private var pills: some View {
         TimelineView(.everyMinute) { _ in
-            let gift = store.streak.canClaim
-            let game = !daily.playedToday
-            if gift || game {
+            let shown = shownPills
+            if !shown.isEmpty {
+                // All in a row; two in a row and the third below; or stacked.
                 ViewThatFits(in: .horizontal) {
                     HStack(spacing: 8) {
-                        if gift { giftPill }
-                        if game { todayPill }
+                        pillRow(shown)
                     }
                     VStack(spacing: 8) {
-                        if gift { giftPill }
-                        if game { todayPill }
+                        HStack(spacing: 8) {
+                            pillRow(Array(shown.prefix(2)))
+                        }
+                        pillRow(Array(shown.dropFirst(2)))
+                    }
+                    VStack(spacing: 8) {
+                        pillRow(shown)
                     }
                 }
                 .transition(.opacity)
             }
         }
+    }
+
+    private var shownPills: [Pill] {
+        var shown: [Pill] = []
+        if store.streak.canClaim { shown.append(.gift) }
+        if !daily.playedToday { shown.append(.today) }
+        if crateCount > 0 { shown.append(.crates) }
+        return shown
+    }
+
+    private func pillRow(_ shown: [Pill]) -> some View {
+        ForEach(shown, id: \.self) { kind in
+            pill(kind)
+        }
+    }
+
+    @ViewBuilder private func pill(_ kind: Pill) -> some View {
+        switch kind {
+        case .gift: giftPill
+        case .today: todayPill
+        case .crates: cratesPill
+        }
+    }
+
+    /// Crates of every kind waiting to be opened.
+    private var crateCount: Int {
+        store.state.crates.values.reduce(0) { $0 + max(0, $1) }
     }
 
     private var giftPill: some View {
@@ -284,6 +421,22 @@ struct HomeView: View {
         }
         .buttonStyle(.plain)
         .accessibilityHint("Opens the arcade")
+    }
+
+    /// Crates waiting to be opened, with the best of them as the icon.
+    private var cratesPill: some View {
+        let count = crateCount
+        let best = CrateKind.allCases.last { (store.state.crates[$0] ?? 0) > 0 } ?? .wooden
+        return Button {
+            Feedback.shared.play(.tap)
+            sheet = .crates
+        } label: {
+            pillLabel(text: count == 1 ? "1 crate to open" : "\(count) crates to open") {
+                CrateSprite(kind: best).frame(width: 18, height: 18)
+            }
+        }
+        .buttonStyle(.plain)
+        .accessibilityHint("Opens your crates")
     }
 
     private func pillLabel<Icon: View>(text: String, @ViewBuilder icon: () -> Icon) -> some View {
@@ -411,8 +564,8 @@ private struct ActionKey: View {
 }
 
 /// Fanfare for level-ups, achievements, records, birthdays. After a happy
-/// one (a level-up from level 3 on, falling in love) it may ask for an App
-/// Store rating, once per app version, when the last card is closed.
+/// one (a level-up from level 3 on) it may ask for an App Store rating,
+/// once per app version, when the last card is closed.
 struct CelebrationOverlay: View {
     @EnvironmentObject private var store: GameStore
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -428,7 +581,7 @@ struct CelebrationOverlay: View {
                         .accessibilityHidden(true)
                     if !reduceMotion { Confetti() }
                     VStack(spacing: 14) {
-                        ArtView(name: c.icon).frame(width: 64, height: 64)
+                        celebrationIcon(c.icon).frame(width: 64, height: 64)
                             .padding(.top, 6)
                         Text(c.title)
                             .font(.title2.weight(.bold))
@@ -457,6 +610,16 @@ struct CelebrationOverlay: View {
             guard empty, reviewDue else { return }
             reviewDue = false
             askForReview()
+        }
+    }
+
+    /// A crate leaves out the empty rows above its lid, so it sits as centred
+    /// as every other icon.
+    @ViewBuilder private func celebrationIcon(_ name: String) -> some View {
+        if let kind = CrateKind.allCases.first(where: { $0.sprite == name }) {
+            CrateSprite(kind: kind)
+        } else {
+            ArtView(name: name)
         }
     }
 

@@ -3,7 +3,7 @@
 <head>
 <!-- @head -->
 <title>Slimy: a tiny slime that lives in your Dynamic Island</title>
-<meta name="description" content="Slimy is a pixel slime that lives in your iPhone's Dynamic Island. Feed it, play twelve mini games, dress it up and visit friends. Free beta for iOS 18, made by hyprnode.">
+<meta name="description" content="Slimy is a pixel slime that lives in your iPhone's Dynamic Island. It talks on its own, has real feelings, opens crates with you and can be cared for by two people. Free beta for iOS 18, made by hyprnode.">
 <link rel="canonical" href="https://slime.hyprnode.de/">
 <link rel="stylesheet" href="/assets/home.css">
 <script type="module" src="/assets/home.js"></script>
@@ -16,6 +16,7 @@
   <section class="hero wrap" id="play" aria-labelledby="hero-title">
     <div class="hero-copy">
       <a class="app-chip" href="#get"><img src="/assets/icon.png" alt="" width="30" height="30"><span>Slimy: Island Pet</span><span class="app-chip-tag">Free beta</span></a>
+      <a class="news-link" href="#new"><b>New in 1.1</b><span>Crates, caring together and a slime with feelings</span></a>
       <h1 id="hero-title">A tiny slime that lives in your Dynamic Island.</h1>
       <p class="lede">Feed it, play with it, dress it up. It sits next to the camera all day, notices when your battery runs low and never guilt-trips you.</p>
       <div class="ctas">
@@ -115,7 +116,7 @@
       </div>
       <div class="panel" id="panel-skin" role="tabpanel" aria-labelledby="tab-skin" tabindex="0">
         <div class="swatches" id="swatches"></div>
-        <p class="panel-note">Eight jelly colours. In the app, new ones unlock as your slime levels up.</p>
+        <p class="panel-note">Eight jelly colours. In the app, new ones unlock as your slime levels up, and some come out of crates.</p>
       </div>
       <div class="panel" id="panel-wear" role="tabpanel" aria-labelledby="tab-wear" tabindex="0" hidden>
         <div class="wear" id="wear"></div>
@@ -127,6 +128,120 @@
       </div>
     </div>
     <p class="sr-only" aria-live="polite" id="say"></p>
+  </section>
+
+  <!-- New in 1.1 -->
+  <section class="section wrap" id="new" aria-labelledby="new-title">
+    <header class="section-head">
+      <p class="eyebrow-text">New in Slimy 1.1</p>
+      <h2 id="new-title">More to open, more to share, more to feel.</h2>
+      <p class="lede">Crates with a secret inside, one slime for two people, and a slime that talks on its own and means it.</p>
+    </header>
+
+    <div class="bento">
+      <article class="tile span-2 tile-wide tile-crates" id="crates" aria-labelledby="crates-title">
+        <div class="crate-art">
+          <div class="chips" role="group" aria-label="Pick a crate" id="crate-kinds">
+            <button type="button" class="chip" data-crate="wooden" aria-pressed="false">Wooden</button>
+            <button type="button" class="chip" data-crate="golden" aria-pressed="true">Golden</button>
+            <button type="button" class="chip" data-crate="mystery" aria-pressed="false">Mystery</button>
+          </div>
+          <div class="crate-stage">
+            <canvas class="crate-room" id="crate-room" width="96" height="56" aria-hidden="true"></canvas>
+            <p class="crate-price" id="crate-price" aria-hidden="true"></p>
+            <button class="crate" type="button" id="crate" aria-describedby="crate-hint">
+              <canvas class="crate-canvas" id="crate-canvas" width="14" height="12" aria-hidden="true"></canvas>
+              <span class="sr-only" id="crate-label">Golden crate. Tap three times to open it.</span>
+            </button>
+            <div class="crate-fx" id="crate-fx" aria-hidden="true"></div>
+            <div class="crate-reward" id="crate-reward" hidden>
+              <span class="cr-rarity" id="cr-rarity"></span>
+              <span class="cr-icon" id="cr-icon" aria-hidden="true"></span>
+              <b class="cr-title" id="cr-title"></b>
+              <span class="cr-note" id="cr-note"></span>
+            </div>
+          </div>
+          <p class="crate-hint" id="crate-hint">Tap the crate three times.</p>
+          <ul class="rarities" aria-label="Rarities">
+            <li data-rarity="common">Common</li>
+            <li data-rarity="rare">Rare</li>
+            <li data-rarity="epic">Epic</li>
+            <li data-rarity="legendary">Legendary <span aria-label="secret">???</span></li>
+          </ul>
+          <p class="sr-only" aria-live="polite" id="crate-status"></p>
+        </div>
+        <div class="tile-copy">
+          <h3 id="crates-title">Crates, and one of them hides a secret.</h3>
+          <p>Wooden crates cost 80 coins, golden ones 300, and mystery crates are earned: on day seven of a streak, every fifth level and now and then after a great round. Inside are coins, food, hats, colours and furniture, and duplicates turn into coins. Golden crates hide a secret legendary. Nobody's telling.</p>
+          <p class="tile-foot">Coins come from playing, never from real money. The app shows the drop rates. The crates on this page are just for fun; the legendary lives only in the app.</p>
+        </div>
+      </article>
+
+      <article class="tile tile-feel" id="feelings" aria-labelledby="feel-title">
+        <div class="feel-art">
+          <p class="feel-say" id="feel-say">i studied a speck of dust. fascinating.</p>
+          <canvas class="feel-slime" id="feel-slime" width="24" height="20" aria-hidden="true"></canvas>
+          <canvas class="grass" data-grass width="1" height="4" aria-hidden="true"></canvas>
+          <p class="feel-now" id="feel-now">Feeling <b>curious</b></p>
+          <ul class="feel-list" id="feel-list" aria-label="How Blob feels right now"></ul>
+        </div>
+        <div class="tile-copy">
+          <h3 id="feel-title">It talks on its own. And it has real feelings.</h3>
+          <p>Every few seconds it has something to say about its day, the weather or you. Nine feelings rise and settle with what happens and change how it moves, talks and answers in chat. Never a guilt trip.</p>
+        </div>
+        <div class="chips feel-acts" role="group" aria-label="Do something with Blob" id="feel-acts">
+          <button type="button" class="chip" data-feel="pet">Pet</button>
+          <button type="button" class="chip" data-feel="play">Play</button>
+          <button type="button" class="chip" data-feel="boo">Say boo</button>
+          <button type="button" class="chip" data-feel="sleep">Bedtime</button>
+        </div>
+      </article>
+
+      <article class="tile span-3 tile-care" id="care" aria-labelledby="care-title">
+        <div class="tile-copy care-copy">
+          <h3 id="care-title">Two people, one slime.</h3>
+          <p>Share your slime with one person: your partner, a sibling, a roommate. You both look after the same slime on your own iPhones, and whatever either of you does shows up on the other phone. Coins, items and records stay your own.</p>
+          <p class="tile-foot">Whoever joins keeps their own slime safe on their iPhone. It comes back if you stop sharing, and either of you can stop at any time.</p>
+        </div>
+        <div class="care-art">
+          <div class="cphones">
+            <div class="cphone" data-who="Ana">
+              <p class="cphone-who">Ana's iPhone</p>
+              <div class="cphone-screen">
+                <canvas class="cphone-scene" width="96" height="116" aria-hidden="true"></canvas>
+                <canvas class="cphone-slime" width="24" height="20" aria-hidden="true"></canvas>
+                <p class="cphone-toast" aria-hidden="true"></p>
+              </div>
+              <ul class="cphone-needs" aria-hidden="true"><li data-need="hunger"><i></i></li><li data-need="fun"><i></i></li><li data-need="love"><i></i></li></ul>
+              <div class="cphone-keys" role="group" aria-label="Ana cares for Blob">
+                <button type="button" data-care="feed"><canvas data-item="apple" data-scale="2"></canvas><span>Feed</span></button>
+                <button type="button" data-care="play"><canvas data-item="ball" data-scale="2"></canvas><span>Play</span></button>
+                <button type="button" data-care="pet"><canvas data-item="heart" data-scale="2"></canvas><span>Pet</span></button>
+              </div>
+            </div>
+            <div class="cphone" data-who="Ben">
+              <p class="cphone-who">Ben's iPhone</p>
+              <div class="cphone-screen">
+                <canvas class="cphone-scene" width="96" height="116" aria-hidden="true"></canvas>
+                <canvas class="cphone-slime" width="24" height="20" aria-hidden="true"></canvas>
+                <p class="cphone-toast" aria-hidden="true"></p>
+              </div>
+              <ul class="cphone-needs" aria-hidden="true"><li data-need="hunger"><i></i></li><li data-need="fun"><i></i></li><li data-need="love"><i></i></li></ul>
+              <div class="cphone-keys" role="group" aria-label="Ben cares for Blob">
+                <button type="button" data-care="feed"><canvas data-item="apple" data-scale="2"></canvas><span>Feed</span></button>
+                <button type="button" data-care="play"><canvas data-item="ball" data-scale="2"></canvas><span>Play</span></button>
+                <button type="button" data-care="pet"><canvas data-item="heart" data-scale="2"></canvas><span>Pet</span></button>
+              </div>
+            </div>
+          </div>
+          <div class="care-log-card">
+            <p class="kicker">Activity</p>
+            <ol class="care-log" id="care-log" aria-label="What Ana and Ben did for Blob"></ol>
+          </div>
+          <p class="sr-only" aria-live="polite" id="care-status"></p>
+        </div>
+      </article>
+    </div>
   </section>
 
   <!-- Features -->
@@ -211,16 +326,18 @@
 
       <article class="tile">
         <div class="tile-art">
-          <div class="chat" role="img" aria-label="Example chat. You: what did you do all day? Blob: i studied a speck of dust. fascinating. You: and now? Blob: now i'm here if you need me.">
-            <p class="msg me">what did you do all day?</p>
-            <div class="msg-row"><canvas data-slime data-skin="mine" data-anim="curious" data-still width="24" height="20"></canvas><p class="msg slime-msg">i studied a speck of dust. fascinating.</p></div>
-            <p class="msg me">and now?</p>
-            <div class="msg-row"><canvas data-slime data-skin="mine" data-still width="24" height="20"></canvas><p class="msg slime-msg">now i'm here if you need me</p></div>
+          <div class="chat" role="img" aria-label="Example chat. You: long day? Blob, feeling sleepy: so long. my wobble is tired. You: you did great today. Blob, feeling cheerful: oh. that made me all warm.">
+            <p class="msg me">long day?</p>
+            <div class="msg-row"><canvas data-slime data-skin="mine" data-anim="sleep" data-still width="24" height="20"></canvas><p class="msg slime-msg">so long. my wobble is tired.</p></div>
+            <p class="mood" aria-hidden="true">feeling sleepy</p>
+            <p class="msg me">you did great today</p>
+            <div class="msg-row"><canvas data-slime data-skin="mine" data-anim="blush" data-still width="24" height="20"></canvas><p class="msg slime-msg">oh. that made me all warm.</p></div>
+            <p class="mood mood-up" aria-hidden="true">feeling cheerful</p>
           </div>
         </div>
         <div class="tile-copy">
-          <h3>Talk to it. Free.</h3>
-          <p>It answers in a sentence or two, always in character. Chat starts only after you agree, runs on Cloudflare Workers AI and Groq, and no message is stored.</p>
+          <h3>Talk to it. It feels with you.</h3>
+          <p>It answers in a sentence or two, in character and in the mood it's in, and what you say can cheer it up or make it shy. Chat starts only after you agree, runs on Cloudflare Workers AI and Groq, and no message is stored.</p>
         </div>
       </article>
 
@@ -387,7 +504,7 @@
     <header class="section-head">
       <p class="eyebrow-text">Friends</p>
       <h2 id="friends-title">Better with a friend.</h2>
-      <p class="lede">Share a code and your slimes can hug, visit and send each other food. Now and then a friend's slime drops by your island and the two share a heart. Love them enough and they fall in love for good.</p>
+      <p class="lede">Share a code and your slimes can hug, visit, send each other food and say hello. Now and then a friend's slime drops by your island for a moment together.</p>
     </header>
 
     <div class="friends">
@@ -403,19 +520,16 @@
           <span class="meet-name me-name" aria-hidden="true">Blob</span>
           <span class="meet-name friend-name" aria-hidden="true">Mochi</span>
         </div>
-        <div class="love">
-          <div class="love-head">
-            <span>Blob and Mochi</span>
-            <b id="love-pct">30%</b>
-          </div>
-          <div class="love-bar" id="love-bar" role="meter" aria-label="Love between Blob and Mochi" aria-valuemin="0" aria-valuemax="100" aria-valuenow="30"></div>
-          <div class="love-scale" aria-hidden="true"><span>Friends</span><span>Kiss at 50%</span><span>In love</span></div>
-          <p class="love-note" id="love-note" aria-live="polite">Kiss unlocks at 50%. At 100% they fall in love.</p>
-        </div>
         <div class="meet-keys">
           <button class="btn btn-tint" type="button" data-friend="hug">Hug</button>
+          <button class="btn btn-tint" type="button" data-friend="visit">Visit</button>
           <button class="btn btn-tint" type="button" data-friend="food">Send food</button>
-          <button class="btn btn-tint" type="button" data-friend="kiss" disabled>Kiss</button>
+          <button class="btn btn-tint" type="button" data-friend="greet">Say hello</button>
+        </div>
+        <div class="moments">
+          <p class="kicker">Blob and Mochi</p>
+          <ol class="moments-list" id="moments" aria-label="Moments between Blob and Mochi"></ol>
+          <p class="sr-only" aria-live="polite" id="moments-status"></p>
         </div>
       </div>
 
@@ -437,11 +551,12 @@
         <ul class="list card">
           <li><canvas data-item="flag" data-scale="2"></canvas><span><b>Challenges and a leaderboard</b>Play the same board as a friend and beat each other's records.</span></li>
           <li><canvas data-item="flower" data-scale="2"></canvas><span><b>A shared weekly garden</b>Grow it together, one round at a time.</span></li>
-          <li><canvas data-item="gear" data-scale="2"></canvas><span><b>You stay in control</b>No search, no public profile. Block, report, choose what friends see, delete your data any time.</span></li>
+          <li><canvas data-item="heart" data-scale="2"></canvas><span><b>One slime for two</b>Share your slime with one person and look after it together, each on your own iPhone.</span></li>
+          <li><canvas data-item="gear" data-scale="2"></canvas><span><b>You stay in control</b>No search, no public profile, and greetings are fixed phrases. Block, report, choose what friends see, delete your data any time.</span></li>
         </ul>
       </div>
     </div>
-    <p class="friends-fine">Friends are optional. Your slime goes online only after you tap Go Online and accept the Terms. Names are checked on the server, and every report is reviewed by a person.</p>
+    <p class="friends-fine">Friends and caring together are optional. Your slime goes online only after you tap Go Online and accept the Terms. Names are checked on the server, and every report is reviewed by a person.</p>
   </section>
 
   <!-- Skins -->
@@ -449,7 +564,7 @@
     <header class="section-head">
       <p class="eyebrow-text">Colours</p>
       <h2 id="colours-title">Eight jelly colours.</h2>
-      <p class="lede">Hatch it in Lime, Bubblegum or Ocean. The others unlock as it levels up, up to Hypr Void at level 15. Pick one and every slime on this site changes with you.</p>
+      <p class="lede">Hatch it in Lime, Bubblegum or Ocean. The others unlock as it levels up, up to Hypr Void at level 15, or turn up early in a crate. Pick one and every slime on this site changes with you.</p>
     </header>
     <div class="skins card">
       <div class="skin-row" id="skin-row" role="group" aria-label="Jelly colour"></div>
@@ -467,7 +582,7 @@
     <div class="privacy-grid">
       <div class="pcard card">
         <svg viewBox="0 0 30 30" aria-hidden="true"><rect x="7" y="3" width="16" height="24" rx="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12.5 6.5h5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-        <p class="copy"><b>Offline first.</b> Until you tap Go Online in Friends or Talk, Slimy sends nothing anywhere.</p>
+        <p class="copy"><b>Offline first.</b> Until you go online for Friends, Talk or caring together, Slimy sends nothing anywhere.</p>
       </div>
       <div class="pcard card">
         <svg viewBox="0 0 30 30" aria-hidden="true"><circle cx="15" cy="11" r="5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M6 25c1.5-4.5 5-6.5 9-6.5s7.5 2 9 6.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M4 4l22 22" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
@@ -479,11 +594,11 @@
       </div>
       <div class="pcard card">
         <svg viewBox="0 0 30 30" aria-hidden="true"><path d="M6 8.5A3.5 3.5 0 0 1 9.5 5h11A3.5 3.5 0 0 1 24 8.5v7a3.5 3.5 0 0 1-3.5 3.5H13l-5 4.5V19H9.5A3.5 3.5 0 0 1 6 15.5z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
-        <p class="copy"><b>Chat isn't kept.</b> Messages pass to the AI to write a reply. No name or device ID goes with them, and nothing is stored.</p>
+        <p class="copy"><b>Chat isn't kept.</b> Messages and how your slime feels pass to the AI to write a reply. No name or device ID goes with them, and nothing is stored.</p>
       </div>
       <div class="pcard card">
         <svg viewBox="0 0 30 30" aria-hidden="true"><path d="M7 9h16M12 9V6.5h6V9M9 9l1 15h10l1-15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        <p class="copy"><b>Delete any time.</b> Delete Server Data in Settings removes your online profile at once. Your slime stays on the phone.</p>
+        <p class="copy"><b>Delete any time.</b> Delete My Data on the Server, in Settings, removes your online profile at once. Your slime stays on the phone.</p>
       </div>
       <div class="pcard card">
         <svg viewBox="0 0 30 30" aria-hidden="true"><circle cx="15" cy="15" r="10" fill="none" stroke="currentColor" stroke-width="2"/><path d="M10 15.5l3.5 3.5 6.5-7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -502,7 +617,11 @@
     <div class="group faq-home" data-faq>
       <details class="faq">
         <summary>Is Slimy free?</summary>
-        <div class="answer"><p>Yes. There are no purchases and no ads. Coins are earned in the app and can't be bought, and the AI chat is free too.</p></div>
+        <div class="answer"><p>Yes. There are no purchases and no ads. Coins and crates are earned in the app and can't be bought with real money, and the AI chat is free too.</p></div>
+      </details>
+      <details class="faq">
+        <summary>Can two people look after one slime?</summary>
+        <div class="answer"><p>Yes. Share your slime with one person and you both care for it on your own iPhones: feeding, playing, a bath, a pet or bedtime on one phone shows up on the other. Coins, items and records stay your own. More in <a href="/support#care-how">Support</a>.</p></div>
       </details>
       <details class="faq">
         <summary>Why isn't it on the App Store yet?</summary>
@@ -518,7 +637,7 @@
       </details>
       <details class="faq">
         <summary>Does it need the internet?</summary>
-        <div class="answer"><p>No. The slime, its games and its home work offline. Only Friends and Talk go online, and only after you say so.</p></div>
+        <div class="answer"><p>No. The slime, its games, its crates and its home work offline. Only Friends, Talk and caring together go online, and only after you say so.</p></div>
       </details>
     </div>
     <p class="privacy-more"><a class="more" href="/support">All questions and answers</a></p>

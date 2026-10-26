@@ -20,6 +20,8 @@ struct SaveFile: Codable {
     /// Why a file can't be imported. The messages are shown as they are.
     enum Problem: LocalizedError, Equatable {
         case unreadable, notASave, newerVersion, noSlime, tooLarge
+        /// The phone cares for a slime together with someone right now.
+        case caringTogether
 
         var errorDescription: String? {
             switch self {
@@ -28,6 +30,7 @@ struct SaveFile: Codable {
             case .newerVersion: return "This save comes from a newer version of Slimy. Update the app and try again."
             case .noSlime: return "There's no slime in this save yet."
             case .tooLarge: return "This file is too large to be a Slimy save."
+            case .caringTogether: return "Stop caring together first, then import the save."
             }
         }
     }
@@ -72,6 +75,9 @@ struct SaveFile: Codable {
         guard state.version <= GameState.currentVersion else { throw Problem.newerVersion }
         guard state.hatched else { throw Problem.noSlime }
         state.version = GameState.currentVersion
+        // Caring together belongs to the phone that made the save, not the
+        // file: a joiner's own slime comes back, without a word.
+        state.stopSharing(now: now, quietly: true)
         state.sanitize(now: now)
         return state
     }

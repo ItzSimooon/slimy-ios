@@ -1,8 +1,10 @@
 import SwiftUI
 
 /// The slime in the app: animated, jiggly, pokeable. Tap to poke it, rub it
-/// to pet it, pull it to stretch it. With Reduce Motion it holds still in
-/// the pose that fits, checked once a second so reactions still end.
+/// to pet it, pull it to stretch it. When it's idle, how it feels shows now
+/// and then: a wave when it's happy, a sulk when it's cross, a yawn when
+/// it's sleepy. With Reduce Motion it holds still in the pose that fits,
+/// checked once a second so reactions still end.
 struct LiveSlimeView: View {
     @EnvironmentObject private var store: GameStore
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -39,6 +41,7 @@ struct LiveSlimeView: View {
         .simultaneousGesture(TapGesture().onEnded { pokeIt() }, isEnabled: interactive)
         .accessibilityElement()
         .accessibilityLabel("\((override ?? store.state.slime).name), your slime")
+        .accessibilityValue(SlimeMoodWord.phrase(for: override ?? store.state.slime))
         .accessibilityHint(interactive ? "Tap to poke, rub to pet" : "")
         .accessibilityActions {
             // Only where it can be touched; elsewhere it's a picture.
@@ -97,19 +100,53 @@ struct LiveSlimeView: View {
         return worn
     }
 
+    /// A reaction plays first; asleep or with a need run low, it shows that.
+    /// Only an idle slime shows how it feels, and its usual idle variety
+    /// fills the moments in between.
     private func animation(for s: Slime, at now: Date) -> SpriteAnim {
         if let reaction = SpriteAnim(s.reaction), now.timeIntervalSince(s.reactionAt) < 5 {
             return reaction
         }
-        if s.mood == .idle, !s.isAsleep {
-            // Idle variety: stretch in the morning, blush when close, curious now and then.
-            let cycle = Int(now.timeIntervalSinceReferenceDate / 9) % 9
-            let hour = Calendar.current.component(.hour, from: now)
-            if cycle == 3, (6..<10).contains(hour) { return .stretch }
-            if cycle == 5, s.bond >= 50 { return .blush }
-            if cycle == 7, s.personality.curious > 0.5 { return .curious }
+        guard s.mood == .idle, !s.isAsleep else { return SpriteAnim(s.mood) }
+        if let felt = Self.feeling(of: s, at: now) { return felt }
+        // Idle variety: stretch in the morning, blush when close, curious now and then.
+        let cycle = Int(now.timeIntervalSinceReferenceDate / 9) % 9
+        let hour = Calendar.current.component(.hour, from: now)
+        if cycle == 3, (6..<10).contains(hour) { return .stretch }
+        if cycle == 5, s.bond >= 50 { return .blush }
+        if cycle == 7, s.personality.curious > 0.5 { return .curious }
+        return .idle
+    }
+
+    /// Length of one feeling moment, in seconds.
+    private static let feelingSlot: TimeInterval = 8
+
+    /// Whether an idle slime shows its strongest feeling during this
+    /// moment, and how. A mild feeling shows rarely, a strong one often;
+    /// the choice holds for the whole moment, so the pose doesn't flicker.
+    static func feeling(of s: Slime, at now: Date) -> SpriteAnim? {
+        let feelings = s.emotions
+        let strength = min(1, max(0, feelings.intensity))
+        guard strength >= 0.3 else { return nil }
+        let slot = Int(now.timeIntervalSinceReferenceDate / feelingSlot)
+        var rng = SplitMix(seed: UInt64(bitPattern: Int64(slot)) &+ 0x5EED)
+        guard rng.unit() < min(0.6, (strength - 0.25) * 0.9) else { return nil }
+        let big = strength >= 0.6 && rng.unit() < 0.4
+        let coin = rng.unit() < 0.5
+        let anim: SpriteAnim
+        switch feelings.dominant {
+        case .joy: anim = big ? .celebrate : .wave
+        case .sadness: anim = .sad
+        case .anger: anim = .sulk
+        case .fear: anim = .hide
+        case .love: anim = .blush
+        case .curiosity: anim = .curious
+        case .boredom: anim = .stretch
+        case .excitement: anim = big || coin ? .celebrate : .play
+        // Dozes off for a moment without going to bed.
+        case .sleepiness: anim = .sleep
         }
-        return SpriteAnim(s.mood)
+        return anim
     }
 
     private var dragGesture: some Gesture {
@@ -159,6 +196,36 @@ private struct FloatingHeart: Identifiable {
     let id = UUID()
     let x: CGFloat
     let born: Date
+}
+
+/// How the slime feels, in a word: under its name on the home screen and
+/// read out by VoiceOver wherever the slime is. The chat (`ChatMood` in
+/// ChatParts.swift) uses the same words and cut-offs; keep the two the same.
+enum SlimeMoodWord {
+    /// "cheerful", "grumpy", "asleep" … A faint feeling reads as "calm".
+    static func word(for slime: Slime) -> String {
+        if slime.isAsleep { return "asleep" }
+        let feelings = slime.emotions
+        let strength = feelings.intensity
+        guard strength >= 0.15 else { return "calm" }
+        let strong = strength >= 0.55
+        switch feelings.dominant {
+        case .joy: return strong ? "cheerful" : "content"
+        case .sadness: return strong ? "sad" : "glum"
+        case .anger: return strong ? "cross" : "grumpy"
+        case .fear: return strong ? "scared" : "nervous"
+        case .love: return strong ? "cuddly" : "fond"
+        case .curiosity: return strong ? "fascinated" : "curious"
+        case .boredom: return strong ? "bored" : "a bit bored"
+        case .excitement: return strong ? "excited" : "eager"
+        case .sleepiness: return strong ? "sleepy" : "drowsy"
+        }
+    }
+
+    /// For VoiceOver: "feeling cheerful", or "asleep".
+    static func phrase(for slime: Slime) -> String {
+        slime.isAsleep ? "asleep" : "feeling \(word(for: slime))"
+    }
 }
 
 /// Particles for the equipped effect (sparkle, hearts, bubbles).

@@ -62,7 +62,7 @@ const clampInt = (value, min, max, fallback) => {
 };
 
 export function createAdmin({
-  db, clock, limiter, route, deleteDevice, stageFor, chat,
+  db, clock, limiter, route, deleteDevice, endCare = () => false, stageFor, chat,
   hashFile = DEFAULT_HASH_FILE, networks = null, trustProxy = false, serverVersion = "1.0.0", startedAt = clock(),
   log = (line) => console.error(line),
 }) {
@@ -191,7 +191,10 @@ export function createAdmin({
   function ban(id) {
     q("UPDATE devices SET banned_at = COALESCE(banned_at, ?) WHERE id = ?").run(clock(), id);
     q("DELETE FROM pair_codes WHERE device_id = ?").run(id);
+    q("DELETE FROM care_codes WHERE device_id = ?").run(id);
     q("DELETE FROM friend_requests WHERE from_device = ? OR to_device = ?").run(id, id);
+    // Whoever cared for a slime with it just becomes unpaired; an unban doesn't bring the pair back.
+    endCare(id);
   }
 
   function unban(id) {
@@ -289,6 +292,7 @@ export function createAdmin({
         total: count("SELECT COUNT(*) AS n FROM friendships"),
         inLove: count("SELECT COUNT(*) AS n FROM friendships WHERE in_love = 1"),
       },
+      care: { pairs: count("SELECT COUNT(*) AS n FROM care_pairs") },
       events24h: count("SELECT COUNT(*) AS n FROM events WHERE created_at >= ?", now - DAY),
       pairCodes24h: count("SELECT COUNT(*) AS n FROM pair_codes WHERE created_at >= ?", now - DAY),
       reports: {
@@ -384,8 +388,13 @@ export function createAdmin({
       LEFT JOIN slimes s ON s.device_id = d.id
       WHERE f.a = ? OR f.b = ?
       ORDER BY f.in_love DESC, f.love DESC`).all(device.id, device.id, device.id);
+    const care = q(`
+      SELECT d.id, d.owner_name FROM care_pairs p
+      JOIN devices d ON d.id = CASE WHEN p.host = ? THEN p.joiner ELSE p.host END
+      WHERE p.host = ? OR p.joiner = ?`).get(device.id, device.id, device.id);
     return {
       device: deviceView(device),
+      carePartner: care ? { id: care.id, ownerName: care.owner_name } : null,
       friends: friends.map((f) => ({
         id: f.id, ownerName: f.owner_name, slimeName: f.slime_name ?? RENAMED.slimeName,
         love: f.love, inLove: f.in_love === 1, banned: f.banned_at != null,

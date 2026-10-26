@@ -13,7 +13,7 @@ app="build/Build/Products/Debug-iphonesimulator/Slimy.app"
 bundle="de.hyprnode.slimy"
 settle="${SCREENSHOT_WAIT:-5}"
 
-sheets=(kitchen shop journal friends settings chat gift)
+sheets=(kitchen shop journal friends settings chat gift crates care)
 covers=(arcade bath)
 
 if [ ! -d "$app" ]; then

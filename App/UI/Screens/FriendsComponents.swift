@@ -69,7 +69,7 @@ struct ReportTarget: Identifiable, Hashable {
 
 /// What you can do with a friend in one tap.
 enum FriendQuickAction: String, CaseIterable, Identifiable {
-    case hug, visit, gift, greet, kiss
+    case hug, visit, gift, greet
 
     var id: String { rawValue }
 
@@ -79,7 +79,6 @@ enum FriendQuickAction: String, CaseIterable, Identifiable {
         case .visit: "Visit"
         case .gift: "Gift"
         case .greet: "Greet"
-        case .kiss: "Kiss"
         }
     }
 
@@ -89,18 +88,12 @@ enum FriendQuickAction: String, CaseIterable, Identifiable {
         case .visit: "house.fill"
         case .gift: "gift.fill"
         case .greet: "hand.wave.fill"
-        case .kiss: "heart.fill"
         }
-    }
-
-    /// Kisses unlock at 50% love.
-    func isAvailable(for friend: Friend) -> Bool {
-        self != .kiss || friend.love >= 50
     }
 }
 
-/// Hug, visit, gift, greet and kiss as a row of tiles; one menu button at
-/// accessibility text sizes, where five tiles don't fit.
+/// Hug, visit, gift and greet as a row of tiles; one menu button at
+/// accessibility text sizes, where four tiles don't fit.
 struct FriendQuickActions: View {
     let friend: Friend
     var busy = false
@@ -117,10 +110,9 @@ struct FriendQuickActions: View {
                     } label: {
                         Label(item.title, systemImage: item.symbol)
                     }
-                    .disabled(!item.isAvailable(for: friend))
                 }
             } label: {
-                Label("Hug, visit, gift …", systemImage: "heart.circle")
+                Label("Hug, visit, gift …", systemImage: "hand.wave")
                     .font(.body.weight(.semibold))
                     .frame(maxWidth: .infinity, minHeight: 44)
             }
@@ -138,8 +130,7 @@ struct FriendQuickActions: View {
     }
 
     private func tile(_ item: FriendQuickAction) -> some View {
-        let available = item.isAvailable(for: friend)
-        return Button {
+        Button {
             Feedback.shared.play(.tap)
             action(item)
         } label: {
@@ -152,19 +143,18 @@ struct FriendQuickActions: View {
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
             }
-            .foregroundStyle(item == .kiss ? Theme.love : Theme.accent)
+            .foregroundStyle(Theme.accent)
             .frame(maxWidth: .infinity, minHeight: 52)
         }
         .buttonStyle(TileStyle(fill: Theme.well, radius: Theme.smallRadius))
-        .disabled(busy || !available)
+        .disabled(busy)
         .accessibilityLabel("\(item.title) \(friend.slime.name)")
-        .accessibilityHint(available ? "" : "Unlocks at 50 percent love.")
     }
 }
 
 // MARK: - Rows
 
-/// A friend in the list: portrait, names, level and love, then the quick
+/// A friend in the list: portrait, names and level, then the quick
 /// actions. Without `open` it is read-only (shown while offline).
 struct FriendListRow: View {
     let friend: Friend
@@ -180,7 +170,7 @@ struct FriendListRow: View {
                     summary(chevron: true)
                 }
                 .buttonStyle(.plain)
-                .accessibilityHint("Shows love, memories and your shared garden.")
+                .accessibilityHint("Shows memories and your shared garden.")
             } else {
                 summary(chevron: false)
             }
@@ -200,21 +190,19 @@ struct FriendListRow: View {
                         .font(.headline)
                         .foregroundStyle(Theme.ink)
                         .lineLimit(1)
-                    if friend.inLove { Tag(text: "In love", color: Theme.love) }
                     if isPartner { Tag(text: "Island", color: Theme.accent) }
                 }
                 Text("\(friend.ownerName) · Level \(friend.slime.level)")
                     .font(.subheadline)
                     .foregroundStyle(Theme.inkSoft)
                     .lineLimit(1)
-                HStack(spacing: 8) {
-                    Meter(value: Double(friend.love) / 100, color: Theme.love, height: 6)
-                    Text(friend.love, format: .percent)
-                        .font(.caption.weight(.semibold))
-                        .monospacedDigit()
-                        .foregroundStyle(Theme.love)
-                }
+                Label(friend.slime.happiness == nil ? "Mood hidden" : friend.slime.mood.friendTitle,
+                      systemImage: friend.slime.happiness == nil ? "eye.slash" : friend.slime.mood.friendSymbol)
+                    .font(.caption)
+                    .foregroundStyle(Theme.inkSoft)
+                    .lineLimit(1)
             }
+            Spacer(minLength: 0)
             if chevron {
                 Image(systemName: "chevron.right")
                     .font(.footnote.weight(.semibold))
@@ -224,12 +212,11 @@ struct FriendListRow: View {
         .contentShape(Rectangle())
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(accessibilityText)
-        .accessibilityValue("\(friend.love) percent love")
     }
 
     private var accessibilityText: String {
         var parts = ["\(friend.slime.name), \(friend.ownerName)'s slime", "level \(friend.slime.level)"]
-        if friend.inLove { parts.append("in love") }
+        if friend.slime.happiness != nil { parts.append(friend.slime.mood.friendTitle.lowercased()) }
         if isPartner { parts.append("in your island") }
         return parts.joined(separator: ", ")
     }
@@ -481,7 +468,6 @@ final class FriendActionCenter: ObservableObject {
         switch action {
         case .hug: interact(.hug, with: friend)
         case .visit: interact(.visit, with: friend)
-        case .kiss: interact(.kiss, with: friend)
         case .gift: giftFor = friend
         case .greet: greetFor = friend
         }
@@ -590,7 +576,7 @@ private struct FriendActionsModifier: ViewModifier {
                                 titleVisibility: .visible, presenting: center.removeFor) { friend in
                 Button("Remove Friend", role: .destructive) { center.remove(friend) }
             } message: { friend in
-                Text("You and \(friend.ownerName) stop being friends. Love and memories are gone, and you'd need a new code to connect again.")
+                Text("You and \(friend.ownerName) stop being friends. Memories and your shared garden are gone, and you'd need a new code to connect again.")
             }
             .confirmationDialog(blockTitle,
                                 isPresented: presented(\.blockTarget),
@@ -668,7 +654,6 @@ extension InteractionKind {
         case .hug: "Hugs"
         case .visit: "Visits"
         case .gift: "Gifts"
-        case .kiss: "Kisses"
         }
     }
 
@@ -677,26 +662,27 @@ extension InteractionKind {
         case .hug: "figure.2.arms.open"
         case .visit: "house.fill"
         case .gift: "gift.fill"
-        case .kiss: "heart.fill"
         }
     }
 }
 
 extension FriendMemory {
+    /// Shown in the list. The server still keeps memories about love for
+    /// older app builds; those stay hidden. Kinds from a newer server show
+    /// with a general title.
+    var isShown: Bool {
+        !(kind.hasPrefix("love.") || kind == "inLove" || kind == "first.kiss")
+    }
+
     var title: String {
         switch kind {
         case "met": "Became friends"
         case "first.hug": "First hug"
         case "first.visit": "First visit"
         case "first.gift": "First gift"
-        case "first.kiss": "First kiss"
-        case "love.25": "25% love"
-        case "love.50": "Halfway in love"
-        case "love.75": "Almost in love"
-        case "inLove": "Fell in love"
         case "firstChallengeWin": "First challenge won"
         case "firstCoop": "First full garden"
-        default: "A lovely moment"
+        default: "A moment together"
         }
     }
 
@@ -706,8 +692,6 @@ extension FriendMemory {
         case "first.hug": "figure.2.arms.open"
         case "first.visit": "house.fill"
         case "first.gift": "gift.fill"
-        case "first.kiss", "inLove": "heart.fill"
-        case "love.25", "love.50", "love.75": "heart.circle.fill"
         case "firstChallengeWin": "trophy.fill"
         case "firstCoop": "leaf.fill"
         default: "sparkles"

@@ -28,13 +28,16 @@ tar -cf - --exclude=data --exclude=node_modules server | ssh root@192.168.1.234 
 ssh root@192.168.1.234 'cd /opt/slimy/server && rm -rf node_modules && npm test'
 ```
 
-Before the first start of 1.0, back up the database once. Version 1.0 adds migration 2 (reports, bans, records, chat usage, `last_seen_at`); it runs by itself on start.
+Before the first start of a new version, back up the database once. Migrations run by themselves on start: 1.0 added migration 2 (reports, bans, records, chat usage, `last_seen_at`), 1.1 adds migration 3 (caring together: care codes, care pairs with the shared snapshot, care events). Nothing in 1.1 needs new settings; the 1.0 app keeps working against it.
 
 ```sh
-sqlite3 /var/lib/slimy/slimy.db ".backup /var/backups/slimy/before-1.0.db"
+sqlite3 /var/lib/slimy/slimy.db ".backup /var/backups/slimy/before-1.1.db"
 systemctl restart slimy
-journalctl -u slimy -n 20 --no-pager   # "slimy api 1.0.0 on 127.0.0.1:8080 (chat via cloudflare, groq)"
+journalctl -u slimy -n 20 --no-pager   # "slimy api 1.1.0 on 127.0.0.1:8080 (chat via cloudflare, groq)"
+curl -s http://127.0.0.1:8080/api/v1/health   # "schema": 3
 ```
+
+Caddy needs no change for 1.1: `PUT /api/v1/care/snapshot` bodies (up to about 64 KB) are far below Caddy's limits, and the server enforces its own.
 
 ## 2. The environment file
 
@@ -280,7 +283,8 @@ API=https://slime.hyprnode.de/api/v1
 curl -s $API/health | jq                                   # "chat": true
 T=$(curl -s -X POST $API/devices -H 'Content-Type: application/json' -d '{"ownerName":"Smoke test"}' | jq -r .token)
 curl -s -X POST $API/chat -H "Authorization: Bearer $T" -H 'Content-Type: application/json' \
-  -d '{"message":"hello!","slime":{"name":"Blob","favorite":"cake"}}' | jq
+  -d '{"message":"hello!","slime":{"name":"Blob","favorite":"cake","emotions":{"joy":0.8,"sleepiness":0.3}}}' | jq   # reply, reaction, emotion
+curl -s $API/care -H "Authorization: Bearer $T" | jq -c   # {"partner":null,"snapshot":null,"version":0,"events":[],"cursor":"0"}
 curl -s -X POST $API/devices -H 'Content-Type: application/json' -d '{"ownerName":"f u c k"}' | jq   # "Please choose a different name."
 curl -s -o /dev/null -w '%{http_code}\n' -X DELETE $API/me -H "Authorization: Bearer $T"   # 204
 ```

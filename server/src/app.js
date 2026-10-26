@@ -3,7 +3,7 @@ import { schemaVersion, transaction } from "./db.js";
 import { checkName, cleanText } from "./moderation.js";
 import { DAY, HOUR, RateLimiter } from "./ratelimit.js";
 import {
-  ENUMS, HttpError, bool, dayKey, fail, int, iso, newId, newPairCode, newToken, oneOf, optionalText, pair, sha256,
+  ENUMS, HttpError, bool, date, dayKey, fail, int, iso, newId, newPairCode, newToken, oneOf, optionalText, pair, sha256,
   startOfUtcDay, text, weekKey,
 } from "./util.js";
 
@@ -13,6 +13,14 @@ import {
 //
 // No event a friend sends can do more than show something on the other
 // phone: a toast, a moment in the island, a gift of food, a challenge.
+//
+// Two people can also care for one slime together: the server keeps the
+// pair, the latest shared snapshot (opaque JSON the phones reconcile) and
+// the care actions each side sends for the other phone to apply.
+
+/** Bodies are small; only the shared slime snapshot may be bigger. */
+export const BODY_LIMIT = 32 * 1024;
+export const SNAPSHOT_BODY_LIMIT = 160 * 1024;
 
 export const LIMITS = {
   maxFriends: 20,
@@ -28,11 +36,24 @@ export const LIMITS = {
   recordCap: 1_000_000,
   leaderboardSize: 21,
   seenEveryMs: 10 * 60_000,
+  careEventDays: 30,
+  careEventsPerDay: 600,
+  carePage: 100,
+  careAmountMax: 200,
+  snapshotBytes: 64 * 1024,
+  snapshotsPerHour: 240,
+  snapshotNameChars: 100,
 };
 
 export const BANNED = "This device can't use online features anymore.";
 export const UNKNOWN_DEVICE = "This device isn't connected to Slimy's server anymore. Go online again in Friends.";
 export const BAD_NAME = "Please choose a different name.";
+export const ALREADY_CARING = "You're already caring for a slime together.";
+export const NOT_CARING = "You're not caring for a slime together right now.";
+export const SNAPSHOT_CONFLICT = "The slime changed on the other phone first. Here is the newest version.";
+
+/** The app's games, plus its daily game: care events may come from any of them. */
+const CARE_GAMES = [...ENUMS.game, "daily"];
 
 /** Love per interaction, and how often each counts per friend and day. */
 export const LOVE = {
@@ -181,17 +202,91 @@ export function createApp({
     return { week, goal: LIMITS.coopGoal, mine, theirs, total: mine + theirs, done: Boolean(row?.done_at) };
   }
 
+  // --- Caring together --------------------------------------------------------
+
+  /** A fresh code that is neither a friend code nor a care code right now. */
+  function freshCode() {
+    let code;
+    do { code = newPairCode(); } while (
+      q("SELECT 1 FROM pair_codes WHERE code = ?").get(code) || q("SELECT 1 FROM care_codes WHERE code = ?").get(code));
+    return code;
+  }
+
+  /**
+   * Ends the care pair `deviceId` is part of, if any: the partner becomes
+   * unpaired, and the shared snapshot and every care event go with the pair.
+   * Callers that do more than this wrap it in a transaction.
+   */
+  function endCare(deviceId) {
+    const row = q("SELECT id, host, joiner FROM care_pairs WHERE host = ? OR joiner = ?").get(deviceId, deviceId);
+    if (!row) return false;
+    q("DELETE FROM care_events WHERE pair_id = ?").run(row.id);
+    q("DELETE FROM care_pairs WHERE id = ?").run(row.id);
+    // A saved join answer can hold a copy of the snapshot; it goes with the pair.
+    q("DELETE FROM idempotency WHERE device_id IN (?, ?) AND path = '/care/join'").run(row.host, row.joiner);
+    return true;
+  }
+
+  /**
+   * The pair the device cares in, seen from its side, or null. A pair with a
+   * banned partner ends here: the partner simply becomes unpaired.
+   */
+  function careOf(me) {
+    const row = q("SELECT * FROM care_pairs WHERE host = ? OR joiner = ?").get(me, me);
+    if (!row) return null;
+    const partner = row.host === me ? row.joiner : row.host;
+    if (isBanned(partner) || isBanned(me)) {
+      endCare(me);
+      return null;
+    }
+    return { ...row, partner, partnerRole: row.host === me ? "joiner" : "host" };
+  }
+
+  const ownerNameOf = (id) => q("SELECT owner_name FROM devices WHERE id = ?").get(id)?.owner_name ?? "Someone";
+
+  const parseSnapshot = (json) => (json == null ? null : JSON.parse(json));
+
+  /** CareEventWire. */
+  function careEventView(row, ownerName = ownerNameOf(row.device_id)) {
+    return {
+      id: String(row.id),
+      deviceId: row.device_id,
+      ownerName,
+      kind: row.kind,
+      food: row.food,
+      game: row.game,
+      amount: row.amount,
+      at: iso(row.at),
+      createdAt: iso(row.created_at),
+    };
+  }
+
+  /** The slime's name in a shared snapshot passes the same filter as every other slime name. */
+  function checkSnapshotName(value, devices) {
+    const name = cleanText(value);
+    if (!name) return;
+    // No slime name comes near this, and the filter gets slow on very long text.
+    if ([...name].length > LIMITS.snapshotNameChars) fail(400, BAD_NAME);
+    const blocked = devices.flatMap((id) => {
+      const row = q("SELECT blocked_names FROM devices WHERE id = ?").get(id);
+      return row?.blocked_names ? JSON.parse(row.blocked_names) : [];
+    });
+    if (checkName(name) || blocked.includes(nameKey(name))) fail(400, BAD_NAME);
+  }
+
   /** Everything DELETE /me removes. Also used by the admin. */
   function deleteDevice(id) {
     transaction(db, () => {
+      // The partner just becomes unpaired; the shared snapshot and care events go too.
+      endCare(id);
       q("DELETE FROM memories WHERE a = ? OR b = ?").run(id, id);
       q("DELETE FROM coop WHERE a = ? OR b = ?").run(id, id);
       q("DELETE FROM coop_daily WHERE device_id = ?").run(id);
       q("DELETE FROM idempotency WHERE device_id = ?").run(id);
       q("DELETE FROM events WHERE from_device = ?").run(id);
       q("DELETE FROM blocks WHERE blocked = ?").run(id);
-      // Slime, friendships, requests, codes, inbox, challenges, own blocks and records go with
-      // the device (ON DELETE CASCADE); reports lose the device id (ON DELETE SET NULL).
+      // Slime, friendships, requests, friend and care codes, inbox, challenges, own blocks and records
+      // go with the device (ON DELETE CASCADE); reports lose the device id (ON DELETE SET NULL).
       q("DELETE FROM devices WHERE id = ?").run(id);
     });
   }
@@ -214,6 +309,12 @@ export function createApp({
     // Open reports stay until someone has looked at them.
     q("DELETE FROM reports WHERE status = 'resolved' AND resolved_at < ?").run(now - LIMITS.reportDays * DAY);
     q("DELETE FROM chat_usage WHERE day < ?").run(dayKey(now - LIMITS.chatUsageDays * DAY));
+    q("DELETE FROM care_events WHERE created_at < ?").run(now - LIMITS.careEventDays * DAY);
+    q("DELETE FROM care_codes WHERE expires_at < ? OR used_at < ?").run(now - DAY, now - DAY);
+    // A ban ends the pair at once; this also catches bans written straight into the database.
+    const bannedPairs = q(`SELECT p.host FROM care_pairs p JOIN devices h ON h.id = p.host JOIN devices j ON j.id = p.joiner
+      WHERE h.banned_at IS NOT NULL OR j.banned_at IS NOT NULL`).all();
+    for (const row of bannedPairs) transaction(db, () => endCare(row.host));
     limiter.sweep();
     admin.sweep();
   }
@@ -328,8 +429,7 @@ export function createApp({
     const now = clock();
     return transaction(db, () => {
       q("DELETE FROM pair_codes WHERE device_id = ? AND used_at IS NULL").run(me);
-      let code;
-      do { code = newPairCode(); } while (q("SELECT 1 FROM pair_codes WHERE code = ?").get(code));
+      const code = freshCode();
       const expires = now + LIMITS.codeMinutes * 60_000;
       q("INSERT INTO pair_codes (code, device_id, created_at, expires_at) VALUES (?, ?, ?, ?)").run(code, me, now, expires);
       return { code, expiresAt: iso(expires) };
@@ -521,6 +621,8 @@ export function createApp({
       q("DELETE FROM events WHERE to_device = ? AND from_device = ?").run(me, other);
       q("UPDATE challenges SET expires_at = ? WHERE (from_device = ? AND to_device = ?) OR (from_device = ? AND to_device = ?)")
         .run(clock(), me, other, other, me);
+      // Blocking the person you care for a slime with ends that too.
+      if (q("SELECT 1 FROM care_pairs WHERE (host = ? AND joiner = ?) OR (host = ? AND joiner = ?)").get(me, other, other, me)) endCare(me);
     });
     return null;
   });
@@ -624,6 +726,137 @@ export function createApp({
     });
   });
 
+  // Caring together: two people, one slime ---------------------------------------
+
+  route("POST", "/care/codes", ({ me }) => {
+    limit("care-code", me, 20, HOUR, "You've fetched a lot of codes. Wait a little.");
+    return transaction(db, () => {
+      if (careOf(me)) fail(409, ALREADY_CARING);
+      q("DELETE FROM care_codes WHERE device_id = ? AND used_at IS NULL").run(me);
+      const code = freshCode();
+      const now = clock();
+      const expires = now + LIMITS.codeMinutes * 60_000;
+      q("INSERT INTO care_codes (code, device_id, created_at, expires_at) VALUES (?, ?, ?, ?)").run(code, me, now, expires);
+      return { code, expiresAt: iso(expires) };
+    });
+  });
+
+  // The code's owner becomes the host; the one who types it adopts the host's slime.
+  route("POST", "/care/join", ({ me, body, ip }) => {
+    // Wrong codes count together with wrong friend codes.
+    if (limiter.exhausted("badcode", me, 8) || limiter.exhausted("badcode-ip", ip, 30)) {
+      fail(429, "Too many wrong codes. Try again in an hour.");
+    }
+    limit("care-join", me, 30, HOUR);
+    const code = text(body.code, "code", { min: 6, max: 6 }).toUpperCase();
+    const wrong = (status, message) => {
+      limiter.hit("badcode", me, 8, HOUR);
+      limiter.hit("badcode-ip", ip, 30, HOUR);
+      fail(status, message);
+    };
+    const joined = (care) => ({
+      partner: { deviceId: care.partner, ownerName: ownerNameOf(care.partner) },
+      snapshot: parseSnapshot(care.snapshot),
+      version: care.version,
+    });
+    return transaction(db, () => {
+      const row = q("SELECT * FROM care_codes WHERE code = ?").get(code);
+      const mine = careOf(me);
+      // The same join again (a retry without Idempotency-Key) answers like the first time.
+      if (row?.used_at && mine?.partnerRole === "host" && mine.partner === row.device_id) return joined(mine);
+      if (!row || row.used_at || isBanned(row.device_id)) wrong(404, "That code doesn't exist. Check the characters again.");
+      if (row.device_id === me) fail(400, "That's your own code. Send it to the person you want to care with.");
+      if (row.expires_at < clock()) wrong(410, "The code has expired. Ask for a new one.");
+      const host = row.device_id;
+      // A block looks exactly like an unknown code.
+      if (isBlocked(me, host)) wrong(404, "That code doesn't exist. Check the characters again.");
+      if (mine) fail(409, ALREADY_CARING);
+      if (careOf(host)) fail(409, "They're already caring for a slime with someone else.");
+      const now = clock();
+      q("UPDATE care_codes SET used_at = ? WHERE code = ?").run(now, code);
+      q("DELETE FROM care_codes WHERE device_id IN (?, ?) AND used_at IS NULL").run(me, host);
+      const id = newId("care");
+      q("INSERT INTO care_pairs (id, host, joiner, created_at, updated_at) VALUES (?, ?, ?, ?, ?)").run(id, host, me, now, now);
+      return joined(careOf(me));
+    });
+  });
+
+  route("GET", "/care", ({ me, query }) => {
+    const afterText = query.get("after") ?? "";
+    const after = /^\d{1,15}$/.test(afterText) ? Number(afterText) : 0;
+    const care = careOf(me);
+    if (!care) return { partner: null, snapshot: null, version: 0, events: [], cursor: String(after) };
+    const ownerName = ownerNameOf(care.partner);
+    // Only the partner's actions: your own phone applied yours already.
+    const rows = q("SELECT * FROM care_events WHERE pair_id = ? AND device_id = ? AND id > ? ORDER BY id LIMIT ?")
+      .all(care.id, care.partner, after, LIMITS.carePage);
+    return {
+      partner: { deviceId: care.partner, ownerName, role: care.partnerRole },
+      snapshot: parseSnapshot(care.snapshot),
+      version: care.version,
+      events: rows.map((row) => careEventView(row, ownerName)),
+      cursor: rows.length ? String(rows.at(-1).id) : String(after),
+    };
+  });
+
+  route("POST", "/care/events", ({ me, body }) => {
+    limit("care-event", me, LIMITS.careEventsPerDay, DAY, "That's a lot of care for one day. More tomorrow.");
+    const kind = oneOf(body.kind, "kind", ENUMS.careKind);
+    const food = body.food == null ? null : oneOf(body.food, "food", ENUMS.food);
+    const game = body.game == null ? null : oneOf(body.game, "game", CARE_GAMES);
+    let amount = null;
+    if (body.amount != null) {
+      if (typeof body.amount !== "number" || !Number.isFinite(body.amount) || body.amount < 0 || body.amount > LIMITS.careAmountMax) {
+        fail(400, `"amount" must be a number from 0 to ${LIMITS.careAmountMax}.`);
+      }
+      amount = body.amount;
+    }
+    const now = clock();
+    // Late events from an offline queue keep their time; a clock running ahead can't put one in the future.
+    const at = Math.max(now - LIMITS.careEventDays * DAY, Math.min(date(body.at, "at"), now));
+    return transaction(db, () => {
+      const care = careOf(me);
+      if (!care) fail(409, NOT_CARING);
+      const { lastInsertRowid } = q(`INSERT INTO care_events (pair_id, device_id, kind, food, game, amount, at, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`).run(care.id, me, kind, food, game, amount, at, now);
+      return { event: careEventView(q("SELECT * FROM care_events WHERE id = ?").get(lastInsertRowid)) };
+    });
+  });
+
+  // The shared slime as one opaque JSON object. Versions go up by one, so
+  // two phones can't overwrite each other without noticing.
+  route("PUT", "/care/snapshot", ({ me, body }) => {
+    limit("care-snapshot", me, LIMITS.snapshotsPerHour, HOUR, "The slime is syncing a lot. Wait a moment.");
+    const snapshot = body.snapshot;
+    if (!snapshot || typeof snapshot !== "object" || Array.isArray(snapshot)) fail(400, '"snapshot" must be an object.');
+    const version = body.version;
+    if (!Number.isSafeInteger(version) || version < 1) fail(400, '"version" must be a whole number of 1 or more.');
+    const json = JSON.stringify(snapshot);
+    if (Buffer.byteLength(json, "utf8") > LIMITS.snapshotBytes) fail(413, "The slime's data is too large to share.");
+    return transaction(db, () => {
+      const care = careOf(me);
+      if (!care) fail(409, NOT_CARING);
+      if (typeof snapshot.name === "string") checkSnapshotName(snapshot.name, [me, care.partner]);
+      if (version !== care.version + 1) {
+        const conflict = new HttpError(409, SNAPSHOT_CONFLICT, { version: care.version, snapshot: parseSnapshot(care.snapshot) });
+        // Never replayed for an Idempotency-Key: the state it carries goes stale, and it is shared data.
+        conflict.transient = true;
+        throw conflict;
+      }
+      q("UPDATE care_pairs SET snapshot = ?, version = ?, updated_at = ? WHERE id = ?").run(json, version, clock(), care.id);
+      return { version };
+    });
+  });
+
+  // Either side stops: both are unpaired, the snapshot and care events are deleted.
+  route("DELETE", "/care", ({ me }) => {
+    transaction(db, () => {
+      endCare(me);
+      q("DELETE FROM care_codes WHERE device_id = ? AND used_at IS NULL").run(me);
+    });
+    return null;
+  });
+
   // Reports ---------------------------------------------------------------------
 
   // A name, someone's behaviour or a slime reply that felt wrong. Reporting
@@ -669,6 +902,15 @@ export function createApp({
       return name && !checkName(name) ? name : null;
     };
     const localTime = typeof s.localTime === "string" ? [...cleanText(s.localTime)].slice(0, 16).join("") : "";
+    // How the slime feels, 0 to 1 each. Unknown names and anything that isn't a number are left out.
+    let emotions = null;
+    if (s.emotions && typeof s.emotions === "object" && !Array.isArray(s.emotions)) {
+      emotions = {};
+      for (const name of ENUMS.emotion) {
+        const value = s.emotions[name];
+        if (typeof value === "number" && Number.isFinite(value)) emotions[name] = Math.round(Math.max(0, Math.min(1, value)) * 100) / 100;
+      }
+    }
     const slime = {
       name: safeName(s.name) ?? "Slime",
       ageDays: Number.isInteger(s.ageDays) ? Math.max(0, Math.min(s.ageDays, 100000)) : 0,
@@ -678,6 +920,7 @@ export function createApp({
       favorite: ENUMS.food.includes(s.favorite) ? s.favorite : "apple",
       partnerName: safeName(s.partnerName),
       localTime: /\d/.test(localTime) ? localTime : "",
+      emotions,
     };
     return chat.reply({ message, history: cleanHistory, slime, onUsage: recordChatUsage });
   });
@@ -685,7 +928,7 @@ export function createApp({
   // Admin (/api/v1/admin/*) ----------------------------------------------------------
 
   const admin = createAdmin({
-    db, clock, limiter, route, deleteDevice, stageFor, chat, trustProxy, serverVersion, startedAt,
+    db, clock, limiter, route, deleteDevice, endCare, stageFor, chat, trustProxy, serverVersion, startedAt,
     hashFile: adminHashFile,
     networks: typeof adminNetworks === "string" ? parseNetworks(adminNetworks) : adminNetworks,
   });
@@ -751,9 +994,9 @@ export function createApp({
       if (result == null) status = 204;
     } catch (error) {
       if (error instanceof HttpError) error.headers = responseHeaders;
-      if (!(error instanceof HttpError) || !idempotent || error.status >= 500 || error.status === 429) throw error;
+      if (!(error instanceof HttpError) || !idempotent || error.status >= 500 || error.status === 429 || error.transient) throw error;
       status = error.status;
-      result = { error: error.message };
+      result = error.body;
     }
     if (idempotent) {
       q("INSERT OR IGNORE INTO idempotency (device_id, key, method, path, status, body, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)")
@@ -777,11 +1020,11 @@ export function createApp({
     };
     try {
       req.ip = (trustProxy && String(req.headers["x-forwarded-for"] ?? "").split(",")[0].trim()) || req.socket.remoteAddress || "?";
-      req.body = await readBody(req);
+      req.body = await readBody(req, isSnapshotUpload(req) ? SNAPSHOT_BODY_LIMIT : BODY_LIMIT);
       const out = await handle(req);
       send(out.status, out.body, out.headers);
     } catch (error) {
-      if (error instanceof HttpError) return send(error.status, { error: error.message }, error.headers);
+      if (error instanceof HttpError) return send(error.status, error.body, error.headers);
       console.error(error);
       send(500, { error: "Something went wrong on the server. Try again later." });
     }
@@ -794,13 +1037,23 @@ function stageFor(level) {
   return level < 4 ? "baby" : level < 12 ? "young" : "grown";
 }
 
-async function readBody(req) {
+/** PUT /care/snapshot carries up to 64 KB of slime; the handler checks the exact size. */
+function isSnapshotUpload(req) {
+  if (req.method !== "PUT") return false;
+  try {
+    return new URL(req.url, "http://local").pathname === "/api/v1/care/snapshot";
+  } catch {
+    return false;
+  }
+}
+
+async function readBody(req, maxBytes = BODY_LIMIT) {
   if (req.method === "GET" || req.method === "HEAD") return {};
   const chunks = [];
   let size = 0;
   for await (const chunk of req) {
     size += chunk.length;
-    if (size > 32 * 1024) throw new HttpError(413, "The request is too large.");
+    if (size > maxBytes) throw new HttpError(413, "The request is too large.");
     chunks.push(chunk);
   }
   if (!size) return {};

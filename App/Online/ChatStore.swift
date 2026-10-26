@@ -15,8 +15,13 @@ struct ChatMessage: Codable, Identifiable, Hashable {
     var reported: Bool
     /// On an error note: the message that Try Again sends again.
     var retryID: UUID?
+    /// On a slime reply: the feeling it expressed, if the server named one.
+    var emotion: Emotion?
+    /// How strongly the reply expressed `emotion`, 0...1.
+    var intensity: Double?
 
-    init(role: Role, text: String, date: Date = .now, failed: Bool = false, retryID: UUID? = nil) {
+    init(role: Role, text: String, date: Date = .now, failed: Bool = false, retryID: UUID? = nil,
+         emotion: Emotion? = nil, intensity: Double? = nil) {
         self.id = UUID()
         self.role = role
         self.text = text
@@ -24,10 +29,12 @@ struct ChatMessage: Codable, Identifiable, Hashable {
         self.failed = failed
         self.reported = false
         self.retryID = retryID
+        self.emotion = emotion
+        self.intensity = intensity
     }
 
     private enum CodingKeys: String, CodingKey {
-        case id, role, text, date, failed, reported, retryID
+        case id, role, text, date, failed, reported, retryID, emotion, intensity
     }
 
     // Tolerant, so chats saved by older versions still load.
@@ -40,6 +47,9 @@ struct ChatMessage: Codable, Identifiable, Hashable {
         failed = try c.decodeIfPresent(Bool.self, forKey: .failed) ?? false
         reported = try c.decodeIfPresent(Bool.self, forKey: .reported) ?? false
         retryID = try c.decodeIfPresent(UUID.self, forKey: .retryID)
+        // A feeling this version doesn't know just isn't shown.
+        emotion = try? c.decodeIfPresent(Emotion.self, forKey: .emotion)
+        intensity = try? c.decodeIfPresent(Double.self, forKey: .intensity)
     }
 
     func encode(to encoder: Encoder) throws {
@@ -51,6 +61,8 @@ struct ChatMessage: Codable, Identifiable, Hashable {
         try c.encode(failed, forKey: .failed)
         try c.encode(reported, forKey: .reported)
         try c.encodeIfPresent(retryID, forKey: .retryID)
+        try c.encodeIfPresent(emotion, forKey: .emotion)
+        try c.encodeIfPresent(intensity, forKey: .intensity)
     }
 }
 
@@ -179,16 +191,7 @@ final class ChatStore: ObservableObject {
         }
 
         let history = turns(before: message.id)
-        let slime = GameStore.shared.state.slime
-        let context = ChatContext(
-            name: String(slime.name.prefix(16)),
-            ageDays: slime.ageDays(),
-            level: slime.level,
-            mood: slime.mood,
-            needs: slime.needs,
-            favorite: slime.favorite,
-            partnerName: FriendsStore.shared.partner.map { String($0.slime.name.prefix(16)) },
-            localTime: Date.now.formatted(date: .omitted, time: .shortened))
+        let context = Self.context(for: GameStore.shared.state.slime)
 
         do {
             let api = try await FriendsStore.shared.authorizedAPI()
@@ -200,10 +203,12 @@ final class ChatStore: ObservableObject {
             // so it shows like any other reply.
             let text = String(reply.reply.trimmingCharacters(in: .whitespacesAndNewlines)
                 .prefix(Self.maxReplyLength))
-            messages.append(ChatMessage(role: .slime, text: text.isEmpty ? "*wobbles*" : text))
-            if let reaction = reply.reaction, reaction != .none {
-                GameStore.shared.update { $0.slime.react(reaction, at: .now) }
-            }
+            // A feeling this version doesn't know is left out.
+            let felt = reply.emotion.flatMap { Emotion(rawValue: $0.name) }
+            let intensity: Double? = felt == nil ? nil : reply.emotion?.intensity
+            messages.append(ChatMessage(role: .slime, text: text.isEmpty ? "*wobbles*" : text,
+                                        emotion: felt, intensity: intensity))
+            express(felt, intensity: intensity ?? 0, reaction: reply.reaction)
             Feedback.shared.play(.pop)
         } catch {
             // A ban takes the device offline; a device the server forgot
@@ -216,6 +221,61 @@ final class ChatStore: ObservableObject {
             messages.append(ChatMessage(role: .note, text: problem.text, failed: true,
                                         retryID: problem.canRetry ? message.id : nil))
             Feedback.shared.play(.nope)
+        }
+    }
+
+    /// What the AI service learns about the slime, including how it feels
+    /// right now, so the reply comes in that mood. No owner name, no device
+    /// ID, and no friend's or caretaker's name.
+    private static func context(for slime: Slime, now: Date = .now) -> ChatContext {
+        var context = ChatContext(
+            name: String(slime.name.prefix(16)),
+            ageDays: slime.ageDays(at: now),
+            level: slime.level,
+            mood: slime.mood,
+            needs: slime.needs,
+            favorite: slime.favorite,
+            localTime: now.formatted(date: .omitted, time: .shortened))
+        let feelings = slime.emotions.wire
+        context.emotions = feelings.isEmpty ? nil : feelings
+        return context
+    }
+
+    // MARK: Feelings
+
+    /// How much of a reply's feeling rubs off on the slime: a reply at full
+    /// intensity moves that feeling by about a third.
+    static let feelingShare = 0.35
+
+    /// The slime feels a bit more of what its reply expressed and shows it.
+    /// The animation the reply asked for wins; without one, the feeling's own
+    /// plays, unless the feeling was only faint.
+    private func express(_ emotion: Emotion?, intensity: Double, reaction asked: Reaction?) {
+        let store = GameStore.shared
+        var reaction: Reaction = asked ?? Reaction.none
+        if let emotion {
+            store.feel(emotion, intensity * Self.feelingShare)
+            if reaction == Reaction.none, intensity >= 0.15 {
+                reaction = Self.reaction(showing: emotion, intensity: intensity)
+            }
+        }
+        guard reaction != Reaction.none else { return }
+        let chosen = reaction
+        store.update { $0.slime.react(chosen, at: .now) }
+    }
+
+    /// The animation that shows a feeling.
+    static func reaction(showing emotion: Emotion, intensity: Double) -> Reaction {
+        switch emotion {
+        case .joy: return intensity >= 0.7 ? .celebrate : .wave
+        case .sadness: return .melt
+        case .anger: return .sulk
+        case .fear: return .hide
+        case .love: return intensity >= 0.6 ? .love : .blush
+        case .curiosity: return .curious
+        case .boredom: return .stretch
+        case .excitement: return .celebrate
+        case .sleepiness: return .stretch
         }
     }
 

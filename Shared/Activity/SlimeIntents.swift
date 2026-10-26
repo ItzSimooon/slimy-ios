@@ -59,7 +59,7 @@ struct BathSlimeIntent: LiveActivityIntent {
 
 struct PetSlimeIntent: LiveActivityIntent {
     static let title: LocalizedStringResource = "Pet Slime"
-    static let description = IntentDescription("Gives your slime a little love.")
+    static let description = IntentDescription("Pets your slime and gives it a cuddle.")
 
     func perform() async throws -> some IntentResult {
         #if SLIME_APP

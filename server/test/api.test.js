@@ -426,7 +426,7 @@ describe("chat", () => {
     const a = await device();
     await call("POST", "/chat", { token: a.token, body: { message: "hi", slime: { name: "fuck", partnerName: "www.spam.com" } } });
     assert.match(lastChatRequest.messages[0].content, /You are Slime,/);
-    assert.match(lastChatRequest.messages[0].content, /don't have any slime friends/);
+    assert.doesNotMatch(lastChatRequest.messages[0].content, /spam|friends with/);
   });
 
   test("requests are counted per provider without content", async () => {
@@ -728,5 +728,79 @@ describe("migration 2", () => {
     const row = old.prepare("SELECT * FROM devices").get();
     assert.equal(row.last_seen_at, 2);
     assert.equal(row.banned_at, null);
+  });
+});
+
+describe("axolotl", () => {
+  test("the secret skin is a skin like any other on the server", async () => {
+    const a = await device("Anna"), b = await device("Ben");
+    await friends(a, b);
+    const profile = { name: "Pinky", skin: "axolotl", level: 9, mood: "idle", happiness: 90 };
+    assert.equal((await call("PUT", "/me/slime", { token: a.token, body: profile })).status, 204);
+    assert.equal((await call("GET", "/friends", { token: b.token })).body[0].slime.skin, "axolotl");
+    const code = (await call("POST", "/pair-codes", { token: a.token, body: {} })).body.code;
+    assert.equal((await call("GET", `/invites/${code}`)).body.slime.skin, "axolotl");
+    await call("PUT", "/me/records", { token: a.token, body: { records: { bubblePop: 10 } } });
+    assert.equal((await call("GET", "/friends/leaderboard", { token: b.token })).body.games[0].entries[0].skin, "axolotl");
+  });
+});
+
+describe("chat emotions", () => {
+  const FEELING = { choices: [{ message: { role: "assistant",
+    content: '{"reply":"hehe, you make me giggle!","reaction":"celebrate","emotion":{"name":"joy","intensity":0.9}}' } }] };
+
+  test("the slime's feelings reach the prompt and the reply's feeling comes back", async () => {
+    const a = await device();
+    fakeReply = FEELING;
+    const r = await call("POST", "/chat", {
+      token: a.token,
+      body: { message: "you are the best slime", slime: { name: "Blob", emotions: { sadness: 0.75, joy: 0.3, sleepiness: 0.12 } } },
+    });
+    fakeReply = HELLO;
+    assert.equal(r.status, 200);
+    assert.deepEqual(r.body, { reply: "hehe, you make me giggle!", reaction: "celebrate", emotion: { name: "joy", intensity: 0.9 } });
+    const prompt = lastChatRequest.messages[0].content;
+    assert.match(prompt, /How you feel right now, strongest first: very sad, a little happy, a little sleepy\./);
+    assert.match(prompt, /words can change how you feel/);
+    assert.ok(lastChatRequest.response_format.json_schema.schema.properties.emotion);
+  });
+
+  test("odd emotion values are cleaned before they reach the prompt", async () => {
+    const a = await device();
+    await call("POST", "/chat", {
+      token: a.token,
+      // JSON.parse keeps "__proto__" as a plain key, the way the server reads the body.
+      body: { message: "hi", slime: { emotions: JSON.parse('{"fear":7,"anger":"very","love":-2,"boredom":0.5,"hunger":0.9,"__proto__":{"joy":1}}') } },
+    });
+    const line = lastChatRequest.messages[0].content.split("\n").find((l) => l.startsWith("How you feel"));
+    assert.equal(line, "How you feel right now, strongest first: very scared, bored.");
+    await call("POST", "/chat", { token: a.token, body: { message: "hi", slime: { emotions: [0.5, 0.5] } } });
+    assert.doesNotMatch(lastChatRequest.messages[0].content, /How you feel right now|you feel calm/);
+  });
+
+  test("old apps without emotions get the same answer shape as before", async () => {
+    const a = await device();
+    const r = await call("POST", "/chat", { token: a.token, body: { message: "hello", slime: { name: "Blob" } } });
+    assert.deepEqual(r.body, { reply: "blub, hello!", reaction: "wave" });
+  });
+});
+
+describe("migration 3", () => {
+  test("upgrades a version 2 database and keeps its data", () => {
+    const old = new DatabaseSync(":memory:");
+    old.exec("PRAGMA foreign_keys = ON");
+    old.exec("CREATE TABLE schema_migrations (version INTEGER PRIMARY KEY, applied_at INTEGER NOT NULL)");
+    old.exec(migrations[0]);
+    old.exec(migrations[1]);
+    old.prepare("INSERT INTO schema_migrations (version, applied_at) VALUES (1, 0), (2, 0)").run();
+    old.prepare("INSERT INTO devices (id, token_hash, owner_name, created_at, last_seen_at) VALUES ('dev_a', 'h', 'Anna', 1, 2)").run();
+    old.prepare("INSERT INTO records (device_id, game, best, updated_at) VALUES ('dev_a', 'bubblePop', 50, 3)").run();
+    migrate(old);
+    assert.equal(schemaVersion(old), 3);
+    assert.equal(old.prepare("SELECT owner_name FROM devices").get().owner_name, "Anna");
+    assert.equal(old.prepare("SELECT best FROM records").get().best, 50);
+    for (const table of ["care_codes", "care_pairs", "care_events"]) {
+      assert.equal(old.prepare(`SELECT COUNT(*) AS n FROM ${table}`).get().n, 0, table);
+    }
   });
 });

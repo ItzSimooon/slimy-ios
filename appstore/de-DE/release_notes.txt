@@ -1,13 +1,11 @@
-Slimy 1.0 ist da.
+Slimy 1.1 bringt Kisten, gemeinsames Pflegen und einen Slime mit Gefühlen.
 
-• Ein Pixel-Slime, der in deiner Dynamic Island, auf dem Sperrbildschirm und in Widgets wohnt
-• 12 Arcade-Spiele, darunter die neuen Slime Stack und Jelly Dash, und jeden Tag ein neues Spiel
-• Tägliche Serien und jeden Tag ein kleines Geschenk
-• Fotobox: Lass deinen Slime posieren und teile das Bild
-• Freunde-Bestenliste für jedes Spiel
-• Freunde per Link einladen
-• Mit deinem Slime reden, mit einer klaren Abfrage, bevor etwas gesendet wird
-• Heller und dunkler Modus
-• Sichere deinen Slime in einer Datei und stelle ihn wieder her
+• Kisten: Kauf Holz- und Goldkisten mit Münzen, verdiene dir Mystery-Kisten und tipp sie auf. Drin sind Münzen, Essen, Outfits, Möbel und neue Farben. Goldkisten verbergen etwas Legendäres. Was genau, verraten wir nicht.
+• Die App zeigt die Chancen für jede Kiste, und doppelte Fundstücke werden zu Münzen
+• Gemeinsam pflegen: Teil deinen Slime mit einer Person und kümmert euch zusammen um ihn, jeder auf dem eigenen iPhone
+• Dein Slime hat jetzt echte Gefühle. Sie verändern, wie er sich bewegt, was er sagt und wie er im Chat antwortet
+• Er redet von sich aus, solange die App offen ist. Lieber ruhiger? Schalte „Talks on its own“ in den Einstellungen aus
+• Der Chat antwortet in der Stimmung deines Slimes, und was du schreibst, kann sie verändern
+• Bei Freunden dreht sich alles um Umarmungen, Besuche, Geschenke, Grüße, Herausforderungen und den gemeinsamen Garten
 
-Danke an alle, die die Beta getestet haben.
+Danke, dass du dich um deinen Slime kümmerst.

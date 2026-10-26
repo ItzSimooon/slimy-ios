@@ -1,26 +1,32 @@
 import SwiftUI
 import UIKit
 
-/// Buy and wear things: hats, glasses, scarves, effects, furniture, places
-/// and colours. Tapping anything tries it on the slime first; the bar at the
-/// bottom buys, wears or places what is picked.
+/// Buy and wear things: crates, hats, glasses, scarves, effects, furniture,
+/// places and colours. Tapping anything tries it on the slime first; the
+/// bar at the bottom buys, wears or places what is picked. Crates are
+/// bought and opened right on their cards.
 struct ShopView: View {
     @EnvironmentObject private var store: GameStore
     @Environment(\.dynamicTypeSize) private var typeSize
 
-    enum Tab: Hashable { case kind(ItemKind), places, colours }
+    enum Tab: Hashable { case crates, kind(ItemKind), places, colours }
 
     @State private var tab: Tab = .kind(.hat)
     @State private var pick: ShopPick?
     @State private var line: String?
     @State private var lineID = 0
     @State private var newKeys: Set<String> = []
+    /// The crate waiting for "Buy for … coins?".
+    @State private var buying: CrateKind?
+    @State private var opening: CrateKind?
+    @State private var showRates = false
     /// Everything that was already for sale on earlier visits, so new things get a tag.
     @AppStorage("slimy.shop.seen") private var seenRaw = ""
     @ScaledMetric(relativeTo: .body) private var tileWidth: CGFloat = 150
 
     private var tabs: [(Tab, String)] {
-        var out: [(Tab, String)] = ItemKind.allCases.map { (Tab.kind($0), $0.title) }
+        var out: [(Tab, String)] = [(Tab.crates, "Crates")]
+        out += ItemKind.allCases.map { (Tab.kind($0), $0.title) }
         out.append((Tab.places, "Places"))
         out.append((Tab.colours, "Colours"))
         return out
@@ -50,21 +56,45 @@ struct ShopView: View {
                                 .foregroundStyle(Theme.inkSoft)
                                 .fixedSize(horizontal: false, vertical: true)
                         }
-                        LazyVGrid(columns: [GridItem(.adaptive(minimum: tileWidth), spacing: 12)], spacing: 12) {
-                            tiles(s)
+                        if tab == .crates {
+                            crateCards(s)
+                        } else {
+                            LazyVGrid(columns: [GridItem(.adaptive(minimum: tileWidth), spacing: 12)], spacing: 12) {
+                                tiles(s)
+                            }
                         }
                     }
                     .padding(16)
                 }
             }
             .background(Theme.backdrop)
-            .safeAreaInset(edge: .bottom, spacing: 0) { actionBar(s) }
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                // Crates have their own buttons; nothing to try on.
+                if tab != .crates { actionBar(s) }
+            }
             .sheetTitle("Shop", inline: true)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     CoinCounter(coins: s.wallet.coins, inToolbar: true)
                 }
             }
+            .confirmationDialog(buying.map { "Buy a \(CrateCopy.name($0).lowercased())?" } ?? "",
+                                isPresented: Binding(get: { buying != nil }, set: { if !$0 { buying = nil } }),
+                                titleVisibility: .visible,
+                                presenting: buying) { kind in
+                if let price = kind.price {
+                    Button("Buy for \(CrateCopy.coins(price))") { buy(kind) }
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: { _ in
+                Text("What's inside is a surprise until you open it.")
+            }
+        }
+        .fullScreenCover(item: $opening) { kind in
+            CrateOpenView(kind: kind) { opening = nil }
+        }
+        .sheet(isPresented: $showRates) {
+            DropRatesView(standalone: true)
         }
         .onChange(of: tab) { pick = nil }
         .onAppear(perform: markSeen)
@@ -81,6 +111,8 @@ struct ShopView: View {
     @ViewBuilder
     private func tiles(_ s: GameState) -> some View {
         switch tab {
+        case .crates:
+            EmptyView()
         case .kind(let kind):
             ForEach(Catalog.items(kind)) { item in
                 itemTile(item, s)
@@ -90,10 +122,16 @@ struct ShopView: View {
                 habitatTile(habitat, s)
             }
         case .colours:
-            ForEach(Skin.allCases) { skin in
+            ForEach(Self.shownSkins(s)) { skin in
                 skinTile(skin, s)
             }
         }
+    }
+
+    /// Every colour, except a secret one nobody has found yet: those are
+    /// never for sale and never shown locked.
+    private static func shownSkins(_ s: GameState) -> [Skin] {
+        Skin.allCases.filter { !$0.isSecret || s.slime.isUnlocked($0) }
     }
 
     private func itemTile(_ item: CatalogItem, _ s: GameState) -> some View {
@@ -111,7 +149,7 @@ struct ShopView: View {
         }
         let actions = model(for: .item(item.id), s)
         return ShopTile(title: item.title, status: status, isNew: newKeys.contains(item.id) && !owned,
-                        rare: item.rare, selected: pick == .item(item.id),
+                        rare: item.rare, legendary: false, selected: pick == .item(item.id),
                         accessibility: accessibilityText(item.title, rare: item.rare, status: status),
                         quickAction: actions.quickAction,
                         action: { select(.item(item.id)) }) {
@@ -137,7 +175,7 @@ struct ShopView: View {
         let key = "habitat.\(habitat.rawValue)"
         let actions = model(for: .habitat(habitat), s)
         return ShopTile(title: habitat.title, status: status, isNew: newKeys.contains(key) && !owned,
-                        rare: false, selected: pick == .habitat(habitat),
+                        rare: false, legendary: false, selected: pick == .habitat(habitat),
                         accessibility: accessibilityText(habitat.title, rare: false, status: status),
                         quickAction: actions.quickAction,
                         action: { select(.habitat(habitat)) }) {
@@ -161,10 +199,11 @@ struct ShopView: View {
         }
         let key = "skin.\(skin.rawValue)"
         let actions = model(for: .skin(skin), s)
+        let spoken = accessibilityText(skin.title, rare: false, status: status) + (skin.isSecret ? ", legendary" : "")
         return ShopTile(title: skin.title, status: status,
                         isNew: newKeys.contains(key) && s.slime.skin != skin,
-                        rare: false, selected: pick == .skin(skin),
-                        accessibility: accessibilityText(skin.title, rare: false, status: status),
+                        rare: false, legendary: skin.isSecret, selected: pick == .skin(skin),
+                        accessibility: spoken,
                         quickAction: actions.quickAction,
                         action: { select(.skin(skin)) }) {
             ShopSkinArt(skin: skin, slime: s.slime)
@@ -176,6 +215,8 @@ struct ShopView: View {
 
     private func note(for tab: Tab, _ s: GameState) -> String? {
         switch tab {
+        case .crates:
+            return CrateCopy.contents
         case .kind(let kind):
             if kind == .furniture { return "Furniture goes in the room, one piece per spot." }
             if kind == .effect { return "Effects float around \(s.slime.name) wherever it goes." }
@@ -280,6 +321,7 @@ struct ShopView: View {
                             .foregroundStyle(Theme.ink)
                             .lineLimit(2)
                         if m.rare { Tag(text: "RARE", color: rareGold) }
+                        if m.legendary { RarityBadge(rarity: .legendary, compact: true) }
                     }
                     Text(m.detail)
                         .font(.subheadline)
@@ -394,11 +436,15 @@ struct ShopView: View {
 
     private func skinModel(_ skin: Skin, _ s: GameState) -> PickModel {
         if s.slime.skin == skin {
-            return PickModel(title: skin.title, detail: "\(s.slime.name)'s colour right now")
+            return PickModel(title: skin.title, detail: "\(s.slime.name)'s colour right now", legendary: skin.isSecret)
         }
         if s.slime.isUnlocked(skin) {
-            return PickModel(title: skin.title, detail: "Unlocked", buttonTitle: "Use colour",
-                             run: { dye(skin) })
+            return PickModel(title: skin.title, detail: skin.isSecret ? "Found in a crate" : "Unlocked",
+                             legendary: skin.isSecret, buttonTitle: "Use colour", run: { dye(skin) })
+        }
+        if skin.isSecret {
+            // Never listed before it's found; nothing to say about it.
+            return PickModel(title: "???", detail: "Only found in crates.")
         }
         return PickModel(title: skin.title, detail: "Unlocks at level \(skin.unlockLevel).",
                          buttonTitle: "Locked", buttonSystemIcon: "lock.fill", buttonKind: .quiet, enabled: false)
@@ -455,6 +501,33 @@ struct ShopView: View {
         store.wear(skin)
         Feedback.shared.play(.success)
     }
+
+    // MARK: Crates
+
+    private func crateCards(_ s: GameState) -> some View {
+        VStack(spacing: 12) {
+            ForEach(CrateKind.allCases) { kind in
+                ShopCrateCard(kind: kind, owned: s.crates[kind, default: 0], coins: s.wallet.coins,
+                              buy: { buying = kind }, open: { opening = kind })
+            }
+            AppButton(title: "Drop rates", systemIcon: "percent", kind: .quiet) { showRates = true }
+            Text(CrateCopy.noRealMoney)
+                .font(.footnote)
+                .foregroundStyle(Theme.inkSoft)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    /// The store plays the coin sound, or its "nope" when it can't be bought.
+    private func buy(_ kind: CrateKind) {
+        guard store.buyCrate(kind) else { return }
+        say(Self.crateLines.randomElement(), announce: false)
+        UIAccessibility.post(notification: .announcement,
+                             argument: "Bought a \(CrateCopy.name(kind).lowercased()). Open it whenever you like.")
+    }
+
+    private static let crateLines = ["ooh, a crate!", "what's inside? open it!", "shake it! shake it!",
+                                     "i heard something rattle!"]
 
     private func say(_ text: String?, announce: Bool) {
         guard let text, !text.isEmpty else { return }
@@ -515,6 +588,8 @@ private struct PickModel {
     var detail: String
     var warning = false
     var rare = false
+    /// A secret colour found in a crate.
+    var legendary = false
     var buttonTitle: String? = nil
     var buttonIcon: String? = nil
     var buttonSystemIcon: String? = nil
@@ -534,6 +609,7 @@ private struct ShopTile<Art: View>: View {
     let status: TileStatus
     let isNew: Bool
     let rare: Bool
+    let legendary: Bool
     let selected: Bool
     let accessibility: String
     let quickAction: (title: String, run: () -> Void)?
@@ -558,6 +634,7 @@ private struct ShopTile<Art: View>: View {
                 VStack(alignment: .leading, spacing: 4) {
                     if isNew { Tag(text: "NEW") }
                     if rare { Tag(text: "RARE", color: rareGold) }
+                    if legendary { RarityBadge(rarity: .legendary, compact: true) }
                 }
                 .padding(8)
             }
@@ -611,6 +688,120 @@ private struct ShopTile<Art: View>: View {
                 .font(.subheadline)
                 .foregroundStyle(Theme.inkSoft)
         }
+    }
+}
+
+/// A crate in the shop: its price, how many are waiting, Buy and Open.
+private struct ShopCrateCard: View {
+    let kind: CrateKind
+    let owned: Int
+    let coins: Int
+    let buy: () -> Void
+    let open: () -> Void
+
+    @Environment(\.dynamicTypeSize) private var typeSize
+
+    var body: some View {
+        Card {
+            HStack(alignment: .top, spacing: 14) {
+                CrateSprite(kind: kind)
+                    .padding(10)
+                    .frame(width: 76, height: 76)
+                    .background(Theme.well, in: RoundedRectangle(cornerRadius: Theme.smallRadius, style: .continuous))
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(CrateCopy.name(kind))
+                        .font(.headline)
+                        .foregroundStyle(Theme.ink)
+                    Text(kind.blurb)
+                        .font(.footnote)
+                        .foregroundStyle(Theme.inkSoft)
+                        .fixedSize(horizontal: false, vertical: true)
+                    price
+                    Text(ownedText)
+                        .font(.subheadline)
+                        .foregroundStyle(Theme.inkSoft)
+                        .monospacedDigit()
+                }
+                Spacer(minLength: 0)
+            }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(CrateCopy.name(kind))
+            .accessibilityValue(spoken)
+
+            if kind.price == nil && owned == 0 {
+                Text(CrateCopy.mysteryHint)
+                    .font(.footnote)
+                    .foregroundStyle(Theme.inkSoft)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            if full {
+                Text(CrateCopy.shelfFull)
+                    .font(.footnote)
+                    .foregroundStyle(Theme.inkSoft)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            if kind.price != nil || owned > 0 {
+                let layout = typeSize.isAccessibilitySize
+                    ? AnyLayout(VStackLayout(spacing: 8))
+                    : AnyLayout(HStackLayout(spacing: 10))
+                layout {
+                    if let cost = kind.price {
+                        AppButton(title: "Buy", icon: "coin", kind: .secondary, action: buy)
+                            .disabled(coins < cost || full)
+                            .accessibilityLabel("Buy \(CrateCopy.name(kind).lowercased()) for \(CrateCopy.coins(cost))")
+                    }
+                    if owned > 0 {
+                        AppButton(title: "Open", systemIcon: "shippingbox", action: open)
+                            .accessibilityLabel("Open \(CrateCopy.name(kind).lowercased())")
+                    }
+                }
+                .padding(.top, 2)
+            }
+        }
+    }
+
+    /// The price, and how many coins are still missing. A crate that isn't
+    /// for sale says so in its blurb.
+    @ViewBuilder private var price: some View {
+        if let cost = kind.price {
+            HStack(spacing: 4) {
+                PixelItem(name: "coin").frame(width: 14, height: 14)
+                Text(cost, format: .number)
+                    .font(.subheadline.weight(.semibold))
+                    .monospacedDigit()
+                    .foregroundStyle(coins >= cost ? Theme.ink : Theme.inkSoft)
+            }
+            if coins < cost {
+                Text(CrateCopy.needMore(cost - coins))
+                    .font(.footnote)
+                    .foregroundStyle(Theme.danger)
+            }
+        }
+    }
+
+    /// A crate for sale with no room left for another; the store says no.
+    private var full: Bool { kind.price != nil && owned >= Crates.maxStack }
+
+    private var ownedText: String {
+        switch owned {
+        case 0: "None yet"
+        case 1: "1 to open"
+        default: "\(owned) to open"
+        }
+    }
+
+    private var spoken: String {
+        var parts: [String] = []
+        if let cost = kind.price {
+            parts.append(CrateCopy.coins(cost))
+            if coins < cost { parts.append("not enough coins") }
+        }
+        parts.append(ownedText.lowercased())
+        var text = "\(parts.joined(separator: ", ")). \(kind.blurb)"
+        if full { text += " \(CrateCopy.shelfFull)" }
+        return text
     }
 }
 

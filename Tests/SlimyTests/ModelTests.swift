@@ -293,11 +293,16 @@ final class PersistenceTests: XCTestCase {
 }
 
 final class IslandStateTests: XCTestCase {
-    func testMeetupFallsBackToSoloWhenStale() {
+    func testMeetupFallsBackToSoloWhenStale() throws {
         var game = GameState()
         game.hatch(name: "Testi", skin: .lime, seed: 1, now: noon)
-        let friend = FriendSlime(id: "dev_a", name: "Mochi", owner: "Anna", skin: .bubblegum, stage: .baby,
-                                 mood: .idle, love: 40, inLove: false, equipped: nil)
+        // Decoded the way the island receives it, so the test doesn't depend
+        // on every field of the friend's type (older fields are ignored).
+        let json = """
+        {"id": "dev_a", "name": "Mochi", "owner": "Anna", "skin": "bubblegum", "stage": "baby", "mood": "idle",
+         "love": 40, "inLove": false}
+        """
+        let friend = try JSONDecoder().decode(FriendSlime.self, from: Data(json.utf8))
         let state = SlimeActivityAttributes.ContentState(game, at: noon, friends: [friend], moment: .meetup, momentFriend: "dev_a")
         XCTAssertEqual(state.anim, .meet)
         XCTAssertEqual(state.partner?.id, "dev_a")
@@ -305,9 +310,38 @@ final class IslandStateTests: XCTestCase {
 
         let solo = state.solo
         XCTAssertNil(solo.moment)
-        XCTAssertNil(solo.partner)          // not in love, so no partner once the moment ends
+        XCTAssertNil(solo.partner)          // no moment, so no partner
         XCTAssertNotEqual(solo.anim, .meet)
         XCTAssertEqual(solo.line, state.baseLine)
+    }
+
+    /// An island state as Slimy 1.0 wrote it: the friends carry the old love
+    /// meter, and `moment` may be 1.0's "love" moment.
+    private func versionOneState(moment: String?) throws -> SlimeActivityAttributes.ContentState {
+        let shared = moment.map { ", \"moment\": \"\($0)\"" } ?? ""
+        let json = """
+        {"name": "Testi", "skin": "lime", "stage": "young", "mood": "idle", "reaction": "none", "anchor": 0,
+         "hunger": 50, "fun": 50, "energy": 50, "clean": 50, "love": 50, "level": 3, "coins": 10,
+         "line": "Mochi: hi", "baseLine": "hi", "momentFriend": "dev_a",
+         "friends": [{"id": "dev_a", "name": "Mochi", "owner": "Anna", "skin": "bubblegum", "stage": "baby",
+                      "mood": "idle", "love": 100, "inLove": true}]\(shared)}
+        """
+        return try JSONDecoder().decode(SlimeActivityAttributes.ContentState.self, from: Data(json.utf8))
+    }
+
+    func testVersionOneLoveMomentStillDecodesAsAHug() throws {
+        // A Live Activity started by 1.0 keeps running after the update.
+        let old = try versionOneState(moment: "love")
+        XCTAssertEqual(old.moment, .hug)
+        XCTAssertEqual(old.anim, .love)
+        XCTAssertEqual(old.partner?.id, "dev_a")
+        XCTAssertEqual(old.friends?.first?.name, "Mochi")
+        XCTAssertNil(old.solo.partner)
+
+        // No moment, so no partner, even with a friend named.
+        let calm = try versionOneState(moment: nil)
+        XCTAssertNil(calm.moment)
+        XCTAssertNil(calm.partner)
     }
 
     func testPhoneEventShowsBrieflyAndFallsBack() {

@@ -7,7 +7,7 @@ set -euo pipefail
 
 src="$1"
 branch="ci-screenshots"
-order=(home gift kitchen shop journal friends settings chat arcade bath)
+order=(home gift crates kitchen shop journal friends care settings chat arcade bath)
 
 shopt -s nullglob
 pngs=("$src"/*.png)

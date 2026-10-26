@@ -1,6 +1,7 @@
 """Hand-drawn pixel sprites that aren't the slime: food, game icons,
-accessories and furniture. Each sprite has its own palette; "." is empty
-and "k" is always the dark outline colour.
+accessories, furniture and loot crates, plus the colours of the axolotl
+skin. Each sprite has its own palette; "." is empty and "k" is always the
+dark outline colour.
 """
 
 INK = 0x1B241F
@@ -347,6 +348,128 @@ ITEMS = {
         "....d.....",
     ]),
 }
+
+# ------------------------------------------------------------------ crates
+# Loot crates, 14 x 14. Closed and open share their bottom six rows, so the
+# opening screen can swap one for the other and only the lid moves: closed,
+# the lid sits on the box (rows 4-7) and rows 0-3 stay empty; open, the lid
+# stands up behind the box (rows 0-3) and the dark inside shows. Nothing
+# glows: the mystery crate's keyhole is flat light pixels.
+
+_WOOD = {"k": 0x3B2414, "y": 0xE6B577, "o": 0xC98A4B, "b": 0xA8693A, "d": 0x6E4220,
+         "g": 0x7E8A84, "w": 0xC9D3C2, "i": 0x24160C}
+_GOLD = {"k": 0x5A3A0A, "y": 0xFFD166, "o": 0xE8A23A, "d": 0xB8781F, "w": 0xFFF5D6,
+         "r": 0xE8524A, "p": 0xFFB3A8, "i": 0x2E1E06}
+_MYSTERY = {"k": 0x1E1640, "v": 0x7A5BE0, "p": 0xA58BFF, "d": 0x4A3A9A, "t": 0x2FB8A8,
+            "c": 0x8FF0E0, "w": 0xF0FFFC, "i": 0x120C2A}
+
+_WOOD_BOX = [
+    "kgoooowwoooogk",
+    "kgddddddddddgk",
+    "kgobooooobbogk",
+    "kgddddddddddgk",
+    "kgbbbbbbbbbbgk",
+    "kkkkkkkkkkkkkk",
+]
+_GOLD_BOX = [
+    "kdyoyyrpyyoydk",
+    "kdwoyyddyyoydk",
+    "kdyoyyyyyyoydk",
+    "kdyoyyyyyyoydk",
+    "kdoooooooooodk",
+    "kkkkkkkkkkkkkk",
+]
+_MYSTERY_BOX = [
+    "kdvvvcwwcvvvdk",
+    "kdvvcwwwwcvvdk",
+    "kdvvvcwwcvvvdk",
+    "kdvvvtwwtvvvdk",
+    "kdddddttdddddk",
+    "kkkkkkkkkkkkkk",
+]
+
+CRATES = {
+    "crate.wooden": (_WOOD, [
+        "..............",
+        "..............",
+        "..............",
+        "..............",
+        ".kkkkkkkkkkkk.",
+        "kyyyyyyyyyyybk",
+        "kgoooooooooogk",
+        "kkkkkkwwkkkkkk",
+    ] + _WOOD_BOX),
+    "crate.wooden.open": (_WOOD, [
+        ".kkkkkkkkkkkk.",
+        ".kbbbbbbbbbbk.",
+        ".kddddddddddk.",
+        ".kbbbbbbbbbbk.",
+        "kkkkkkkkkkkkkk",
+        "kyiiiiiiiiiiyk",
+        "kyiiiiiiiiiiyk",
+        "kkkkkkkkkkkkkk",
+    ] + _WOOD_BOX),
+    "crate.golden": (_GOLD, [
+        "..............",
+        "..............",
+        "..............",
+        "..............",
+        ".kkkkkkkkkkkk.",
+        "kwwoyyyyyyoyyk",
+        "kdyoyyyyyyoydk",
+        "kkkkkkrrkkkkkk",
+    ] + _GOLD_BOX),
+    "crate.golden.open": (_GOLD, [
+        ".kkkkkkkkkkkk.",
+        ".kooooooooook.",
+        ".koddddddddok.",
+        ".kooooooooook.",
+        "kkkkkkkkkkkkkk",
+        "kyiiiiwiiiiiyk",
+        "kyiiwiiiiiwiyk",
+        "kkkkkkkkkkkkkk",
+    ] + _GOLD_BOX),
+    "crate.mystery": (_MYSTERY, [
+        "..............",
+        "..............",
+        "..............",
+        "..............",
+        ".kkkkkkkkkkkk.",
+        "kpppppppppppvk",
+        "ktvvvvvvvvvvtk",
+        "kttttttttttttk",
+    ] + _MYSTERY_BOX),
+    "crate.mystery.open": (_MYSTERY, [
+        ".kkkkkkkkkkkk.",
+        ".kvvvvvvvvvvk.",
+        ".kvddddddddvk.",
+        ".kvvvvvvvvvvk.",
+        "kkkkkkkkkkkkkk",
+        "kpiiciiiiciipk",
+        "kpiiiicciiiipk",
+        "kttttttttttttk",
+    ] + _MYSTERY_BOX),
+}
+ITEMS.update(CRATES)
+
+for _name in [n for n in CRATES if not n.endswith(".open")]:
+    _closed, _opened = CRATES[_name][1], CRATES[_name + ".open"][1]
+    assert len(_closed) == len(_opened) == 14, _name
+    assert all(len(r) == 14 for r in _closed + _opened), _name
+    assert _closed[8:] == _opened[8:], _name
+    assert all(set(r) == {"."} for r in _closed[:4]), _name
+
+# ----------------------------------------------------------------- axolotl
+# The secret legendary colour (Skin.axolotl). Its four layer colours work
+# like any skin's; on top of every frame tools/make_slime.py draws an overlay
+# with frilly gills on both sides of the head and pink cheeks:
+#   g gill tips, d gill stems, p cheeks (the same pink as a blush, Brand.warm).
+# The island has one font for the whole overlay, drawn in AXOLOTL_ISLAND.
+# The "axolotl" reward icon is the baby axolotl itself, built by make_slime.py.
+
+AXOLOTL_SKIN = {"body": 0xFFC4D8, "shade": 0xF08DB0, "ink": 0x4A1736, "shine": 0xFFFFFF}
+AXOLOTL_OVERLAY = {"g": 0xF0628F, "d": 0xC93A6E, "p": 0xF07A9A}
+AXOLOTL_ISLAND = 0xF0628F
 
 # ------------------------------------------------------------ accessories
 # Placement: "hat" sits on the head, "glasses" on the eyes, "scarf" is

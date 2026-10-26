@@ -81,7 +81,7 @@ private struct ExpandedTrailing: View {
     let state: IslandState
 
     var body: some View {
-        if state.moment != nil, let partner = state.partner {
+        if let partner = state.partner {
             // A shared moment: the friend faces you, playing the same animation.
             IslandPortrait(name: partner.name, alignment: .trailing) {
                 IslandSlime(friend: partner, state: state, height: 34)
@@ -119,7 +119,6 @@ private struct ExpandedTrailing: View {
     }
 
     private var caption: String {
-        if let p = state.partner { return p.inLove ? "in love" : "\(p.love)% love" }
         let n = state.friends?.count ?? 0
         return n == 1 ? "1 friend" : "\(n) friends"
     }
@@ -189,7 +188,7 @@ struct LockScreenSlime: View {
             // The header next to it names the player's slime; friends speak for themselves.
             IslandSlime(state, height: 50)
                 .accessibilityHidden(true)
-            if state.moment != nil, let partner = state.partner {
+            if let partner = state.partner {
                 IslandSlime(friend: partner, state: state, height: 50)
             } else if state.friends?.isEmpty == false {
                 FriendGroup(state: state, height: 40, limit: 2)
@@ -211,10 +210,11 @@ struct LockScreenSlime: View {
             Text(state.name)
                 .font(IslandType.title)
                 .lineLimit(1)
-            if state.moment != nil, let partner = state.partner {
+            if let moment = state.moment, let partner = state.partner {
                 HStack(spacing: 3) {
-                    Image(systemName: "heart.fill")
+                    Image(systemName: moment.symbol)
                         .foregroundStyle(.pink)
+                        .accessibilityHidden(true)
                     Text("with \(partner.name)")
                         .foregroundStyle(.secondary)
                 }

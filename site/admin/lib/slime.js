@@ -61,32 +61,37 @@ export async function paintAvatar(canvas, skin, stage) {
   }
   const frames = (Object.hasOwn(data.frames, `${stage}.idle`) ? data.frames[`${stage}.idle`] : null) ?? data.frames["young.idle"];
   if (!frames?.length) return false;
-  const [b, sh, k, w] = Object.hasOwn(mod.SKINS, skin) ? mod.SKINS[skin] : mod.SKINS.lime;
+  const known = Object.hasOwn(mod.SKINS, skin);
+  const [b, sh, k, w] = known ? mod.SKINS[skin] : mod.SKINS.lime;
   const colors = { b, s: sh, k, w, r: WARM, c: COOL };
   const rows = frames[0];
-  // Centre the drawn pixels: small stages sit at the bottom of the frame.
+  // Some skins draw extra pixels over the body (the site's overlayFor()).
+  const overlay = known && typeof mod.overlayFor === "function" ? mod.overlayFor(skin, stage || "young", "idle", 0) : null;
+  // Centre the drawn pixels, overlay included: small stages sit at the bottom of the frame.
   let top = rows.length;
   let bottom = -1;
   let left = data.width;
   let right = -1;
-  rows.forEach((line, y) => {
+  const measure = (lines, palette) => lines.forEach((line, y) => {
     for (let x = 0; x < line.length; x++) {
-      if (!colors[line[x]]) continue;
+      if (!palette[line[x]]) continue;
       top = Math.min(top, y);
       bottom = Math.max(bottom, y);
       left = Math.min(left, x);
       right = Math.max(right, x);
     }
   });
+  measure(rows, colors);
+  if (overlay?.rows && overlay.colors) measure(overlay.rows, overlay.colors);
   if (bottom < 0) return false;
   const dx = Math.floor((data.width - (right - left + 1)) / 2) - left;
   const dy = Math.floor((data.height - (bottom - top + 1)) / 2) - top;
   canvas.width = data.width;
   canvas.height = data.height;
   const ctx = canvas.getContext("2d");
-  rows.forEach((line, y) => {
+  const paintRows = (lines, palette) => lines.forEach((line, y) => {
     for (let x = 0; x < line.length; x++) {
-      const fill = colors[line[x]];
+      const fill = palette[line[x]];
       if (!fill) continue;
       let end = x;
       while (end + 1 < line.length && line[end + 1] === line[x]) end++;
@@ -95,6 +100,8 @@ export async function paintAvatar(canvas, skin, stage) {
       x = end;
     }
   });
+  paintRows(rows, colors);
+  if (overlay?.rows && overlay.colors) paintRows(overlay.rows, overlay.colors);
   return true;
 }
 
@@ -118,6 +125,8 @@ export async function skinInfo(skin) {
   if (!mod) return { title: skin ?? "Unknown", color: null };
   const known = Object.hasOwn(mod.SKINS, skin);
   const tone = known ? mod.SKINS[skin] : null;
-  const title = known && mod.SKIN_TITLES && Object.hasOwn(mod.SKIN_TITLES, skin) ? mod.SKIN_TITLES[skin] : skin;
+  const title = known && mod.SKIN_TITLES && Object.hasOwn(mod.SKIN_TITLES, skin)
+    ? mod.SKIN_TITLES[skin]
+    : typeof skin === "string" && skin ? skin[0].toUpperCase() + skin.slice(1) : null;
   return { title: title ?? "Unknown", color: tone ? tone[0] : null, shade: tone ? tone[1] : null };
 }

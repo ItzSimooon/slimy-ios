@@ -11,6 +11,8 @@ enum GameEvent: Hashable {
     /// The slime turned this many years old today.
     case birthday(Int)
     case holiday(Holiday)
+    /// A crate turned up (every fifth level, after a great round).
+    case crate(CrateKind, CrateSource)
 }
 
 struct Outcome {
@@ -22,8 +24,8 @@ struct Outcome {
 extension GameState {
     // MARK: Time
 
-    /// Moves the world to `now`: needs, sleep, daily challenges, special
-    /// days, achievements.
+    /// Moves the world to `now`: needs, sleep and feelings, daily
+    /// challenges, special days, achievements.
     @discardableResult
     mutating func tick(now: Date, calendar: Calendar = .current) -> [GameEvent] {
         guard hatched else { return [] }
@@ -48,6 +50,9 @@ extension GameState {
             inventory.owned.insert("furn.cake")
             slime.needs.add(.love, 15)
             slime.needs.add(.fun, 15)
+            slime.feel(.joy, 0.5)
+            slime.feel(.excitement, 0.4)
+            slime.feel(.love, 0.2)
             memory.add(MemoryEntry(kind: .birthday, at: now, detail: "\(years)", keepsake: true))
             // A birthday that starts at midnight doesn't wake it up.
             if !slime.isAsleep {
@@ -60,6 +65,8 @@ extension GameState {
         if let holiday = Holiday.at(now, calendar: calendar),
            wallet.claim(holiday.receipt(year: year), coins: holiday.coins, at: now) {
             memory.add(MemoryEntry(kind: .holiday, at: now, detail: holiday.rawValue, keepsake: true))
+            slime.feel(.joy, 0.3)
+            slime.feel(.excitement, 0.3)
             if !slime.isAsleep {
                 slime.react(.celebrate, at: now)
                 let line = Dialogue.say(holiday.lines, in: &self, at: now, calendar: calendar)
@@ -82,6 +89,9 @@ extension GameState {
         player.lastSeen = now
         guard away > 4 * 3600, !slime.isAsleep else { return nil }
         let days = Int(away / 86400)
+        // Glad you're back, whatever the time away.
+        slime.feel(.joy, days >= 2 ? 0.4 : 0.25)
+        slime.feel(.love, days >= 2 ? 0.25 : 0.15)
         let line: String
         var rng = SplitMix(seed: SplitMix.seed("arrive\(Int(now.timeIntervalSince1970 / 60))"))
         if days >= 2 {
@@ -103,6 +113,8 @@ extension GameState {
         slime.birthday = now
         slime.lastUpdate = now
         slime.react(.wave, at: now)
+        slime.feel(.curiosity, 0.4)
+        slime.feel(.joy, 0.2)
         hatched = true
         player.lastSeen = now
         memory.add(MemoryEntry(kind: .hatched, at: now, detail: slime.name, keepsake: true))
@@ -111,31 +123,47 @@ extension GameState {
 
     // MARK: Care
 
+    /// Feeds the slime. A free serving from the pantry is used first; then
+    /// it costs the food's price.
     mutating func feed(_ food: Food, now: Date) -> Outcome {
         tick(now: now)
-        guard slime.level >= food.unlockLevel else {
+        let fromPantry = servings(of: food) > 0
+        guard fromPantry || slime.level >= food.unlockLevel else {
             return Outcome(ok: false, line: "\(food.title) unlocks at level \(food.unlockLevel).")
         }
-        guard wallet.coins >= food.price else {
+        guard fromPantry || wallet.coins >= food.price else {
             return Outcome(ok: false, line: Dialogue.say(.noCoins, in: &self, at: now))
         }
         guard slime.needs.hunger < 97 else {
             return Outcome(ok: false, line: Dialogue.say(.stuffed, in: &self, at: now))
         }
-        _ = wallet.spend(food.price)
+        if fromPantry {
+            let left = servings(of: food) - 1
+            inventory.pantry[food] = left > 0 ? left : nil
+        } else {
+            _ = wallet.spend(food.price)
+        }
         slime.isAsleep = false
         let isFavorite = food == slime.favorite
         slime.needs.add(.hunger, food.nutrition * (isFavorite ? 1.3 : 1))
         slime.needs.add(.fun, food.funBonus)
         if food == .starJelly {
             for need in Need.allCases { slime.needs.add(need, 20) }
+            slime.feel(.excitement, 0.3)
         }
-        if isFavorite { slime.needs.add(.love, 6) }
+        if isFavorite {
+            slime.needs.add(.love, 6)
+            slime.feel(.joy, 0.3)
+            slime.feel(.love, 0.2)
+        } else {
+            slime.feel(.joy, 0.15 + 0.1 * slime.personality.foodie)
+        }
         inventory.foodsTasted.insert(food)
         progress.stats.feeds += 1
         slime.bond = min(100, slime.bond + 0.5)
         slime.personality.drift(.foodie)
         slime.react(.eat, at: now)
+        noteCare(.feed, food: food, now: now)
 
         var events: [GameEvent] = []
         var line: String
@@ -162,10 +190,16 @@ extension GameState {
         tick(now: now)
         slime.recentPets = slime.recentPets.filter { now.timeIntervalSince($0) < 600 } + [now]
         let streak = slime.recentPets.count
+        let loveBefore = slime.needs.love
         slime.needs.add(.love, max(2, 14 - Double(streak - 1) * 4))
+        let loveGiven = slime.needs.love - loveBefore
         slime.needs.add(.fun, 2)
         progress.stats.pets += 1
         slime.personality.drift(.cuddly, by: 0.002)
+        // Each pet in a row means a little less.
+        slime.feel(.love, 0.18 * max(0.25, 1 - Double(streak - 1) * 0.2))
+        slime.feel(.joy, 0.05)
+        noteCare(.pet, amount: loveGiven, now: now)
         var line: String
         var events: [GameEvent] = []
         if slime.isAsleep {
@@ -197,8 +231,17 @@ extension GameState {
         progress.stats.baths += 1
         slime.bond = min(100, slime.bond + 0.5)
         slime.react(.bath, at: now)
+        // Some slimes are grumpy about baths for a little while.
+        let grumpy = slime.personality.dislikesBaths
+        if grumpy {
+            slime.feel(.anger, 0.3)
+            slime.feel(.joy, 0.1)
+        } else {
+            slime.feel(.joy, 0.3)
+        }
+        noteCare(.bath, now: now)
         memory.add(MemoryEntry(kind: .bath, at: now))
-        var line = Dialogue.say(.bath, in: &self, at: now)
+        var line = Dialogue.say(grumpy ? .bathGrumpy : .bath, in: &self, at: now)
         var events = gainXP(6, now: now, line: &line)
         events += checkAchievements(now: now)
         slime.say = Utterance(text: line, at: now)
@@ -214,6 +257,9 @@ extension GameState {
         slime.reaction = .none
         progress.stats.sleeps += 1
         slime.personality.drift(.sleepy, by: 0.002)
+        slime.feel(.sleepiness, 0.1)
+        slime.feel(.excitement, -0.2)
+        noteCare(.sleep, now: now)
         let line = Dialogue.say(.sleep, in: &self, at: now)
         slime.say = Utterance(text: line, at: now)
         return Outcome(ok: true, line: line, events: checkAchievements(now: now))
@@ -223,8 +269,16 @@ extension GameState {
         tick(now: now)
         slime.isAsleep = false
         let tired = slime.needs.energy < 50
-        if tired { slime.needs.add(.fun, -5) }
+        if tired {
+            slime.needs.add(.fun, -5)
+            slime.feel(.sleepiness, 0.15)
+            slime.feel(.anger, 0.1)
+        } else {
+            slime.feel(.joy, 0.1)
+            slime.feel(.sleepiness, -0.3)
+        }
         slime.react(.stretch, at: now)
+        noteCare(.wake, now: now)
         let line = Dialogue.say(tired ? .wakeTired : .wake, in: &self, at: now)
         slime.say = Utterance(text: line, at: now)
         return Outcome(ok: true, line: line)
@@ -241,7 +295,8 @@ extension GameState {
     }
 
     /// Pays out a finished round once. A second call with the same session
-    /// changes nothing.
+    /// changes nothing. A great round sometimes brings a mystery crate,
+    /// decided by the round's session.
     mutating func finish(_ result: GameResult) -> Outcome {
         let now = result.finishedAt
         tick(now: now)
@@ -258,11 +313,14 @@ extension GameState {
         if favorite { slime.bond = min(100, slime.bond + 1) }
         slime.personality.drift(.playful)
         progress.stats.plays += 1
-        if result.score >= result.goodScore { progress.stats.goodGames += 1 }
+        let great = result.score >= result.goodScore
+        if great { progress.stats.goodGames += 1 }
         if game == .daily, let day = result.day, var quest = progress.quest, quest.day == day {
             quest.best = max(quest.best, result.score)
             progress.quest = quest
         }
+        let ratio = Double(max(0, result.score)) / Double(result.goodScore)
+        noteCare(.play, game: game, amount: ratio * 100, now: now)
 
         var record = progress.records[game] ?? GameRecord()
         // Every day's game is different, so its scores aren't records.
@@ -284,14 +342,23 @@ extension GameState {
         if isRecord {
             events.append(.record(game, result.score))
             memory.add(MemoryEntry(kind: .highScore, at: now, detail: "\(game.rawValue):\(result.score)", keepsake: true))
+            slime.feel(.joy, 0.35)
+            slime.feel(.excitement, 0.4)
             line = Dialogue.say(.highScore, in: &self, context: ctx, at: now)
             slime.react(.celebrate, at: now)
         } else if result.score < result.goodScore / 4 {
+            slime.feel(.excitement, 0.15)
+            slime.feel(.joy, 0.05)
             line = Dialogue.say(.lowScore, in: &self, context: ctx, at: now)
             slime.react(.play, at: now)
         } else {
+            slime.feel(.excitement, 0.3)
+            slime.feel(.joy, great ? 0.15 : 0.08)
             line = Dialogue.say(.played, in: &self, context: ctx, at: now)
             slime.react(.play, at: now)
+        }
+        if great, Crates.dropsAfterRound(result.session), addCrate(.mystery) {
+            events.append(.crate(.mystery, .greatRound))
         }
         memory.add(MemoryEntry(kind: .played, at: now, detail: "\(game.rawValue):\(result.score)"))
         player.xp += result.xp / 2
@@ -328,6 +395,8 @@ extension GameState {
         }
         progress.quest?.claimed = true
         slime.react(.celebrate, at: now)
+        slime.feel(.joy, 0.2)
+        slime.feel(.excitement, 0.15)
         var line = "+\(plan.quest.coins) coins"
         let events = gainXP(15, now: now, line: &line) + checkAchievements(now: now)
         return Outcome(ok: true, line: line, events: events)
@@ -356,6 +425,8 @@ extension GameState {
         inventory.owned.insert(item.id)
         progress.stats.purchases += 1
         slime.react(.celebrate, at: now)
+        slime.feel(.joy, 0.15)
+        slime.feel(.curiosity, 0.1)
         let line = Dialogue.say(.bought, in: &self, context: .init(item: item.title), at: now)
         slime.say = Utterance(text: line, at: now)
         return Outcome(ok: true, line: line, events: checkAchievements(now: now))
@@ -371,6 +442,8 @@ extension GameState {
         inventory.habitats.insert(habitat)
         inventory.habitat = habitat
         slime.react(.curious, at: now)
+        slime.feel(.curiosity, 0.35)
+        slime.feel(.excitement, 0.2)
         let line = Dialogue.say(.bought, in: &self, context: .init(item: habitat.title), at: now)
         return Outcome(ok: true, line: line, events: checkAchievements(now: now))
     }
@@ -386,6 +459,7 @@ extension GameState {
             if let slot = item.slot { inventory.furniture[slot] = id }
         }
         slime.react(.blush, at: now)
+        slime.feel(.joy, 0.1)
         slime.say = Utterance(text: Dialogue.say(.equipped, in: &self, at: now), at: now)
     }
 
@@ -445,6 +519,7 @@ extension GameState {
             progress.challenges.weekly[i].claimed = true
         }
         player.xp += isDaily ? 10 : 30
+        slime.feel(.joy, isDaily ? 0.15 : 0.25)
         var line = "+\(template.coins) coins"
         var events: [GameEvent] = [.challenge(id)]
         events += gainXP(isDaily ? 8 : 25, now: now, line: &line)
@@ -456,6 +531,7 @@ extension GameState {
     mutating func handle(_ event: PhoneEvent, now: Date) -> String {
         tick(now: now)
         if let effect = event.effect { slime.needs.add(effect.need, effect.amount) }
+        if let feeling = event.feeling { slime.feel(feeling.emotion, feeling.amount) }
         if !slime.isAsleep || event.wakesUp {
             slime.isAsleep = false
             slime.react(event.reaction, at: now)
@@ -475,6 +551,9 @@ extension GameState {
         tick(now: now)
         slime.needs.add(.hunger, food.nutrition)
         slime.needs.add(.love, 8)
+        slime.feel(.joy, 0.3)
+        slime.feel(.excitement, 0.15)
+        slime.feel(.love, 0.15)
         inventory.foodsTasted.insert(food)
         progress.stats.giftsReceived += 1
         slime.react(.celebrate, at: now)
@@ -484,23 +563,34 @@ extension GameState {
         return line
     }
 
-    mutating func friendMoment(_ category: LineCategory, friend: String, fellInLove: Bool, now: Date) -> String {
+    /// Something done together with a friend's slime: a hug, a visit or a
+    /// gift sent. Counts it, cheers the slime up and returns its line.
+    mutating func friendMoment(_ category: LineCategory, friend: String, now: Date) -> String {
         tick(now: now)
-        slime.needs.add(.love, fellInLove ? 40 : 10)
+        slime.needs.add(.love, 10)
         slime.needs.add(.fun, 5)
         var levelLine = ""
-        _ = gainXP(fellInLove ? 50 : 4, now: now, line: &levelLine)
+        _ = gainXP(4, now: now, line: &levelLine)
         switch category {
-        case .gift: progress.stats.giftsSent += 1
-        case .friendVisit: progress.stats.visits += 1
-        case .friendHug: progress.stats.hugs += 1
-        default: break
+        case .gift:
+            progress.stats.giftsSent += 1
+            memory.add(MemoryEntry(kind: .gift, at: now, detail: friend))
+            slime.feel(.joy, 0.2)
+            slime.feel(.love, 0.1)
+        case .friendVisit:
+            progress.stats.visits += 1
+            memory.add(MemoryEntry(kind: .visit, at: now, detail: friend))
+            slime.feel(.joy, 0.25)
+            slime.feel(.excitement, 0.25)
+        case .friendHug:
+            progress.stats.hugs += 1
+            slime.feel(.love, 0.2)
+            slime.feel(.joy, 0.15)
+        default:
+            slime.feel(.joy, 0.15)
         }
-        if fellInLove {
-            memory.add(MemoryEntry(kind: .inLove, at: now, detail: friend, keepsake: true))
-        }
-        slime.react(fellInLove ? .celebrate : .love, at: now)
-        let line = Dialogue.say(fellInLove ? .inLove : category, in: &self, context: .init(friend: friend), at: now)
+        slime.react(category == .friendVisit ? .wave : .love, at: now)
+        let line = Dialogue.say(category, in: &self, context: .init(friend: friend), at: now)
         slime.say = Utterance(text: line, at: now)
         _ = checkAchievements(now: now)
         return line
@@ -509,6 +599,8 @@ extension GameState {
     mutating func madeFriend(_ friend: String, now: Date) {
         progress.stats.friends += 1
         memory.add(MemoryEntry(kind: .friendMade, at: now, detail: friend, keepsake: true))
+        slime.feel(.joy, 0.3)
+        slime.feel(.excitement, 0.25)
         slime.say = Utterance(text: Dialogue.say(.friendNew, in: &self, context: .init(friend: friend), at: now), at: now)
         _ = checkAchievements(now: now)
     }
@@ -527,39 +619,146 @@ extension GameState {
         return (wish, line)
     }
 
-    /// What it says when nothing in particular happened: what it needs
-    /// first, then birthday and season talk, the streak, closeness, the time
-    /// of day, or just idle thoughts.
+    /// How many of its most recent lines small talk never repeats.
+    static let chatterMemory = 12
+
+    /// Small talk: something that fits right now, picked from what it needs,
+    /// how it feels, what just happened (food, a game, a friend, the
+    /// partner's care, a crate), the season, where it lives, the weather,
+    /// the time of day and its character. Never one of its last 12 lines, and never a
+    /// guilt trip.
     mutating func chatter(now: Date, calendar: Calendar = .current) -> String {
         tick(now: now, calendar: calendar)
-        let hour = calendar.component(.hour, from: now)
-        let streakDays = streakInfo(at: now, calendar: calendar).current
-        let years = Birthday.years(born: slime.birthday, at: now, calendar: calendar) ?? 0
+        let recent = Set(memory.recentLines.suffix(Self.chatterMemory))
         // Deterministic per moment, like the lines themselves.
-        var rng = SplitMix(seed: SplitMix.seed("chatter\(Int(now.timeIntervalSince1970 / 30))"))
-        let roll = rng.unit()
-        let category: LineCategory
-        if slime.isAsleep {
-            category = .sleeping
-        } else if let wish = slime.wish {
-            category = Dialogue.category(for: wish)
-        } else if years > 0, roll < 0.5 {
-            category = .birthday
-        } else if let seasonal = Season.at(now, calendar: calendar).lines, roll < 0.3 {
-            category = seasonal
-        } else if streakDays >= 3, roll > 0.9 {
-            category = .streak
-        } else if slime.bond >= 50, hour % 3 == 0, roll < 0.6 {
-            category = .idleClose
-        } else if rng.unit() < 0.45 {
-            category = Dialogue.timeOfDay(hour: hour)
-        } else {
-            category = .idle
+        var rng = SplitMix(seed: SplitMix.seed(
+            "chatter\(Int(now.timeIntervalSince1970))|\(memory.lineUsedAt.count)|\(memory.recentLines.last ?? "")"))
+        var topics = chatterTopics(now: now, calendar: calendar)
+        while !topics.isEmpty {
+            let total = topics.reduce(0.0) { $0 + max(0, $1.weight) }
+            var roll = rng.unit() * total
+            var index = topics.count - 1
+            for (i, topic) in topics.enumerated() {
+                roll -= max(0, topic.weight)
+                if roll < 0 {
+                    index = i
+                    break
+                }
+            }
+            let topic = topics.remove(at: index)
+            if let line = Dialogue.fresh(topic.category, state: self, at: now, calendar: calendar,
+                                         avoiding: recent, using: &rng) {
+                return speak(line, context: topic.context, at: now)
+            }
         }
-        let context = LineContext(game: slime.favoriteGame.title, streak: streakDays, years: years)
-        let line = Dialogue.say(category, in: &self, context: context, at: now, calendar: calendar)
-        slime.say = Utterance(text: line, at: now)
-        return line
+        // Everything that fits was said lately: any line of the fallback
+        // kind it hasn't said in a while.
+        let fallback: LineCategory = slime.isAsleep ? .sleeping : .idle
+        let unsaid = (Dialogue.lines[fallback] ?? []).filter { !recent.contains($0.id) }
+        let line = unsaid.isEmpty
+            ? Dialogue.pick(fallback, state: self, at: now, calendar: calendar)
+            : unsaid[Int(rng.next() % UInt64(unsaid.count))]
+        return speak(line, context: LineContext(game: slime.favoriteGame.title), at: now)
+    }
+
+    /// One thing it could talk about, and how much it wants to.
+    struct ChatterTopic {
+        let category: LineCategory
+        let weight: Double
+        var context = LineContext()
+    }
+
+    /// What it could talk about right now, weighted.
+    func chatterTopics(now: Date, calendar: Calendar = .current) -> [ChatterTopic] {
+        let base = LineContext(game: slime.favoriteGame.title,
+                               streak: streakInfo(at: now, calendar: calendar).current,
+                               years: Birthday.years(born: slime.birthday, at: now, calendar: calendar) ?? 0)
+        if slime.isAsleep { return [ChatterTopic(category: .sleeping, weight: 1, context: base)] }
+        var topics: [ChatterTopic] = []
+
+        // What it would like, gently, a little more often the lower it gets.
+        let low = slime.needs.lowest
+        if low.value < 50 {
+            topics.append(ChatterTopic(category: Dialogue.category(for: low.need),
+                                       weight: 2 + 4 * (50 - low.value) / 50, context: base))
+        }
+
+        // How it feels: the leading feeling most, strong others too.
+        let feelings = slime.emotions
+        for e in Emotion.allCases where feelings[e] >= 0.3 {
+            let lead = e == feelings.dominant
+            topics.append(ChatterTopic(category: Dialogue.category(for: e),
+                                       weight: (lead ? 1.5 : 0.5) + 3.5 * feelings[e], context: base))
+        }
+
+        // What just happened.
+        func recent(_ kind: MemoryEntry.Kind, within window: TimeInterval) -> MemoryEntry? {
+            guard let entry = memory.last(kind) else { return nil }
+            let age = now.timeIntervalSince(entry.at)
+            return age >= 0 && age < window ? entry : nil
+        }
+        if let fed = recent(.fed, within: 15 * 60) {
+            var ctx = base
+            ctx.food = Food(rawValue: fed.detail)?.title.lowercased() ?? "snack"
+            topics.append(ChatterTopic(category: .afterFood, weight: 1.5, context: ctx))
+        }
+        if let played = recent(.played, within: 15 * 60) {
+            var ctx = base
+            let id = String(played.detail.split(separator: ":").first ?? "")
+            ctx.game = GameID(rawValue: id)?.title ?? slime.favoriteGame.title
+            topics.append(ChatterTopic(category: .afterGame, weight: 1.5, context: ctx))
+        }
+        if let cared = recent(.partnerCare, within: 20 * 60), let note = PartnerCareNote(detail: cared.detail) {
+            var ctx = base
+            ctx.friend = note.person
+            topics.append(ChatterTopic(category: .partnerCared, weight: 2, context: ctx))
+        }
+        let friendKinds: [MemoryEntry.Kind] = [.visit, .gift, .giftReceived, .friendMade]
+        if let friendly = memory.entries.last(where: { friendKinds.contains($0.kind) }), !friendly.detail.isEmpty {
+            let age = now.timeIntervalSince(friendly.at)
+            if age >= 0, age < 20 * 60 {
+                var ctx = base
+                ctx.friend = friendly.detail
+                topics.append(ChatterTopic(category: .afterFriend, weight: 1.5, context: ctx))
+            }
+        }
+        if let crate = recent(.crate, within: 15 * 60) {
+            var ctx = base
+            ctx.item = CrateFind(detail: crate.detail)?.title.lowercased() ?? "that"
+            topics.append(ChatterTopic(category: .afterCrate, weight: 1.5, context: ctx))
+        }
+
+        // Special days, the season, where it lives, the time of day.
+        if base.years > 0 { topics.append(ChatterTopic(category: .birthday, weight: 2.5, context: base)) }
+        let season = Season.at(now, calendar: calendar)
+        topics.append(ChatterTopic(category: season.talk, weight: season.lines != nil ? 1.4 : 0.6, context: base))
+        topics.append(ChatterTopic(category: Dialogue.category(for: inventory.habitat), weight: 0.7, context: base))
+        // The weather, wherever it can see the sky: outside or through the room's window.
+        if inventory.habitat.hasWeather || inventory.habitat == .room {
+            let sky = Sky.at(now, calendar: calendar)
+            if let talk = sky.talk {
+                topics.append(ChatterTopic(category: talk, weight: sky == .cloudy ? 0.6 : 1.3, context: base))
+            }
+        }
+        topics.append(ChatterTopic(category: Dialogue.timeOfDay(hour: calendar.component(.hour, from: now)),
+                                   weight: 1, context: base))
+
+        // Closeness, the streak and its character.
+        if slime.bond >= 50 { topics.append(ChatterTopic(category: .idleClose, weight: 0.8, context: base)) }
+        if base.streak >= 3 { topics.append(ChatterTopic(category: .streak, weight: 0.35, context: base)) }
+        if slime.personality.curious > 0.5 {
+            topics.append(ChatterTopic(category: .curious, weight: 0.4 * slime.personality.curious, context: base))
+        }
+        topics.append(ChatterTopic(category: .idle, weight: 1, context: base))
+        return topics
+    }
+
+    /// Says a line now and remembers it.
+    private mutating func speak(_ line: Line, context: LineContext, at now: Date) -> String {
+        memory.used(line: line.id, at: now)
+        let text = Dialogue.fill(line.text, context: context, state: self)
+        slime.say = Utterance(text: text, at: now, lineID: line.id)
+        return text
     }
 
     /// The line to show right now without changing anything.
@@ -574,6 +773,8 @@ extension GameState {
 
     // MARK: Progress
 
+    /// Adds xp. Every new level pays coins once; every fifth level also
+    /// brings a mystery crate.
     mutating func gainXP(_ amount: Int, now: Date, line: inout String) -> [GameEvent] {
         let levelBefore = slime.level
         let stageBefore = slime.stage
@@ -581,10 +782,15 @@ extension GameState {
         var events: [GameEvent] = []
         if slime.level > levelBefore {
             for level in (levelBefore + 1)...slime.level {
-                wallet.claim("level:\(level)", coins: 10 * level, at: now)
+                let paid = wallet.claim("level:\(level)", coins: 10 * level, at: now)
                 events.append(.levelUp(level))
                 memory.add(MemoryEntry(kind: .levelUp, at: now, detail: "\(level)", keepsake: level % 5 == 0))
+                if paid, level % 5 == 0, addCrate(.mystery) {
+                    events.append(.crate(.mystery, .levelUp))
+                }
             }
+            slime.feel(.joy, 0.3)
+            slime.feel(.excitement, 0.35)
             line = Dialogue.say(.levelUp, in: &self, context: .init(level: slime.level), at: now)
             slime.react(.celebrate, at: now)
         }
@@ -596,12 +802,15 @@ extension GameState {
         return events
     }
 
+    /// Awards every achievement that is newly done: its coins, xp, a memory
+    /// and, for some, a crate.
     @discardableResult
     mutating func checkAchievements(now: Date) -> [GameEvent] {
         var events: [GameEvent] = []
         for achievement in Achievements.all where progress.achievements[achievement.id] == nil && achievement.check(self) {
             progress.achievements[achievement.id] = now
             wallet.claim("achievement:\(achievement.id)", coins: achievement.coins, at: now)
+            if let crate = achievement.crate { addCrate(crate) }
             player.xp += 20
             memory.add(MemoryEntry(kind: .achievement, at: now, detail: achievement.id, keepsake: true))
             events.append(.achievement(achievement.id))

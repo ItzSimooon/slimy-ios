@@ -253,7 +253,7 @@ export default function devicesView(ctx) {
     const copy = {
       ban: {
         title: `Ban ${owner}'s device?`,
-        message: [h("p", null, "The device can't use friends, chat or any other online feature anymore. Its friend code stops working and it disappears from its friends' lists."),
+        message: [h("p", null, "The device can't use friends, chat or any other online feature anymore. Its friend code stops working, it disappears from its friends' lists, and caring together with it ends."),
           h("p", null, "You can unban it at any time.")],
         confirmLabel: "Ban device", destructive: true, run: () => api.ban(device.id), done: "Device banned.",
       },
@@ -269,7 +269,7 @@ export default function devicesView(ctx) {
       },
       delete: {
         title: `Delete ${owner}'s device?`,
-        message: [h("p", null, "This removes the device, its slime, friendships, friend requests, events and challenges, the same as deleting the data in the app."),
+        message: [h("p", null, "This removes the device, its slime, friendships, friend requests, events and challenges, the same as deleting the data in the app. If it cares for a slime together with someone, that ends for both."),
           h("p", { class: "sheet-warning" }, icon("warning"), "This can't be undone.")],
         confirmLabel: "Delete device", destructive: true, typed: "DELETE", run: () => api.deleteDevice(device.id), done: "Device deleted.",
       },
@@ -302,6 +302,24 @@ export default function devicesView(ctx) {
         onDone(result);
       }
     });
+  }
+
+  /** The person this device cares for one slime with (GET /admin/devices/:id, carePartner). */
+  function careGroup(data) {
+    // Older servers leave carePartner out: say nothing rather than "not sharing".
+    if (!("carePartner" in data)) return null;
+    const p = data.carePartner;
+    return group({
+      header: "Caring together",
+      footer: p ? "Both iPhones share one slime. Banning or deleting either device ends it for both." : null,
+    }, p?.id
+      ? row({
+        leading: h("span", { class: "row-icon tint-indigo" }, icon("heart")),
+        title: ownerOf(p),
+        subtitle: "Shares one slime with this device",
+        href: hrefFor(p.id),
+      })
+      : row({ title: h("span", { class: "muted" }, "Not sharing a slime") }));
   }
 
   function friendRow(f) {
@@ -381,8 +399,12 @@ export default function devicesView(ctx) {
       typeof data.reportsFiled === "number" ? row({ title: "Reports filed", value: fmtInt(data.reportsFiled) }) : null);
 
     const friendCount = typeof d.friends === "number" ? d.friends : friends.length;
-    const friendsGroup = group({ header: `Friends (${fmtInt(friendCount)})` },
-      ...(friends.length ? friends.map(friendRow) : [row({ title: h("span", { class: "muted" }, "No friends yet") })]));
+    const friendsGroup = group({
+      header: `Friends (${fmtInt(friendCount)})`,
+      footer: friends.some((f) => Number(f.love) > 0 || f.inLove)
+        ? "Love is a Slimy 1.0 feature. The server still counts it (hugs, visits and gifts from any app raise it) so older apps keep working; Slimy 1.1 doesn't show it."
+        : null,
+    }, ...(friends.length ? friends.map(friendRow) : [row({ title: h("span", { class: "muted" }, "No friends yet") })]));
 
     const reportsSection = h("section", { class: "group", "aria-labelledby": "dev-reports-h" },
       h("h2", { class: "group-header", id: "dev-reports-h" }, `Reports against this device (${fmtInt(reports.length)})`),
@@ -449,7 +471,7 @@ export default function devicesView(ctx) {
           : [row({ title: h("span", { class: "muted" }, "No scores uploaded yet") })]))
       : null;
 
-    return h("div", { class: "detail" }, hero, slimeGroup, deviceGroup, friendsGroup, recordsGroup, reportsSection, actionsGroup);
+    return h("div", { class: "detail" }, hero, slimeGroup, deviceGroup, careGroup(data), friendsGroup, recordsGroup, reportsSection, actionsGroup);
   }
 
   async function reloadDetail(host, id, opts) {

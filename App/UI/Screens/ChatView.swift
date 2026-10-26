@@ -93,12 +93,11 @@ struct ChatView: View {
         .accessibilityAddTraits(.isHeader)
     }
 
+    /// Offline, typing, or how the slime feels right now ("Feeling curious").
     private var status: String {
         if !friends.isOnline { return "Offline" }
         if chat.isThinking { return "Typing…" }
-        if slime.isAsleep { return "Sleepy" }
-        if slime.mood == .sad { return "Needs some care" }
-        return "Happy to talk"
+        return ChatMood.status(of: slime)
     }
 
     private var menu: some View {
@@ -142,8 +141,8 @@ struct ChatView: View {
                         .multilineTextAlignment(.center)
                         .fixedSize(horizontal: false, vertical: true)
                     Text(friends.isOnline
-                         ? "Ask how it feels, what it ate or who its friends are."
-                         : "Once you're online, you can ask how it feels, what it ate or who its friends are.")
+                         ? "Ask how it feels, what it ate or how its day is going."
+                         : "Once you're online, you can ask how it feels, what it ate or how its day is going.")
                         .font(.subheadline)
                         .foregroundStyle(Theme.inkSoft)
                         .multilineTextAlignment(.center)

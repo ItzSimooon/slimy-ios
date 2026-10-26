@@ -18,6 +18,18 @@ struct AccessorySprite: Decodable {
     let island: UInt32
 }
 
+/// Pixels a skin draws over every frame of the slime: the axolotl's frilly
+/// gills and pink cheeks. One grid per frame, in the same order as
+/// `SlimeSprites.frames`, with characters from `palette`.
+struct SkinOverlaySprite: Decodable {
+    /// The island's font layer for it: Slime-<Stage>-<Anim>-<layer>.
+    let layer: String
+    /// The one colour the island draws the whole overlay in.
+    let island: UInt32
+    let palette: [String: UInt32]
+    let frames: [String: [[String]]]
+}
+
 enum SlimeSprites {
     struct Bundle: Decodable {
         let width: Int
@@ -28,9 +40,11 @@ enum SlimeSprites {
         let items: [String: ItemSprite]
         let emoteIcons: [String: [String]]
         let emoteReels: [String: [String]]
+        /// By skin raw value; only skins with extra pixels are listed.
+        let skinOverlays: [String: SkinOverlaySprite]?
 
         static let empty = Bundle(width: 24, height: 20, frames: [:], anchors: [:], accessories: [:],
-                                  items: [:], emoteIcons: [:], emoteReels: [:])
+                                  items: [:], emoteIcons: [:], emoteReels: [:], skinOverlays: nil)
     }
 
     /// Loaded once, the first time any sprite is drawn.
@@ -57,6 +71,30 @@ enum SlimeSprites {
     static func anchors(_ stage: Stage, _ anim: SpriteAnim) -> [[Int]] {
         data.anchors["\(stage.rawValue).\(anim.rawValue)"] ?? []
     }
+
+    /// The overlay grid `skin` draws on `frame` (the axolotl's gills and
+    /// cheeks), or nil for plain colours and frames that aren't in the data.
+    static func overlay(_ skin: Skin, on frame: [String]) -> [String]? {
+        overlayIndex[skin.rawValue]?[frame]
+    }
+
+    /// Overlay grids by skin, found by the frame they belong to: a
+    /// `PixelSlime` only knows its frame's pixels. The generator makes sure
+    /// frames that look the same get the same overlay.
+    private static let overlayIndex: [String: [[String]: [String]]] = {
+        var index: [String: [[String]: [String]]] = [:]
+        for (skin, overlay) in data.skinOverlays ?? [:] {
+            var byFrame: [[String]: [String]] = [:]
+            for (key, grids) in overlay.frames {
+                guard let frames = data.frames[key] else { continue }
+                for (frame, grid) in zip(frames, grids) where byFrame[frame] == nil {
+                    byFrame[frame] = grid
+                }
+            }
+            index[skin] = byFrame
+        }
+        return index
+    }()
 }
 
 /// The animations, the same in app and island.
@@ -130,7 +168,8 @@ struct IconShape: Shape {
 
 // MARK: - Slime
 
-/// One frame of the slime, with accessories, drawn crisply at any size.
+/// One frame of the slime, with accessories, drawn crisply at any size. A
+/// skin with an overlay (the axolotl) adds its gills and cheeks on top.
 struct PixelSlime: View {
     let frame: [String]
     let skin: Skin
@@ -146,6 +185,9 @@ struct PixelSlime: View {
                     PixelGridShape(rows: frame, code: layer.code).fill(skin.color(for: layer))
                 }
             }
+            ForEach(skinLayers, id: \.id) { layer in
+                PixelGridShape(rows: layer.rows, code: layer.code).fill(layer.color)
+            }
             ForEach(accessoryLayers, id: \.id) { layer in
                 PixelGridShape(rows: layer.rows, code: layer.code).fill(layer.color)
             }
@@ -154,22 +196,33 @@ struct PixelSlime: View {
         .accessibilityHidden(true)
     }
 
-    private struct AccLayer {
+    private struct PaintLayer {
         let id: String
         let rows: [String]
         let code: Character
         let color: Color
     }
 
-    private var accessoryLayers: [AccLayer] {
+    /// The skin's own extra pixels for this frame, one layer per colour.
+    private var skinLayers: [PaintLayer] {
+        guard let overlay = skin.overlay, let grid = SlimeSprites.overlay(skin, on: frame) else { return [] }
+        var out: [PaintLayer] = []
+        for key in overlay.palette.keys.sorted() {
+            guard let ch = key.first, let hex = overlay.palette[key] else { continue }
+            out.append(PaintLayer(id: "skin.\(key)", rows: grid, code: ch, color: Color(hex: hex)))
+        }
+        return out
+    }
+
+    private var accessoryLayers: [PaintLayer] {
         guard let anchor, anchor.count >= 4 else { return [] }
-        var out: [AccLayer] = []
+        var out: [PaintLayer] = []
         for item in [accessories.scarf, accessories.glasses, accessories.hat].compactMap({ $0 }) {
             guard let sprite = SlimeSprites.data.accessories[item] else { continue }
             let grid = AccessoryPlacer.place(sprite, on: frame, anchor: anchor)
             for (key, hex) in sprite.palette {
                 guard let ch = key.first else { continue }
-                out.append(AccLayer(id: "\(item).\(key)", rows: grid, code: ch, color: Color(hex: hex)))
+                out.append(PaintLayer(id: "\(item).\(key)", rows: grid, code: ch, color: Color(hex: hex)))
             }
         }
         return out

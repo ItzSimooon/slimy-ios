@@ -1,15 +1,25 @@
 import { createHash, randomBytes, randomInt } from "node:crypto";
 
-/** An error with an HTTP status and an English message the app shows as is. */
+/**
+ * An error with an HTTP status and an English message the app shows as is.
+ * `extra` adds fields next to `error` in the answer (e.g. a 409 with the
+ * current state).
+ */
 export class HttpError extends Error {
-  constructor(status, message) {
+  constructor(status, message, extra = null) {
     super(message);
     this.status = status;
+    this.extra = extra;
+  }
+
+  /** The answer body: `{error, ...extra}`. */
+  get body() {
+    return { error: this.message, ...(this.extra ?? {}) };
   }
 }
 
-export const fail = (status, message) => {
-  throw new HttpError(status, message);
+export const fail = (status, message, extra = null) => {
+  throw new HttpError(status, message, extra);
 };
 
 /** ISO 8601 in UTC without milliseconds; Swift's .iso8601 rejects them. */
@@ -57,7 +67,7 @@ export const pair = (x, y) => (x < y ? [x, y] : [y, x]);
 // --- Input validation -------------------------------------------------------
 
 export const ENUMS = {
-  skin: ["lime", "bubblegum", "ocean", "grape", "lava", "gold", "ghost", "void"],
+  skin: ["lime", "bubblegum", "ocean", "grape", "lava", "gold", "ghost", "void", "axolotl"],
   mood: ["idle", "sad", "sleep"],
   stage: ["baby", "young", "grown"],
   food: ["apple", "carrot", "berry", "mushroom", "cookie", "soup", "honey", "pudding", "cake", "starJelly"],
@@ -68,6 +78,8 @@ export const ENUMS = {
   reaction: ["none", "eat", "play", "love", "bath", "melt", "zap", "confused", "wave", "celebrate", "stretch", "sulk",
     "hide", "curious", "blush"],
   reportReason: ["name", "harassment", "spam", "chat", "other"],
+  careKind: ["feed", "play", "bath", "pet", "sleep", "wake", "gift"],
+  emotion: ["joy", "sadness", "anger", "fear", "love", "curiosity", "boredom", "excitement", "sleepiness"],
 };
 
 export function text(value, field, { min = 1, max = 40, fallback } = {}) {
@@ -99,4 +111,13 @@ export function oneOf(value, field, list) {
 export function bool(value, field) {
   if (typeof value !== "boolean") fail(400, `"${field}" must be true or false.`);
   return value;
+}
+
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d{1,9})?)?(?:Z|[+-]\d{2}:?\d{2})$/;
+
+/** An ISO 8601 date with a time zone ("2026-10-25T12:00:00Z"), as milliseconds. */
+export function date(value, field) {
+  const ms = typeof value === "string" && ISO_DATE.test(value) ? Date.parse(value) : Number.NaN;
+  if (!Number.isFinite(ms)) fail(400, `"${field}" must be a date like 2026-10-25T12:00:00Z.`);
+  return ms;
 }

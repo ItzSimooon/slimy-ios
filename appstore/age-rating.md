@@ -19,15 +19,15 @@ Answer every question in App Store Connect → your app → **Age Rating** hones
 | Alcohol, tobacco or drug use or references | None | |
 | Medical or treatment information | None | The chat is told not to give health advice and points people to someone they trust. |
 | Health or wellness topics | None | Needs like "energy" and "clean" belong to the pet, not to the user. |
-| Mature or suggestive themes | None | Slimes can "fall in love" and give a "kiss": a heart animation between two blobs, nothing more. |
+| Mature or suggestive themes | None | There is no romance between slimes (1.1 removed the love meter and kisses of 1.0). Hearts stand for petting and care. |
 | Sexual content or nudity | None | |
 | Cartoon or fantasy violence | None | No fighting; obstacles in games are rocks and puddles. |
 | Realistic violence | None | |
 | Guns or other weapons | None | |
-| Simulated gambling | None | Treasure Dig is a deduction game; the daily gift is free and cannot be bought. |
+| Simulated gambling | None | Treasure Dig is a deduction game; the daily gift is free and cannot be bought. Crates hold random game items, but they are opened with coins earned in the game, never with money, and there are no casino-style games, bets or payouts. |
 | Gambling (real money) | No | |
 | Contests | No | |
-| Loot boxes (paid random items) | No | Nothing can be bought with real money. |
+| Loot boxes (paid random items) | No | Crates hold random items, but nothing can be bought with real money: coins are only earned in the game, and the app shows the drop rates anyway. If App Store Connect's wording counts random rewards bought with in-game currency, answer Yes and keep the drop rates note. |
 | Made for Kids | No | Slimy is not in the Kids category and must not use "for kids" wording in metadata (Guideline 2.3.8). |
 
 ## Getting to 13+

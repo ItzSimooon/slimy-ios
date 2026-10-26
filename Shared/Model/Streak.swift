@@ -14,8 +14,6 @@ struct StreakState: Codable, Hashable {
     var best = 0
     /// Gifts opened in total. Moves the seven-day calendar along.
     var opened = 0
-    /// The item handed out on the most recent seventh day, if any.
-    var lastItem: String?
 }
 
 /// One gift in the seven-day calendar.
@@ -25,26 +23,31 @@ struct DailyGift: Hashable, Identifiable {
     /// 1...7: its place in this week's calendar.
     let day: Int
     let coins: Int
-    /// A catalog item. Only ever on the seventh day.
+    /// A catalog item, if the gift holds one.
     let item: String?
+    /// A crate. The seventh day brings a mystery crate.
+    var crate: CrateKind? = nil
 
     var id: Int { day }
     var isSpecial: Bool { day == Self.days }
 
-    /// "20 coins" or the item's name.
+    /// "20 coins", the crate or the item's name.
     var title: String {
+        if let crate { return crate.title }
         if let item, let entry = Catalog.item(item) { return entry.title }
         return "\(coins) coins"
     }
 
-    /// Everything in it: "20 coins", or "Treasure chest and 60 coins".
+    /// Everything in it: "20 coins", or "Mystery crate and 60 coins".
     var summary: String {
+        if let crate { return "\(crate.title) and \(coins) coins" }
         if let item, let entry = Catalog.item(item) { return "\(entry.title) and \(coins) coins" }
         return "\(coins) coins"
     }
 
     /// Item sprite for tiles and celebrations.
     var icon: String {
+        if let crate { return crate.sprite }
         if let item, let entry = Catalog.item(item) { return entry.sprite }
         return "coin"
     }
@@ -75,12 +78,10 @@ struct StreakInfo: Equatable {
 }
 
 enum Streak {
-    /// Coins for days 1 to 7. The seventh day also brings an item.
+    /// Coins for days 1 to 7. The seventh day also brings a crate.
     static let coins = [10, 15, 20, 25, 30, 40, 60]
-    /// Handed out on seventh days, in this order, until all are owned.
-    static let specialItems = ["furn.chest", "furn.crystal", "furn.flag"]
-    /// Extra coins on a seventh day once every special item is owned.
-    static let bonusWhenAllOwned = 60
+    /// The crate on every seventh day.
+    static let weekCrate: CrateKind = .mystery
     /// Streak lengths that go into the memory book.
     static let milestones: Set<Int> = [7, 30, 100, 365]
     static let xp = 8
@@ -127,17 +128,9 @@ extension GameState {
         let alive = gap.map { (-1...1).contains($0) } ?? false
         let done = max(0, claimedToday ? streak.opened - 1 : streak.opened)
         let index = done % DailyGift.days
-        let special: String?
-        if claimedToday && index == DailyGift.days - 1 {
-            special = streak.lastItem
-        } else {
-            special = Streak.specialItems.first(where: { !owns($0) })
-        }
         let week = (0..<DailyGift.days).map { i -> DailyGift in
             let last = i == DailyGift.days - 1
-            return DailyGift(day: i + 1,
-                             coins: Streak.coins[i] + (last && special == nil ? Streak.bonusWhenAllOwned : 0),
-                             item: last ? special : nil)
+            return DailyGift(day: i + 1, coins: Streak.coins[i], item: nil, crate: last ? Streak.weekCrate : nil)
         }
         var next: Date?
         if hatched, !canClaim {
@@ -150,7 +143,7 @@ extension GameState {
                           week: week, nextGift: next)
     }
 
-    /// Opens today's gift: pays its coins (and on day 7 its item), extends
+    /// Opens today's gift: pays its coins (and on day 7 its crate), extends
     /// the streak and checks achievements. Nil if there's nothing to open.
     mutating func claimDailyGift(now: Date, calendar: Calendar = .current) -> (gift: DailyGift, outcome: Outcome)? {
         tick(now: now, calendar: calendar)
@@ -166,8 +159,8 @@ extension GameState {
         streak.best = max(streak.best, streak.count)
         streak.lastDay = today
         streak.opened += 1
-        if gift.isSpecial { streak.lastItem = gift.item }
         if let item = gift.item { inventory.owned.insert(item) }
+        if let crate = gift.crate { addCrate(crate) }
         if Streak.milestones.contains(streak.count) {
             memory.add(MemoryEntry(kind: .streak, at: now, detail: "\(streak.count)", keepsake: true))
         }
@@ -176,10 +169,13 @@ extension GameState {
         slime.needs.add(.love, 5)
         slime.needs.add(.fun, 4)
         slime.bond = min(100, slime.bond + 0.5)
+        slime.feel(.joy, 0.2)
+        slime.feel(.excitement, gift.isSpecial ? 0.35 : 0.2)
         slime.react(.celebrate, at: now)
+        noteCare(.gift, now: now)
 
         let category: LineCategory
-        if gift.item != nil {
+        if gift.isSpecial {
             category = .giftWeek
         } else if startedOver {
             category = .streakFresh
@@ -205,6 +201,5 @@ extension StreakState {
         count = max(0, c.value(.count, d.count))
         best = max(0, c.value(.best, d.best))
         opened = max(0, c.value(.opened, d.opened))
-        lastItem = c.value(.lastItem, d.lastItem)
     }
 }

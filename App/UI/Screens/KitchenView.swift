@@ -2,7 +2,8 @@ import SwiftUI
 import UIKit
 
 /// Feeding: every food, what it costs and how much it fills. Tapping a food
-/// feeds it right away and the sheet stays open for another bite.
+/// feeds it right away and the sheet stays open for another bite. Free
+/// servings from crates are used before any coins.
 struct KitchenView: View {
     @EnvironmentObject private var store: GameStore
 
@@ -18,11 +19,13 @@ struct KitchenView: View {
                     header(s)
                     LazyVGrid(columns: [GridItem(.adaptive(minimum: tileWidth), spacing: 12)], spacing: 12) {
                         ForEach(Food.allCases) { food in
+                            let servings = s.servings(of: food)
                             FoodTile(food: food,
-                                     locked: s.slime.level < food.unlockLevel,
-                                     affordable: s.wallet.coins >= food.price,
+                                     locked: servings == 0 && s.slime.level < food.unlockLevel,
+                                     affordable: servings > 0 || s.wallet.coins >= food.price,
                                      tasted: s.inventory.foodsTasted.contains(food),
-                                     favorite: s.inventory.favoriteFound && food == s.slime.favorite) {
+                                     favorite: s.inventory.favoriteFound && food == s.slime.favorite,
+                                     servings: servings) {
                                 feed(food)
                             }
                         }
@@ -149,6 +152,8 @@ private struct FoodTile: View {
     let affordable: Bool
     let tasted: Bool
     let favorite: Bool
+    /// Free servings from crates.
+    let servings: Int
     let action: () -> Void
 
     @ScaledMetric(relativeTo: .body) private var iconSize: CGFloat = 56
@@ -203,7 +208,12 @@ private struct FoodTile: View {
     }
 
     @ViewBuilder private var price: some View {
-        if food.price == 0 {
+        if servings > 0 {
+            Text(verbatim: "Free × \(servings)")
+                .font(.caption.weight(.semibold))
+                .monospacedDigit()
+                .foregroundStyle(Theme.accent)
+        } else if food.price == 0 {
             Text("Free")
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(Theme.accent)
@@ -224,8 +234,12 @@ private struct FoodTile: View {
         if locked {
             parts.append("locked, unlocks at level \(food.unlockLevel)")
         } else {
-            parts.append(food.price == 0 ? "free" : "\(food.price) coins")
-            if !affordable { parts.append("not enough coins") }
+            if servings > 0 {
+                parts.append(servings == 1 ? "1 free serving" : "\(servings) free servings")
+            } else {
+                parts.append(food.price == 0 ? "free" : "\(food.price) coins")
+                if !affordable { parts.append("not enough coins") }
+            }
             if !tasted { parts.append("not tried yet") }
         }
         parts.append("fills \(Int(food.nutrition))")

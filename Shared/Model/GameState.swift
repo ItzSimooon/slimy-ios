@@ -42,6 +42,13 @@ struct Wallet: Codable, Hashable {
         return true
     }
 
+    /// Adds coins that need no receipt, because what paid them can't happen
+    /// twice (a crate is gone once it's opened).
+    mutating func earn(_ amount: Int) {
+        coins += max(0, amount)
+        earnedTotal += max(0, amount)
+    }
+
     /// Receipts that are kept forever: they can never be paid twice.
     static let permanentPrefixes = ["level:", "achievement:", "buy:", "birthday:", "holiday:"]
 
@@ -62,6 +69,8 @@ struct Inventory: Codable, Hashable {
     var habitat: Habitat = .room
     var habitats: Set<Habitat> = [.room]
     var furniture: [FurnitureSlot: String] = [:]
+    /// Free servings from crates. Feeding uses one before paying coins.
+    var pantry: [Food: Int] = [:]
 }
 
 struct Stats: Codable, Hashable {
@@ -78,6 +87,10 @@ struct Stats: Codable, Hashable {
     var eventsSeen = 0
     var purchases = 0
     var goodGames = 0
+    /// Crates opened. Not a challenge goal, so not a `StatKey`.
+    var cratesOpened = 0
+    /// Care actions your Care Together partner did for the shared slime.
+    var partnerCare = 0
 
     subscript(_ key: StatKey) -> Int {
         get {
@@ -132,10 +145,18 @@ struct Progress: Codable, Hashable {
 
 /// Things that happened, for dialogue and the memory book.
 struct MemoryEntry: Codable, Hashable, Identifiable {
+    /// Entries of kinds this version doesn't know (like the old "inLove")
+    /// are left out when a save loads.
     enum Kind: String, Codable {
         case hatched, fed, favoriteFound, played, highScore, bath, levelUp, stageUp
-        case achievement, gift, giftReceived, visit, friendMade, inLove, event, reunion
+        case achievement, gift, giftReceived, visit, friendMade, event, reunion
         case birthday, streak, holiday
+        /// A crate was opened. Detail: see `CrateFind`.
+        case crate
+        /// The Care Together partner did something. Detail: see `PartnerCareNote`.
+        case partnerCare
+        /// Caring together started or ended. Detail: the partner's name.
+        case careStarted, careEnded
     }
 
     var id = UUID()
@@ -163,12 +184,18 @@ extension MemoryEntry {
         case .giftReceived: return keepsake ? "First gift from \(detail)" : "Gift from \(detail)"
         case .visit: return "Visited \(detail)"
         case .friendMade: return "New friend: \(detail)"
-        case .inLove: return "In love with \(detail)"
         case .event: return PhoneEvent(rawValue: detail)?.title ?? "Something happened"
         case .reunion: return "Back together after \(detail) days"
         case .birthday: return detail == "1" ? "First birthday" : "Birthday: \(detail) years old"
         case .streak: return "\(detail) days in a row"
         case .holiday: return Holiday(rawValue: detail)?.greeting ?? "A holiday together"
+        case .crate:
+            guard let find = CrateFind(detail: detail) else { return "Opened a crate" }
+            return find.rarity == .legendary ? "Legendary find: \(find.title)" : "\(find.crate.title): \(find.title)"
+        case .partnerCare:
+            return PartnerCareNote(detail: detail)?.summary ?? "Cared for together"
+        case .careStarted: return detail.isEmpty ? "Started caring together" : "Started caring together with \(detail)"
+        case .careEnded: return detail.isEmpty ? "Stopped caring together" : "Stopped caring together with \(detail)"
         }
     }
 
@@ -182,12 +209,15 @@ extension MemoryEntry {
         case .bath: return "bubbleItem"
         case .levelUp, .stageUp: return "coin"
         case .gift, .giftReceived: return "chest"
-        case .visit, .friendMade, .inLove: return "heart"
+        case .visit, .friendMade: return "heart"
         case .event: return "speech"
         case .reunion: return "flower"
         case .birthday: return "cake"
         case .streak: return "flag"
         case .holiday: return Holiday(rawValue: detail)?.icon ?? "starJelly"
+        case .crate: return CrateFind(detail: detail)?.icon ?? "chest"
+        case .partnerCare: return PartnerCareNote(detail: detail)?.kind.icon ?? "heart"
+        case .careStarted, .careEnded: return "heart"
         }
     }
 
@@ -249,13 +279,16 @@ struct Settings: Codable, Hashable {
     var notifications = NotificationPrefs()
     var sleep = SleepSchedule()
     var liveEvents = true
+    /// The slime talks to itself every few seconds while the app is open.
+    var chatty = true
 }
 
 // MARK: - The save
 
 struct GameState: Codable {
     /// 3: daily gift streak, seasons seen, birthdays and holidays.
-    static let currentVersion = 3
+    /// 4: feelings, crates, colours from crates, the pantry, Care Together.
+    static let currentVersion = 4
 
     var version = GameState.currentVersion
     var hatched = false
@@ -267,6 +300,13 @@ struct GameState: Codable {
     var memory = Memory()
     var settings = Settings()
     var streak = StreakState()
+    /// Crates waiting to be opened.
+    var crates: [CrateKind: Int] = [:]
+    /// Caring for the slime together with someone, if you are.
+    var care: CareLink?
+    /// This phone's side of caring together: actions waiting to be sent,
+    /// partner actions already applied.
+    var careBook = CareBook()
 
     static func fresh() -> GameState { GameState() }
 
@@ -283,9 +323,23 @@ struct GameState: Codable {
         for (slot, id) in inventory.furniture where Catalog.item(id)?.slot != slot || !inventory.owned.contains(id) {
             inventory.furniture[slot] = nil
         }
-        for id in slime.equipped.all where !inventory.owned.contains(id) {
-            unequip(id)
+        if care == nil {
+            for id in slime.equipped.all where !inventory.owned.contains(id) {
+                unequip(id)
+            }
+        } else {
+            // A shared slime may wear what the other person owns.
+            for id in slime.equipped.all where Catalog.item(id) == nil {
+                unequip(id)
+            }
         }
+        inventory.pantry = inventory.pantry.filter { $0.value > 0 }.mapValues { min($0, Crates.maxStack) }
+        crates = crates.filter { $0.value > 0 }.mapValues { min($0, Crates.maxStack) }
+        if var link = care {
+            link.ownBackup?.sanitize(now: now)
+            care = link
+        }
+        careBook.sanitize(now: now)
         wallet.prune(now: now)
     }
 }
@@ -336,6 +390,29 @@ extension Inventory {
         habitat = c.value(.habitat, d.habitat)
         habitats = c.value(.habitats, d.habitats)
         furniture = c.value(.furniture, d.furniture)
+        pantry = c.value(.pantry, d.pantry)
+    }
+}
+
+extension Stats {
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        let d = Stats()
+        feeds = c.value(.feeds, d.feeds)
+        plays = c.value(.plays, d.plays)
+        baths = c.value(.baths, d.baths)
+        pets = c.value(.pets, d.pets)
+        sleeps = c.value(.sleeps, d.sleeps)
+        giftsSent = c.value(.giftsSent, d.giftsSent)
+        giftsReceived = c.value(.giftsReceived, d.giftsReceived)
+        visits = c.value(.visits, d.visits)
+        hugs = c.value(.hugs, d.hugs)
+        friends = c.value(.friends, d.friends)
+        eventsSeen = c.value(.eventsSeen, d.eventsSeen)
+        purchases = c.value(.purchases, d.purchases)
+        goodGames = c.value(.goodGames, d.goodGames)
+        cratesOpened = c.value(.cratesOpened, d.cratesOpened)
+        partnerCare = c.value(.partnerCare, d.partnerCare)
     }
 }
 
@@ -397,6 +474,7 @@ extension Settings {
         notifications = c.value(.notifications, d.notifications)
         sleep = c.value(.sleep, d.sleep)
         liveEvents = c.value(.liveEvents, d.liveEvents)
+        chatty = c.value(.chatty, d.chatty)
     }
 }
 
@@ -414,5 +492,8 @@ extension GameState {
         memory = c.value(.memory, d.memory)
         settings = c.value(.settings, d.settings)
         streak = c.value(.streak, d.streak)
+        crates = c.value(.crates, d.crates)
+        care = c.value(.care, d.care)
+        careBook = c.value(.careBook, d.careBook)
     }
 }
