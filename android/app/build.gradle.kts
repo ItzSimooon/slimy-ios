@@ -54,7 +54,7 @@ android {
     }
 
     // The same pixel art and font as the iPhone app, straight from Shared/.
-    sourceSets["main"].assets.srcDirs("src/main/assets", "../../Shared/Sprites", "../../Shared/Fonts")
+    sourceSets["main"].assets.srcDirs("src/main/assets", "../../Shared/Sprites", "../../Shared/Fonts", "../../Resources/Sounds")
 }
 
 dependencies {
