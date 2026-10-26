@@ -111,7 +111,15 @@ Then `systemctl restart slimy`. The log line names the providers it uses, and `n
 
 ## 5. Admin passphrase (owner)
 
-On CT 108, as root, in a real terminal (the input is hidden; it refuses pipes):
+The service runs as `slimy` and reads `/etc/slimy/admin.hash` itself, so the folder must let that group in (otherwise the log says `can't read /etc/slimy/admin.hash (EACCES)` and the admin stays "not set up"):
+
+```sh
+chgrp slimy /etc/slimy && chmod 0750 /etc/slimy
+```
+
+The easy way for keys and passphrase together: copy `server/tools/slimy-setup.sh` to `/usr/local/sbin/slimy-setup` (mode 0700) and run `slimy-setup`. It asks for the Cloudflare token and the Groq key (hidden), checks both against the providers, saves them, restarts the service, tests the chat, then asks for the passphrase.
+
+Or only the passphrase, on CT 108, as root, in a real terminal (the input is hidden; it refuses pipes):
 
 ```sh
 cd /opt/slimy/server
