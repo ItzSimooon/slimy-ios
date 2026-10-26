@@ -1,0 +1,13 @@
+Slimy 1.0 is here.
+
+• A pixel slime that lives in your Dynamic Island, on the Lock Screen and in widgets
+• 12 arcade games, including the new Slime Stack and Jelly Dash, plus a new game every day
+• Daily streaks and a small gift every day
+• Photo booth: pose your slime and share the picture
+• Friends leaderboard for every game
+• Invite friends with a link
+• Talk to your slime, with a clear choice before anything is sent
+• Light and dark mode
+• Back up your slime to a file and restore it
+
+Thank you to everyone who tested the beta.

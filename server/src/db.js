@@ -114,6 +114,43 @@ export const migrations = [
     PRIMARY KEY (device_id, key)
   );
   `,
+  // 2: moderation (reports, bans), friends leaderboard, chat usage, last seen.
+  `
+  ALTER TABLE devices RENAME COLUMN last_seen TO last_seen_at;
+  ALTER TABLE devices ADD COLUMN banned_at INTEGER;
+  ALTER TABLE devices ADD COLUMN blocked_names TEXT;
+  CREATE INDEX devices_created ON devices(created_at, id);
+  CREATE INDEX devices_last_seen ON devices(last_seen_at);
+  CREATE TABLE reports (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    reporter TEXT REFERENCES devices(id) ON DELETE SET NULL,
+    reported TEXT REFERENCES devices(id) ON DELETE SET NULL,
+    reason TEXT NOT NULL,
+    note TEXT,
+    text TEXT,
+    status TEXT NOT NULL DEFAULT 'open',
+    resolution TEXT,
+    created_at INTEGER NOT NULL,
+    resolved_at INTEGER
+  );
+  CREATE INDEX reports_status ON reports(status, id);
+  CREATE INDEX reports_reported ON reports(reported);
+  CREATE INDEX reports_reporter ON reports(reporter, created_at);
+  CREATE TABLE records (
+    device_id TEXT NOT NULL REFERENCES devices(id) ON DELETE CASCADE,
+    game TEXT NOT NULL,
+    best INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL,
+    PRIMARY KEY (device_id, game)
+  );
+  CREATE TABLE chat_usage (
+    day TEXT NOT NULL,
+    provider TEXT NOT NULL,
+    requests INTEGER NOT NULL DEFAULT 0,
+    failures INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (day, provider)
+  );
+  `,
 ];
 
 export function openDatabase(path = ":memory:") {

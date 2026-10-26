@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+<!-- @head -->
+<title>Install the Slimy beta on your iPhone · Slimy</title>
+<meta name="description" content="Install the Slimy beta with Sideloadly on Windows or a Mac: download the IPA, sign it with your Apple ID, trust it on your iPhone, and keep your slime in the Dynamic Island all day.">
+<link rel="canonical" href="https://slime.hyprnode.de/install">
+</head>
+<body>
+<!-- @header -->
+<main id="main" class="page wrap">
+  <header class="page-head">
+    <span class="tag tag-live">Beta, available now</span>
+    <h1>Install the beta.</h1>
+    <p class="lede">Slimy is on its way to the App Store. Until it's there, you can install the beta on your iPhone with Sideloadly, your Apple ID and a cable. It takes about ten minutes.</p>
+  </header>
+
+  <div class="install-top">
+    <section class="dl-card card" aria-labelledby="dl-title">
+      <h2 id="dl-title">Download</h2>
+      <p class="copy">Every build is published on GitHub. Start with <b>Slimy.ipa</b>.</p>
+      <p class="release-line" data-release-ready hidden>Newest beta: <b data-release-name>Slimy</b>, published <time data-release-date></time>.</p>
+      <div class="dl-actions">
+        <a class="btn" href="https://github.com/ItzSimooon/slimy-ios/releases" data-ipa="ipa">
+          <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v10m0 0-4-4m4 4 4-4M4 16.5h12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Download Slimy.ipa
+        </a>
+        <a class="btn btn-tint" href="https://github.com/ItzSimooon/slimy-ios/releases" data-download>All files on GitHub</a>
+      </div>
+      <p class="note"><canvas data-item="gear" data-scale="3"></canvas><span>Sideloading uses Apple's free developer signing. It's meant for apps you build or test yourself, which is what this beta is. Nothing here jailbreaks or changes your iPhone.</span></p>
+    </section>
+
+    <section class="req-card card" aria-labelledby="req-title">
+      <h2 id="req-title">You need</h2>
+      <ul class="req-list">
+        <li>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="2.5" width="11" height="19" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="9.5" y="5" width="5" height="1.6" rx=".8" fill="currentColor"/></svg>
+          <span><b>An iPhone with iOS 18 or later</b>The island needs an iPhone that has a Dynamic Island: iPhone 14 Pro and most models since. Other iPhones get the Lock Screen and widgets.</span>
+        </li>
+        <li>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4.5" width="18" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M8.5 20h7M12 16.5V20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          <span><b>A Windows PC or a Mac</b>With <a href="https://sideloadly.io">Sideloadly</a>. On Windows, also iTunes and iCloud from apple.com (not the Microsoft Store versions), which bring the drivers Sideloadly needs.</span>
+        </li>
+        <li>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.5" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M4.5 20.5c1.2-3.6 4.1-5.5 7.5-5.5s6.3 1.9 7.5 5.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          <span><b>An Apple ID</b>A free one works. Apple uses it to sign the app for your iPhone.</span>
+        </li>
+        <li>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3v5M15 3v5M7 8h10v3a5 5 0 0 1-10 0z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M12 16v5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          <span><b>A USB cable</b>To connect the iPhone to the computer for the install and for re-signing.</span>
+        </li>
+      </ul>
+    </section>
+  </div>
+
+  <h2 class="section-title" id="which">Which file?</h2>
+  <div class="ipas">
+    <section class="ipa card" aria-labelledby="ipa-1">
+      <span class="tag tag-live">Recommended</span>
+      <h3 id="ipa-1">Slimy.ipa</h3>
+      <p>The full app. It carries the App Group that lets Slimy and its widgets share your slime, so the Home Screen and Lock Screen widgets work.</p>
+      <a class="btn btn-sm" href="https://github.com/ItzSimooon/slimy-ios/releases" data-ipa="ipa">Download Slimy.ipa</a>
+    </section>
+    <section class="ipa card" aria-labelledby="ipa-2">
+      <span class="tag">Fallback</span>
+      <h3 id="ipa-2">Slimy-unsigned.ipa</h3>
+      <p>For sideloading tools that reject the App Group. Everything works, the island included, except the Home Screen and Lock Screen widgets, which stay empty.</p>
+      <a class="btn btn-tint btn-sm" href="https://github.com/ItzSimooon/slimy-ios/releases" data-ipa="unsigned">Download Slimy-unsigned.ipa</a>
+    </section>
+  </div>
+
+  <h2 class="section-title" id="steps">Install it with Sideloadly</h2>
+  <ol class="howto">
+    <li>
+      <h3>Get Sideloadly ready</h3>
+      <p>Install <a href="https://sideloadly.io">Sideloadly</a> on your computer. On Windows, install iTunes and iCloud from apple.com first, then restart the computer.</p>
+    </li>
+    <li>
+      <h3>Connect your iPhone</h3>
+      <p>Plug it in with a cable and unlock it. When the iPhone asks whether to trust this computer, tap <b>Trust</b> and enter your passcode.</p>
+    </li>
+    <li>
+      <h3>Install Slimy</h3>
+      <p>Open Sideloadly, choose your iPhone, drag <b>Slimy.ipa</b> onto the window, enter your Apple ID and click <b>Start</b>. Enter the code Apple sends if you use two-factor authentication.</p>
+      <p>Sideloadly asks Apple for a signing certificate with your Apple ID. If you'd rather keep your main account out of it, a second Apple ID works just as well.</p>
+    </li>
+    <li>
+      <h3>Trust the app on your iPhone</h3>
+      <p>Open <span class="path"><span>Settings</span><span>General</span><span>VPN &amp; Device Management</span></span>, tap your Apple ID under Developer App and tap <b>Trust</b>.</p>
+      <p>If iOS asks for Developer Mode: <span class="path"><span>Settings</span><span>Privacy &amp; Security</span><span>Developer Mode</span></span>, turn it on, restart, and confirm.</p>
+    </li>
+    <li>
+      <h3>Hatch your slime</h3>
+      <p>Open Slimy, tap the egg, give your slime a name and a colour, and tap <b>Hatch</b>. Then tap <b>Bring It to the Island</b>, and your slime moves in next to the camera.</p>
+    </li>
+  </ol>
+
+  <h2 class="section-title" id="resign">Every 7 days: re-sign</h2>
+  <div class="prose card">
+    <p>With a free Apple ID, Apple's signature lasts <strong>7 days</strong>. After that, Slimy won't open until it's signed again. Your slime is safe in the meantime.</p>
+    <ul>
+      <li>Connect your iPhone, open Sideloadly and install the newest <code>Slimy.ipa</code> again with the <strong>same Apple ID</strong>. Your slime stays, because the app is replaced, not deleted.</li>
+      <li>Don't delete the app before re-signing. Deleting it deletes the slime.</li>
+      <li>Updating works the same way: install a new <code>Slimy.ipa</code> over the old one.</li>
+      <li>To be safe, export a save now and then: <span class="path"><span>Settings</span><span>Backup</span><span>Export Save</span></span> in Slimy. Import it on any iPhone.</li>
+      <li>A free Apple ID can keep three sideloaded apps on a device at a time. A paid Apple Developer account signs for a year.</li>
+    </ul>
+  </div>
+
+  <h2 class="section-title" id="all-day">Keep it in the island all day</h2>
+  <div class="tips">
+    <section class="tip card" aria-labelledby="tip-1">
+      <div class="tip-art" aria-hidden="true">
+        <span class="pill-island"><canvas class="i-slime" data-slime data-skin="mine" data-crop="2" width="24" height="18"></canvas><canvas class="i-emote" data-item="heart" data-scale="3"></canvas></span>
+      </div>
+      <h3 id="tip-1">About 8 hours at a time</h3>
+      <p>iOS ends every Live Activity after about 8 hours. Open Slimy and your slime comes right back; it also renews an activity that's close to the limit.</p>
+    </section>
+    <section class="tip card" aria-labelledby="tip-2">
+      <div class="tip-art" aria-hidden="true"><canvas data-item="starJelly" data-scale="4"></canvas></div>
+      <h3 id="tip-2">Summon Slime</h3>
+      <p>Add Summon Slime to Control Center or the Action Button to bring your slime back without opening the app. Siri and Shortcuts know it too.</p>
+    </section>
+    <section class="tip card" aria-labelledby="tip-3">
+      <div class="tip-art" aria-hidden="true"><canvas data-item="gear" data-scale="4"></canvas></div>
+      <h3 id="tip-3">Settings that help</h3>
+      <p>Leave Live Activities and Background App Refresh on for Slimy in the Settings app, and keep <b>Always bring it back</b> on in Slimy's Settings under Dynamic Island.</p>
+    </section>
+  </div>
+
+  <h2 class="section-title" id="trouble">If something doesn't work</h2>
+  <div class="group" data-faq>
+    <details class="faq" id="unable">
+      <summary>Sideloadly can't find my iPhone.</summary>
+      <div class="answer"><p>Unlock the iPhone and tap Trust when it asks. On Windows, make sure iTunes and iCloud are the apple.com versions, not the Microsoft Store ones, then restart Sideloadly. Try another cable or port.</p></div>
+    </details>
+    <details class="faq" id="untrusted">
+      <summary>"Untrusted Developer" when I open Slimy.</summary>
+      <div class="answer"><p>Trust your Apple ID once: <span class="path"><span>Settings</span><span>General</span><span>VPN &amp; Device Management</span></span>, tap it and tap Trust.</p></div>
+    </details>
+    <details class="faq" id="three-apps">
+      <summary>Sideloadly says I've reached the app limit.</summary>
+      <div class="answer"><p>A free Apple ID can have three sideloaded apps installed at a time. Remove one you don't need, or use another Apple ID.</p></div>
+    </details>
+    <details class="faq" id="widgets">
+      <summary>The widgets stay empty.</summary>
+      <div class="answer"><p>Open Slimy once so the widgets get your slime, then give them a moment. If you installed <code>Slimy-unsigned.ipa</code>, or your tool removed the App Group, widgets can't see your slime. Install <code>Slimy.ipa</code> instead.</p></div>
+    </details>
+  </div>
+  <p class="group-foot">More answers on the <a class="more" href="/support">support page</a></p>
+</main>
+<!-- @footer -->
+</body>
+</html>

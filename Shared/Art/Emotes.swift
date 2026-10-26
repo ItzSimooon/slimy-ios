@@ -64,9 +64,12 @@ struct EmoteView: View {
     let size: CGFloat
     var animated = true
 
+    /// With Reduce Motion on, the emote shows its first icon instead of looping.
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     var body: some View {
         Group {
-            if animated {
+            if animated && !reduceMotion {
                 TickingGlyph(font: reel.fontName, anchor: anchor, height: size, width: size, color: reel.color)
             } else {
                 IconShape(rows: reel.poster)

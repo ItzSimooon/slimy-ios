@@ -7,12 +7,18 @@ struct SlimeWidgetBundle: WidgetBundle {
     var body: some Widget {
         SlimeLiveActivity()
         SlimeHomeWidget()
+        SlimeNeedsWidget()
         SummonSlimeControl()
         FeedSlimeControl()
+        PetSlimeControl()
+        BedtimeControl()
     }
 }
 
-/// Control Center / Lock Screen / Action Button: bring the slime back.
+// Control Center, the Lock Screen and the Action Button. Each control runs
+// its intent in the app's process without opening the app.
+
+/// Brings the slime back to the Dynamic Island.
 struct SummonSlimeControl: ControlWidget {
     var body: some ControlWidgetConfiguration {
         StaticControlConfiguration(kind: "de.hyprnode.slime.summon") {
@@ -34,5 +40,29 @@ struct FeedSlimeControl: ControlWidget {
         }
         .displayName("Feed Slime")
         .description("Feeds your slime without opening the app.")
+    }
+}
+
+struct PetSlimeControl: ControlWidget {
+    var body: some ControlWidgetConfiguration {
+        StaticControlConfiguration(kind: "de.hyprnode.slime.pet") {
+            ControlWidgetButton(action: PetSlimeIntent()) {
+                Label("Pet Slime", systemImage: "hand.raised.fill")
+            }
+        }
+        .displayName("Pet Slime")
+        .description("Gives your slime a little love without opening the app.")
+    }
+}
+
+struct BedtimeControl: ControlWidget {
+    var body: some ControlWidgetConfiguration {
+        StaticControlConfiguration(kind: "de.hyprnode.slime.bedtime") {
+            ControlWidgetButton(action: SleepSlimeIntent()) {
+                Label("Slime Bedtime", systemImage: "moon.fill")
+            }
+        }
+        .displayName("Slime Bedtime")
+        .description("Puts your slime to bed, or wakes it up if it's asleep.")
     }
 }

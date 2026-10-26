@@ -4,6 +4,7 @@ import SwiftUI
 struct BathView: View {
     @EnvironmentObject private var store: GameStore
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @State private var spots: [MudSpot] = []
     @State private var bubbles: [Bubble] = []
@@ -20,7 +21,7 @@ struct BathView: View {
                                       y: geo.size.height * 0.62 - slimeSize.height)
             ZStack {
                 TileWall()
-                TimelineView(.animation) { context in
+                TimelineView(.animation(minimumInterval: nil, paused: reduceMotion)) { context in
                     let t = context.date.timeIntervalSinceReferenceDate
                     let slime = store.state.slime
                     let anim: SpriteAnim = finished ? .bath : .idle
@@ -58,48 +59,79 @@ struct BathView: View {
                         .allowsHitTesting(false)
                     }
                 }
-                Water()
+                Water(still: reduceMotion)
                     .frame(height: geo.size.height * 0.42)
                     .frame(maxHeight: .infinity, alignment: .bottom)
                     .allowsHitTesting(false)
-
-                overlay
             }
             .contentShape(Rectangle())
             .gesture(
                 DragGesture(minimumDistance: 0)
                     .onChanged { value in scrub(at: value.location, origin: slimeOrigin, size: slimeSize) }
             )
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(alreadyClean ? "\(store.state.slime.name) in the bath" : "\(store.state.slime.name) covered in mud")
+            .accessibilityValue(headline)
+            .accessibilityAddTraits(.allowsDirectInteraction)
+            .accessibilityAction(named: "Scrub") { scrubForVoiceOver() }
         }
         .ignoresSafeArea()
-        .sensoryFeedback(.impact(flexibility: .soft, intensity: 0.4), trigger: scrubs / 6)
+        .statusBarHidden(true)
+        .overlay(alignment: .top) { header }
+        .overlay(alignment: .bottom) { doneButton }
+        .animation(reduceMotion ? nil : .spring(duration: 0.35), value: finished)
         .onAppear(perform: makeMess)
     }
 
-    private var overlay: some View {
-        VStack {
-            PixelWindow {
-                MenuHeader(title: headline, subtitle: "Rub the mud off with your finger.") { dismiss() }
+    // MARK: Overlay
+
+    private var header: some View {
+        HStack(alignment: .top, spacing: 12) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(headline)
+                    .font(.headline)
+                    .foregroundStyle(Theme.ink)
+                    .contentTransition(.numericText())
+                Text(hint)
+                    .font(.subheadline)
+                    .foregroundStyle(Theme.inkSoft)
             }
-            .padding(.horizontal, 16)
-            .padding(.top, 56)
-            Spacer()
-            if finished || alreadyClean {
-                PixelButton(title: "Done", systemIcon: "checkmark") { dismiss() }
-                    .padding(.horizontal, 24)
-                    .padding(.bottom, 44)
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
-            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 10)
+            .background(.regularMaterial, in: Capsule())
+            .accessibilityElement(children: .combine)
+            .accessibilityAddTraits(.isHeader)
+            Spacer(minLength: 0)
+            HUDButton(systemImage: "xmark", label: "Close") { dismiss() }
         }
-        .animation(.spring, value: finished)
+        .padding(.horizontal, 16)
+        .padding(.top, 8)
+    }
+
+    @ViewBuilder private var doneButton: some View {
+        if finished || alreadyClean {
+            AppButton(title: "Done", systemIcon: "checkmark") { dismiss() }
+                .frame(maxWidth: 420)
+                .padding(.horizontal, 24)
+                .padding(.bottom, 16)
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+        }
     }
 
     private var headline: String {
         if alreadyClean { return "Already clean" }
         if finished { return "Sparkling clean" }
         let left = spots.filter { $0.dirt > 0.05 }.count
-        return left == 1 ? "1 mud spot left" : "Scrub off \(left) mud spots"
+        return left == 1 ? "1 mud spot left" : "\(left) mud spots left"
     }
+
+    private var hint: String {
+        if alreadyClean { return "Come back when it gets muddy." }
+        if finished { return "All the mud is gone." }
+        return "Rub the mud off with your finger."
+    }
+
+    // MARK: Scrubbing
 
     private func makeMess() {
         let clean = store.state.slime.needs.clean
@@ -117,7 +149,9 @@ struct BathView: View {
     private func scrub(at point: CGPoint, origin: CGPoint, size: CGSize) {
         guard !finished, !alreadyClean else { return }
         scrubs += 1
-        if scrubs % 2 == 0 {
+        if scrubs % 6 == 0 { Feedback.shared.tapHaptic() }
+        // Rising bubbles are motion; with Reduce Motion the fading mud is the feedback.
+        if scrubs % 2 == 0, !reduceMotion {
             bubbles.append(Bubble(origin: point, radius: .random(in: 5...13), wobble: .random(in: 0...6), born: .now))
             bubbles.removeAll { Date.now.timeIntervalSince($0.born) > 1.6 }
         }
@@ -127,10 +161,23 @@ struct BathView: View {
                 spots[i].dirt = max(0, spots[i].dirt - 0.06)
             }
         }
-        if spots.allSatisfy({ $0.dirt <= 0.05 }) {
-            finished = true
-            store.bath()
-        }
+        checkClean()
+    }
+
+    /// VoiceOver can't rub, so each Scrub action cleans a good part of the
+    /// muddiest spot.
+    private func scrubForVoiceOver() {
+        guard !finished, !alreadyClean,
+              let i = spots.indices.max(by: { spots[$0].dirt < spots[$1].dirt }) else { return }
+        spots[i].dirt = max(0, spots[i].dirt - 0.5)
+        Feedback.shared.play(.splash)
+        checkClean()
+    }
+
+    private func checkClean() {
+        guard !finished, spots.allSatisfy({ $0.dirt <= 0.05 }) else { return }
+        finished = true
+        store.bath()
     }
 }
 
@@ -186,13 +233,16 @@ private struct TileWall: View {
             }
         }
         .ignoresSafeArea()
+        .accessibilityHidden(true)
     }
 }
 
 private struct Water: View {
+    var still = false
+
     var body: some View {
-        TimelineView(.animation) { context in
-            let t = context.date.timeIntervalSinceReferenceDate
+        TimelineView(.animation(minimumInterval: nil, paused: still)) { context in
+            let t = still ? 0 : context.date.timeIntervalSinceReferenceDate
             Canvas { ctx, size in
                 for layer in 0..<2 {
                     var path = Path()
@@ -209,5 +259,6 @@ private struct Water: View {
                 }
             }
         }
+        .accessibilityHidden(true)
     }
 }

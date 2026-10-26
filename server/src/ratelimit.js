@@ -20,6 +20,12 @@ export class RateLimiter {
     return true;
   }
 
+  /** Takes back one hit, e.g. an attempt counted up front that turned out fine. */
+  undo(bucket, key) {
+    const w = this.windows.get(`${bucket}:${key}`);
+    if (w && w.count > 0) w.count -= 1;
+  }
+
   /** True when the bucket is used up, without counting. */
   exhausted(bucket, key, limit) {
     const w = this.windows.get(`${bucket}:${key}`);

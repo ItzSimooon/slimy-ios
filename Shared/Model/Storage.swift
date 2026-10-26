@@ -149,6 +149,9 @@ struct WidgetSnapshot: Codable, Hashable {
     var personality: Personality
     var equipped: Accessories
     var habitat: Habitat
+    /// The player's bedtime, so widgets know when it sleeps. Optional:
+    /// snapshots written before it existed still load.
+    var sleep: SleepSchedule?
 
     init(_ state: GameState, at now: Date) {
         name = state.slime.name
@@ -163,16 +166,18 @@ struct WidgetSnapshot: Codable, Hashable {
         personality = state.slime.personality
         equipped = state.slime.equipped
         habitat = state.inventory.habitat
+        sleep = state.settings.sleep
     }
 
-    /// Needs as they are probably now, without the app running.
-    func projectedNeeds(at now: Date, schedule: SleepSchedule = SleepSchedule()) -> Needs {
+    /// Needs as they are probably now, without the app running. Uses the
+    /// saved bedtime unless `schedule` gives another.
+    func projectedNeeds(at now: Date, schedule: SleepSchedule? = nil) -> Needs {
         var slime = Slime()
         slime.needs = needs
         slime.isAsleep = isAsleep
         slime.personality = personality
         slime.lastUpdate = writtenAt
-        slime.advance(to: now, schedule: schedule)
+        slime.advance(to: now, schedule: schedule ?? sleep ?? SleepSchedule())
         return slime.needs
     }
 }

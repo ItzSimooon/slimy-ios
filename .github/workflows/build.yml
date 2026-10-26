@@ -1,13 +1,24 @@
 name: Build
 
+# Every branch and pull request is built and tested. Only a push to main
+# publishes a release with the IPAs, and only when the unit tests, the server
+# tests and the IPA build all passed. Screenshots are taken on every run and,
+# for pushes, replace the contents of the "ci-screenshots" branch.
 on:
   push:
-    branches: [main]
+    branches-ignore: [ci-screenshots]
   pull_request:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
+
+concurrency:
+  # A newer push replaces a running build of the same branch. On main every
+  # push becomes a release, so each run there gets a group of its own and is
+  # never cancelled or held back.
+  group: build-${{ github.ref == 'refs/heads/main' && github.run_id || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   art:
@@ -35,14 +46,42 @@ jobs:
         with:
           node-version: "22"
       - name: Test
+        working-directory: server
         run: |
-          if [ ! -f server/package.json ]; then echo "no server yet"; exit 0; fi
-          cd server && npm ci --no-audit --no-fund && npm test
+          if [ -f package-lock.json ]; then npm ci --no-audit --no-fund; fi
+          npm test
+
+  site:
+    name: Build website
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      # No dependencies: build.mjs uses Node built-ins only. It reads the
+      # sprites, the pixel font and the app icon from the app's folders, so
+      # this also catches an app change that moves them.
+      - name: Build
+        run: node site/build.mjs
+      - name: Check the output
+        run: |
+          for file in index.html 404.html f/index.html admin/index.html sprites.json sitemap.xml robots.txt; do
+            if [ ! -f "site/dist/$file" ]; then
+              echo "::error::site/dist/$file is missing"
+              exit 1
+            fi
+          done
+          if ! ls site/dist/fonts/*.ttf >/dev/null 2>&1; then
+            echo "::error::site/dist/fonts has no fonts"
+            exit 1
+          fi
 
   tests:
     name: Unit tests (simulator)
     needs: art
     runs-on: macos-15
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
       - uses: maxim-lobanov/setup-xcode@v1
@@ -67,12 +106,13 @@ jobs:
           grep -q "TEST SUCCEEDED" xcodebuild.log
       - name: Report errors
         if: failure()
-        run: tools/ci_report.sh xcodebuild.log
+        run: bash tools/ci_report.sh xcodebuild.log
 
   ipa:
     name: Build IPA
     needs: art
     runs-on: macos-15
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
       - uses: maxim-lobanov/setup-xcode@v1
@@ -97,7 +137,17 @@ jobs:
           grep -q "BUILD SUCCEEDED" xcodebuild.log
       - name: Report errors
         if: failure()
-        run: tools/ci_report.sh xcodebuild.log
+        run: bash tools/ci_report.sh xcodebuild.log
+      - name: Check privacy manifests
+        run: |
+          app=build/Build/Products/Release-iphoneos/Slimy.app
+          for manifest in "$app/PrivacyInfo.xcprivacy" "$app/PlugIns/SlimyWidgets.appex/PrivacyInfo.xcprivacy"; do
+            if [ ! -f "$manifest" ]; then
+              echo "::error::Missing $manifest"
+              exit 1
+            fi
+            plutil -lint "$manifest"
+          done
       - name: Package IPAs
         run: |
           app=build/Build/Products/Release-iphoneos/Slimy.app
@@ -118,11 +168,26 @@ jobs:
           path: |
             Slimy.ipa
             Slimy-unsigned.ipa
+
+  release:
+    name: Publish release
+    # The website's Download button serves the newest release, so a build
+    # whose tests failed must never become one.
+    needs: [ipa, tests, server]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: Slimy-ipa
       - name: Publish download
-        if: github.event_name != 'pull_request'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: build-${{ github.run_number }}
+          # Tag the commit that was built, not whatever main points at now.
+          target_commitish: ${{ github.sha }}
           name: Slimy build ${{ github.run_number }}
           prerelease: true
           files: |
@@ -132,3 +197,53 @@ jobs:
             Build of ${{ github.sha }}.
             Slimy.ipa: ad-hoc signed with the App Group entitlement (needed for the Home Screen widgets). Install it with Sideloadly and your Apple ID.
             Slimy-unsigned.ipa: the same app without entitlements. Use it if your sideloading tool rejects the App Group; the app then keeps its save inside the app and the Home Screen widgets show a placeholder.
+
+  screenshots:
+    name: Screenshots (simulator)
+    needs: art
+    runs-on: macos-15
+    timeout-minutes: 60
+    # Nice to have: a failure here never fails the run or holds up the IPA.
+    continue-on-error: true
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+      - name: Generate Xcode project
+        run: |
+          brew install xcodegen
+          xcodegen generate
+      - name: Pick an iPhone Pro simulator
+        id: sim
+        run: echo "udid=$(bash tools/ci_simulator.sh)" >> "$GITHUB_OUTPUT"
+      - name: Build (Debug, simulator)
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -project Slimy.xcodeproj \
+            -scheme Slimy \
+            -configuration Debug \
+            -destination "platform=iOS Simulator,id=${{ steps.sim.outputs.udid }}" \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            build | tee xcodebuild.log | grep -E "error:|BUILD (SUCCEEDED|FAILED)" || true
+          grep -q "BUILD SUCCEEDED" xcodebuild.log
+      - name: Report errors
+        if: failure()
+        run: bash tools/ci_report.sh xcodebuild.log
+      - name: Take screenshots
+        run: bash tools/ci_screenshots.sh "${{ steps.sim.outputs.udid }}" screenshots
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: screenshots
+          path: screenshots/*.png
+          if-no-files-found: ignore
+      - name: Publish to the ci-screenshots branch
+        if: github.event_name == 'push'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bash tools/ci_publish_screenshots.sh screenshots

@@ -1,42 +1,88 @@
 import SwiftUI
 import UIKit
 
-/// The look of Slimy's game UI: cream pixel windows with a dark ink border
-/// and notched corners, like the menus of a small handheld game. At night
-/// (dark mode) the paper turns plum. The island keeps its own dark palette
-/// (Brand).
+/// Slimy's look: a native iOS app around a pixel-art slime. Everything around
+/// the slime uses system colours, system materials and SF Rounded with Dynamic
+/// Type, so it follows Light/Dark Mode, Increase Contrast and text size.
+/// Pixel art is kept for the slime's own world: the slime, its items, homes
+/// and the games. Pixelify Sans is the slime's voice, nothing else.
 enum Theme {
-    static let paper = Color.dynamic(light: 0xFFF7E8, dark: 0x2B2336)
-    static let paperShade = Color.dynamic(light: 0xF1E2C4, dark: 0x221C2B)
-    static let ink = Color.dynamic(light: 0x3A2B2E, dark: 0xF5ECDC)
-    static let inkSoft = Color.dynamic(light: 0x7C6758, dark: 0xB8A898)
-    static let border = Color.dynamic(light: 0x3A2B2E, dark: 0x0D0A12)
-    static let bevel = Color.dynamic(light: 0xFFFFFF, dark: 0x41374E)
-    static let backdrop = Color.dynamic(light: 0xCFE6D2, dark: 0x16121D)
-    static let accent = Color(hex: 0x4FB84E)
-    static let accentInk = Color(hex: 0x1F4A22)
-    static let gold = Color(hex: 0xE8A92A)
-    static let love = Color(hex: 0xE0577F)
-    static let sky = Color(hex: 0x4FA3D9)
-    static let danger = Color(hex: 0xD9483B)
+    // MARK: Surfaces
 
-    /// Size of one "pixel" of chrome (borders, notches, shadows).
+    /// Behind grouped content.
+    static let backdrop = Color(uiColor: .systemGroupedBackground)
+    /// Cards and rows on the backdrop.
+    static let card = Color(uiColor: .secondarySystemGroupedBackground)
+    /// Wells inside a card: inputs, quiet tiles, icon backgrounds.
+    static let well = Color(uiColor: .tertiarySystemFill)
+    static let separator = Color(uiColor: .separator)
+
+    // MARK: Text
+
+    static let ink = Color.primary
+    static let inkSoft = Color.secondary
+
+    // MARK: Colour
+
+    /// Slime green (AccentColor asset: deep green in light, bright in dark).
+    static let accent = Color.accentColor
+    /// Text and symbols on an accent fill. White on the deep green, near-black
+    /// on the bright green, so both pass 4.5:1.
+    static let onAccent = Color.dynamic(light: 0xFFFFFF, dark: 0x0B2912)
+    static let gold = Color.dynamic(light: 0xB7791F, dark: 0xFFD166)
+    static let love = Color(uiColor: .systemPink)
+    static let sky = Color(uiColor: .systemBlue)
+    static let danger = Color(uiColor: .systemRed)
+
+    // MARK: Shape
+
+    static let radius: CGFloat = 16
+    static let smallRadius: CGFloat = 12
+
+    // MARK: Pixel art (games only)
+
+    /// Size of one chrome pixel inside game boards.
     static let px: CGFloat = 3
+    /// Outline colour for pixel art drawn inside games.
+    static let border = Color.dynamic(light: 0x3A2B2E, dark: 0x0D0A12)
 
-    static func title(_ size: CGFloat = 22) -> Font { Brand.pixel(size) }
-    static func label(_ size: CGFloat = 15) -> Font { Brand.pixel(size) }
-    /// Running text. Follows Dynamic Type (the pixel font does by itself).
-    static func text(_ size: CGFloat = 15) -> Font {
-        .system(size: UIFontMetrics(forTextStyle: .body).scaledValue(for: size), weight: .medium, design: .rounded)
+    // MARK: Type
+
+    /// Bold SF Rounded at the text style closest to `size`, so it scales with
+    /// Dynamic Type. Prefer the semantic styles (.headline …) in new code.
+    static func title(_ size: CGFloat = 22) -> Font { .system(style(size), design: .rounded, weight: .bold) }
+    static func label(_ size: CGFloat = 15) -> Font { .system(style(size), design: .rounded, weight: .semibold) }
+    static func text(_ size: CGFloat = 15) -> Font { .system(style(size), design: .rounded) }
+
+    /// The slime speaking: Pixelify Sans, scaled with Dynamic Type.
+    static func voice(_ size: CGFloat = 16) -> Font {
+        .custom("PixelifySans-Bold", size: size, relativeTo: .body)
     }
+
+    private static func style(_ size: CGFloat) -> Font.TextStyle {
+        switch size {
+        case 32...: .largeTitle
+        case 26..<32: .title
+        case 21..<26: .title2
+        case 19..<21: .title3
+        case 17..<19: .body
+        case 16..<17: .callout
+        case 15..<16: .subheadline
+        case 13..<15: .footnote
+        case 12..<13: .caption
+        default: .caption2
+        }
+    }
+
+    // MARK: Needs
 
     static func color(for need: Need) -> Color {
         switch need {
-        case .hunger: Color(hex: 0xE8892A)
-        case .fun: Color(hex: 0x3F9FD9)
-        case .energy: Color(hex: 0xD9B21F)
-        case .clean: Color(hex: 0x3FBF9A)
-        case .love: Color(hex: 0xE0577F)
+        case .hunger: Color(uiColor: .systemOrange)
+        case .fun: Color(uiColor: .systemBlue)
+        case .energy: Color(uiColor: .systemIndigo)
+        case .clean: Color(uiColor: .systemTeal)
+        case .love: Color(uiColor: .systemPink)
         }
     }
 
@@ -59,8 +105,8 @@ extension Color {
     }
 }
 
-/// A rectangle with its corners cut by one chrome pixel: the pixel-art
-/// "rounded" corner.
+/// A rectangle with its corners cut by one pixel: the pixel-art "rounded"
+/// corner. Only for tiles drawn inside games.
 struct NotchedRect: InsettableShape {
     var notch: CGFloat = Theme.px
     var inset: CGFloat = 0

@@ -11,6 +11,8 @@ struct Player: Codable, Hashable {
     /// When the app was last opened, for reunion greetings.
     var lastSeen = Date.now
     var daysActive: Set<String> = []
+    /// Seasons it has been visited in (Season raw values), for achievements.
+    var seasonsSeen: Set<String> = []
 
     var level: Int { Slime.level(forXP: xp / 2) }
 }
@@ -40,12 +42,15 @@ struct Wallet: Codable, Hashable {
         return true
     }
 
+    /// Receipts that are kept forever: they can never be paid twice.
+    static let permanentPrefixes = ["level:", "achievement:", "buy:", "birthday:", "holiday:"]
+
     /// Keeps the ledger small. Game and daily receipts expire after 60 days;
-    /// permanent ones (levels, achievements, purchases) are kept.
+    /// permanent ones (levels, achievements, purchases, yearly gifts) are kept.
     mutating func prune(now: Date) {
         let cutoff = now.addingTimeInterval(-60 * 24 * 3600)
         ledger = ledger.filter { key, date in
-            date > cutoff || key.hasPrefix("level:") || key.hasPrefix("achievement:") || key.hasPrefix("buy:")
+            date > cutoff || Self.permanentPrefixes.contains { key.hasPrefix($0) }
         }
     }
 }
@@ -130,6 +135,7 @@ struct MemoryEntry: Codable, Hashable, Identifiable {
     enum Kind: String, Codable {
         case hatched, fed, favoriteFound, played, highScore, bath, levelUp, stageUp
         case achievement, gift, giftReceived, visit, friendMade, inLove, event, reunion
+        case birthday, streak, holiday
     }
 
     var id = UUID()
@@ -138,6 +144,56 @@ struct MemoryEntry: Codable, Hashable, Identifiable {
     var detail: String = ""
     /// Shown in the memory book. Only important moments are kept forever.
     var keepsake = false
+}
+
+extension MemoryEntry {
+    /// How the memory book tells this moment.
+    var summary: String {
+        switch kind {
+        case .hatched: return "\(detail) hatched"
+        case .fed: return "Ate \(Food(rawValue: detail)?.title.lowercased() ?? "something")"
+        case .favoriteFound: return "Found its favourite food: \(Food(rawValue: detail)?.title ?? detail)"
+        case .played: return "Played \(Self.game(detail)?.title ?? "a game")"
+        case .highScore: return "Record in \(Self.game(detail)?.title ?? "a game"): \(detail.split(separator: ":").last ?? "")"
+        case .bath: return "Had a bath"
+        case .levelUp: return "Reached level \(detail)"
+        case .stageUp: return "Grew up: \(Stage(rawValue: detail)?.title ?? detail)"
+        case .achievement: return "Achievement: \(Achievements.achievement(detail)?.title ?? detail)"
+        case .gift: return "Sent a gift to \(detail)"
+        case .giftReceived: return keepsake ? "First gift from \(detail)" : "Gift from \(detail)"
+        case .visit: return "Visited \(detail)"
+        case .friendMade: return "New friend: \(detail)"
+        case .inLove: return "In love with \(detail)"
+        case .event: return PhoneEvent(rawValue: detail)?.title ?? "Something happened"
+        case .reunion: return "Back together after \(detail) days"
+        case .birthday: return detail == "1" ? "First birthday" : "Birthday: \(detail) years old"
+        case .streak: return "\(detail) days in a row"
+        case .holiday: return Holiday(rawValue: detail)?.greeting ?? "A holiday together"
+        }
+    }
+
+    /// Item sprite for the memory book.
+    var icon: String {
+        switch kind {
+        case .hatched: return "starJelly"
+        case .fed, .favoriteFound: return Food(rawValue: detail)?.sprite ?? "apple"
+        case .played: return Self.game(detail)?.icon ?? "ball"
+        case .highScore, .achievement: return "furn.trophy"
+        case .bath: return "bubbleItem"
+        case .levelUp, .stageUp: return "coin"
+        case .gift, .giftReceived: return "chest"
+        case .visit, .friendMade, .inLove: return "heart"
+        case .event: return "speech"
+        case .reunion: return "flower"
+        case .birthday: return "cake"
+        case .streak: return "flag"
+        case .holiday: return Holiday(rawValue: detail)?.icon ?? "starJelly"
+        }
+    }
+
+    private static func game(_ detail: String) -> GameID? {
+        GameID(rawValue: String(detail.split(separator: ":").first ?? ""))
+    }
 }
 
 struct Memory: Codable, Hashable {
@@ -198,7 +254,8 @@ struct Settings: Codable, Hashable {
 // MARK: - The save
 
 struct GameState: Codable {
-    static let currentVersion = 2
+    /// 3: daily gift streak, seasons seen, birthdays and holidays.
+    static let currentVersion = 3
 
     var version = GameState.currentVersion
     var hatched = false
@@ -209,6 +266,7 @@ struct GameState: Codable {
     var progress = Progress()
     var memory = Memory()
     var settings = Settings()
+    var streak = StreakState()
 
     static func fresh() -> GameState { GameState() }
 
@@ -217,6 +275,9 @@ struct GameState: Codable {
         slime.sanitize(now: now)
         wallet.coins = max(0, wallet.coins)
         player.xp = max(0, player.xp)
+        streak.count = max(0, streak.count)
+        streak.best = max(streak.best, streak.count)
+        streak.opened = max(0, streak.opened)
         if inventory.habitats.isEmpty { inventory.habitats = [.room] }
         if !inventory.habitats.contains(inventory.habitat) { inventory.habitat = .room }
         for (slot, id) in inventory.furniture where Catalog.item(id)?.slot != slot || !inventory.owned.contains(id) {
@@ -251,6 +312,7 @@ extension Player {
         tips = c.value(.tips, d.tips)
         lastSeen = c.value(.lastSeen, d.lastSeen)
         daysActive = c.value(.daysActive, d.daysActive)
+        seasonsSeen = c.value(.seasonsSeen, d.seasonsSeen)
     }
 }
 
@@ -289,11 +351,22 @@ extension Progress {
     }
 }
 
+/// Decodes one element of a list, or nothing if it is damaged, so a single
+/// bad entry can't wipe the whole list.
+private struct Lossy<T: Decodable>: Decodable {
+    let value: T?
+
+    init(from decoder: Decoder) {
+        value = try? T(from: decoder)
+    }
+}
+
 extension Memory {
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         let d = Memory()
-        entries = c.value(.entries, d.entries)
+        let lossy: [Lossy<MemoryEntry>]? = c.value(.entries, nil)
+        entries = lossy?.compactMap(\.value) ?? d.entries
         recentLines = c.value(.recentLines, d.recentLines)
         lineUsedAt = c.value(.lineUsedAt, d.lineUsedAt)
     }
@@ -340,5 +413,6 @@ extension GameState {
         progress = c.value(.progress, d.progress)
         memory = c.value(.memory, d.memory)
         settings = c.value(.settings, d.settings)
+        streak = c.value(.streak, d.streak)
     }
 }

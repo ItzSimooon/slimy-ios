@@ -4,94 +4,120 @@ import WidgetKit
 
 typealias IslandState = SlimeActivityAttributes.ContentState
 
-/// Text in the island and on the Lock Screen. The rounded system font stays
-/// crisp at small sizes; the pixel font is kept for the slime's name on the
-/// Lock Screen, where it is big enough to read.
+/// Text in the island and on the Lock Screen card: SF Rounded text styles.
+/// Both have a fixed maximum height, so their views cap Dynamic Type at
+/// `IslandType.largest`.
 enum IslandType {
-    static let line = Font.system(size: 15, weight: .semibold, design: .rounded)
-    static let name = Font.system(size: 13, weight: .bold, design: .rounded)
-    static let small = Font.system(size: 12, weight: .semibold, design: .rounded)
-    static let badge = Font.system(size: 13, weight: .heavy, design: .rounded)
-    static let button = Font.system(size: 12, weight: .bold, design: .rounded)
+    static let largest = DynamicTypeSize.large
+
+    static let title = Font.system(.headline, design: .rounded)
+    static let line = Font.system(.subheadline, design: .rounded, weight: .semibold)
+    static let name = Font.system(.caption, design: .rounded, weight: .semibold)
+    static let small = Font.system(.caption, design: .rounded, weight: .semibold)
+    static let badge = Font.system(.caption, design: .rounded, weight: .bold)
+    static let button = Font.system(.caption2, design: .rounded, weight: .semibold)
+    /// The slime speaking, on the Lock Screen card where there is room for it.
+    static let voice = Brand.voice(15, relativeTo: .subheadline)
 }
 
-/// Five block bars, one per need, each with its pixel icon.
-struct NeedsStrip: View {
+/// Colours inside the Dynamic Island, which is black in light and dark mode.
+enum IslandInk {
+    static let primary = Color.white
+    static let tile = Color.white.opacity(0.12)
+}
+
+/// The five needs as rings, each one a button that looks after it without
+/// opening the app: Feed, Play, Sleep (Wake while asleep), Bath, Pet. On the
+/// dimmed Lock Screen (Always On, StandBy at night) only the rings remain.
+struct NeedActions: View {
+    enum Surface { case island, card }
+
     let state: IslandState
-
-    var body: some View {
-        HStack(spacing: 8) {
-            ForEach(Need.allCases) { need in
-                HStack(spacing: 4) {
-                    PixelItem(name: icon(need)).frame(width: 12, height: 12)
-                    PixelBar(value: state.value(need), segments: 5,
-                             color: state.value(need) < 25 ? Brand.danger : Brand.color(for: need), height: 6, gap: 1.5)
-                }
-            }
-        }
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Need.allCases.map { "\($0.title) \(state.value($0)) percent" }.joined(separator: ", "))
-    }
-
-    private func icon(_ need: Need) -> String {
-        switch need {
-        case .hunger: "apple"
-        case .fun: "ball"
-        case .energy: "starJelly"
-        case .clean: "bubbleItem"
-        case .love: "heart"
-        }
-    }
-}
-
-/// A button in the island that runs an intent without opening the app.
-struct IslandButton<I: LiveActivityIntent>: View {
-    let intent: I
-    let symbol: String
-    let label: String
-    let tint: Color
-    var height: CGFloat = 34
-
-    var body: some View {
-        Button(intent: intent) {
-            HStack(spacing: 5) {
-                Image(systemName: symbol).font(.system(size: 12, weight: .bold)).foregroundStyle(tint)
-                Text(label).font(IslandType.button).foregroundStyle(Brand.text)
-                    .lineLimit(1).minimumScaleFactor(0.8)
-            }
-            .frame(maxWidth: .infinity)
-            .frame(height: height)
-            .background(tint.opacity(0.2))
-            .overlay(Rectangle().strokeBorder(tint.opacity(0.55), lineWidth: 1.5))
-        }
-        .buttonStyle(.plain)
-    }
-}
-
-struct ActionRow: View {
-    let state: IslandState
-    var height: CGFloat = 34
+    var surface: Surface = .island
+    var interactive = true
 
     var body: some View {
         HStack(spacing: 6) {
-            if state.mood == .sleep {
-                IslandButton(intent: SleepSlimeIntent(), symbol: "sun.max.fill", label: "Wake", tint: Brand.color(for: .energy), height: height)
-                IslandButton(intent: PetSlimeIntent(), symbol: "hand.raised.fill", label: "Pet", tint: Brand.warm, height: height)
-            } else {
-                IslandButton(intent: FeedSlimeIntent(), symbol: "fork.knife", label: "Feed", tint: Brand.color(for: .hunger), height: height)
-                IslandButton(intent: PlaySlimeIntent(), symbol: "gamecontroller.fill", label: "Play", tint: Brand.color(for: .fun), height: height)
-                IslandButton(intent: BathSlimeIntent(), symbol: "drop.fill", label: "Bath", tint: Brand.color(for: .clean), height: height)
-                IslandButton(intent: PetSlimeIntent(), symbol: "hand.raised.fill", label: "Pet", tint: Brand.warm, height: height)
+            ForEach(Need.allCases) { need in
+                tile(need)
             }
         }
+    }
+
+    @ViewBuilder
+    private func tile(_ need: Need) -> some View {
+        let face = NeedTile(need: need, value: Double(state.value(need)), title: title(need),
+                            surface: surface, raised: interactive)
+        if interactive {
+            switch need {
+            case .hunger: Button(intent: FeedSlimeIntent()) { face }.buttonStyle(.plain)
+            case .fun: Button(intent: PlaySlimeIntent()) { face }.buttonStyle(.plain)
+            case .energy: Button(intent: SleepSlimeIntent()) { face }.buttonStyle(.plain)
+            case .clean: Button(intent: BathSlimeIntent()) { face }.buttonStyle(.plain)
+            case .love: Button(intent: PetSlimeIntent()) { face }.buttonStyle(.plain)
+            }
+        } else {
+            face
+        }
+    }
+
+    /// The action on a button, the need's name when it's only a ring.
+    private func title(_ need: Need) -> String {
+        guard interactive else { return need.title }
+        switch need {
+        case .hunger: return "Feed"
+        case .fun: return "Play"
+        case .energy: return state.mood == .sleep ? "Wake" : "Sleep"
+        case .clean: return "Bath"
+        case .love: return "Pet"
+        }
+    }
+}
+
+/// One need: its ring above a short label, on a rounded tile when tappable.
+private struct NeedTile: View {
+    let need: Need
+    let value: Double
+    let title: String
+    let surface: NeedActions.Surface
+    let raised: Bool
+
+    private var shape: RoundedRectangle { RoundedRectangle(cornerRadius: 14, style: .continuous) }
+
+    var body: some View {
+        VStack(spacing: 3) {
+            NeedDial(need: need, value: value, size: 24, lineWidth: 3)
+            Text(title)
+                .font(IslandType.button)
+                .foregroundStyle(surface == .island ? IslandInk.primary : Color.primary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+        }
+        .frame(maxWidth: .infinity, minHeight: 44)
+        .background {
+            if raised {
+                shape.fill(surface == .island ? IslandInk.tile : Color.primary.opacity(0.08))
+            }
+        }
+        .contentShape(shape)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(title)
+        .accessibilityValue(spokenValue)
+    }
+
+    /// "Food 42 percent" on a button, "42 percent" when the label is the need.
+    private var spokenValue: String {
+        raised ? "\(need.title) \(Int(value)) percent" : "\(Int(value)) percent"
     }
 }
 
 extension IslandSlime {
-    /// The player's slime as the activity state describes it.
-    init(_ state: IslandState, height: CGFloat) {
+    /// The player's slime as the activity state describes it. VoiceOver says
+    /// its name unless `label` says more.
+    init(_ state: IslandState, height: CGFloat, label: String? = nil) {
         self.init(stage: state.slimeStage, anim: state.anim, anchor: state.anchor, skin: state.skin,
-                  accessories: state.accessories, height: height, animated: state.isAnimated)
+                  accessories: state.accessories, height: height, animated: state.isAnimated,
+                  label: label ?? state.name)
     }
 
     /// A friend's slime, facing the player's. During a shared moment both
@@ -99,7 +125,8 @@ extension IslandSlime {
     init(friend: FriendSlime, state: IslandState, height: CGFloat) {
         self.init(stage: friend.stage, anim: state.moment?.anim ?? SpriteAnim(friend.mood), anchor: state.anchor,
                   skin: friend.skin, accessories: friend.equipped ?? Accessories(), height: height,
-                  animated: state.isAnimated, mirrored: true)
+                  animated: state.isAnimated, mirrored: true,
+                  label: "\(friend.name), \(friend.owner)'s slime\(friend.inLove ? ", in love" : "")")
     }
 }
 
@@ -123,20 +150,12 @@ struct FriendGroup: View {
     let state: IslandState
     var height: CGFloat
     var limit = 3
-    var names = true
 
     var body: some View {
         let friends = ordered
         HStack(alignment: .bottom, spacing: 2) {
             ForEach(friends, id: \.id) { friend in
-                VStack(spacing: 2) {
-                    IslandSlime(friend: friend, state: state, height: friend.id == friends.first?.id ? height : height * 0.82)
-                    if names {
-                        Text(friend.name).font(IslandType.small).foregroundStyle(Brand.text.opacity(0.8)).lineLimit(1)
-                    }
-                }
-                .accessibilityElement(children: .ignore)
-                .accessibilityLabel("\(friend.name), \(friend.owner)'s slime\(friend.inLove ? ", in love" : "")")
+                IslandSlime(friend: friend, state: state, height: friend.id == friends.first?.id ? height : height * 0.82)
             }
         }
     }

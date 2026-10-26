@@ -18,7 +18,7 @@ struct PixelBar: View {
         }
         .frame(height: height)
         .accessibilityElement()
-        .accessibilityValue("\(value) Prozent")
+        .accessibilityValue("\(value) percent")
     }
 }
 

@@ -8,6 +8,9 @@ enum GameEvent: Hashable {
     case favoriteFound(Food)
     case record(GameID, Int)
     case challenge(String)
+    /// The slime turned this many years old today.
+    case birthday(Int)
+    case holiday(Holiday)
 }
 
 struct Outcome {
@@ -19,7 +22,8 @@ struct Outcome {
 extension GameState {
     // MARK: Time
 
-    /// Moves the world to `now`: needs, sleep, daily challenges, achievements.
+    /// Moves the world to `now`: needs, sleep, daily challenges, special
+    /// days, achievements.
     @discardableResult
     mutating func tick(now: Date, calendar: Calendar = .current) -> [GameEvent] {
         guard hatched else { return [] }
@@ -30,7 +34,45 @@ extension GameState {
             player.daysActive = Set(player.daysActive.sorted().suffix(400))
         }
         if slime.wish == nil { slime.lastNudged = nil }
-        return checkAchievements(now: now)
+        let special = celebrateSpecialDays(now: now, calendar: calendar)
+        return special + checkAchievements(now: now)
+    }
+
+    /// Birthdays and holidays: a gift and a memory, once a year each.
+    private mutating func celebrateSpecialDays(now: Date, calendar: Calendar) -> [GameEvent] {
+        player.seasonsSeen.insert(Season.at(now, calendar: calendar).rawValue)
+        let year = Calendar.gregorian(like: calendar).component(.year, from: now)
+        var events: [GameEvent] = []
+        if let years = Birthday.years(born: slime.birthday, at: now, calendar: calendar),
+           wallet.claim(Birthday.receipt(year: year), coins: Birthday.coins(years: years), at: now) {
+            inventory.owned.insert("furn.cake")
+            slime.needs.add(.love, 15)
+            slime.needs.add(.fun, 15)
+            memory.add(MemoryEntry(kind: .birthday, at: now, detail: "\(years)", keepsake: true))
+            // A birthday that starts at midnight doesn't wake it up.
+            if !slime.isAsleep {
+                slime.react(.celebrate, at: now)
+                let line = Dialogue.say(.birthday, in: &self, context: LineContext(years: years), at: now, calendar: calendar)
+                slime.say = Utterance(text: line, at: now)
+            }
+            events.append(.birthday(years))
+        }
+        if let holiday = Holiday.at(now, calendar: calendar),
+           wallet.claim(holiday.receipt(year: year), coins: holiday.coins, at: now) {
+            memory.add(MemoryEntry(kind: .holiday, at: now, detail: holiday.rawValue, keepsake: true))
+            if !slime.isAsleep {
+                slime.react(.celebrate, at: now)
+                let line = Dialogue.say(holiday.lines, in: &self, at: now, calendar: calendar)
+                slime.say = Utterance(text: line, at: now)
+            }
+            events.append(.holiday(holiday))
+        }
+        return events
+    }
+
+    /// Whether today is the slime's hatch-day anniversary.
+    func isBirthday(at now: Date, calendar: Calendar = .current) -> Bool {
+        hatched && Birthday.years(born: slime.birthday, at: now, calendar: calendar) != nil
     }
 
     /// The app was opened. Greets you, without guilt, if you were away.
@@ -41,9 +83,12 @@ extension GameState {
         guard away > 4 * 3600, !slime.isAsleep else { return nil }
         let days = Int(away / 86400)
         let line: String
+        var rng = SplitMix(seed: SplitMix.seed("arrive\(Int(now.timeIntervalSince1970 / 60))"))
         if days >= 2 {
             line = Dialogue.say(.longReunion, in: &self, context: .init(days: days), at: now, calendar: calendar)
             memory.add(MemoryEntry(kind: .reunion, at: now, detail: "\(days)"))
+        } else if let seasonal = Season.at(now, calendar: calendar).lines, rng.unit() < 0.5 {
+            line = Dialogue.say(seasonal, in: &self, at: now, calendar: calendar)
         } else {
             line = Dialogue.say(.reunion, in: &self, at: now, calendar: calendar)
         }
@@ -69,7 +114,7 @@ extension GameState {
     mutating func feed(_ food: Food, now: Date) -> Outcome {
         tick(now: now)
         guard slime.level >= food.unlockLevel else {
-            return Outcome(ok: false, line: "\(food.title) unlocks at level \(food.unlockLevel)")
+            return Outcome(ok: false, line: "\(food.title) unlocks at level \(food.unlockLevel).")
         }
         guard wallet.coins >= food.price else {
             return Outcome(ok: false, line: Dialogue.say(.noCoins, in: &self, at: now))
@@ -201,7 +246,7 @@ extension GameState {
         let now = result.finishedAt
         tick(now: now)
         guard wallet.claim("game:\(result.session.uuidString)", coins: result.coins, at: now) else {
-            return Outcome(ok: false, line: "already collected")
+            return Outcome(ok: false, line: "Already collected.")
         }
         let game = result.game
         let favorite = game == slime.favoriteGame
@@ -276,9 +321,9 @@ extension GameState {
     /// Pays the quest once, when it's done.
     mutating func claimQuest(_ plan: DailyPlan, now: Date) -> Outcome {
         let p = questProgress(plan)
-        guard p.value >= p.target else { return Outcome(ok: false, line: "not done yet") }
+        guard p.value >= p.target else { return Outcome(ok: false, line: "Not done yet.") }
         guard wallet.claim("quest:\(plan.day)", coins: plan.quest.coins, at: now) else {
-            return Outcome(ok: false, line: "already collected")
+            return Outcome(ok: false, line: "Already collected.")
         }
         progress.quest?.claimed = true
         slime.react(.celebrate, at: now)
@@ -294,15 +339,15 @@ extension GameState {
         case .level(let n): slime.level >= n
         case .achievement(let id): progress.achievements[id] != nil
         case .bond(let n): slime.bond >= Double(n)
-        case .season(let month): calendar.component(.month, from: now) == month
+        case .season(let month): Calendar.gregorian(like: calendar).component(.month, from: now) == month
         }
     }
 
     func owns(_ id: String) -> Bool { inventory.owned.contains(id) }
 
     mutating func buy(_ item: CatalogItem, now: Date) -> Outcome {
-        guard !owns(item.id) else { return Outcome(ok: false, line: "you already have it") }
-        guard isAvailable(item.unlock, now: now) else { return Outcome(ok: false, line: "still locked") }
+        guard !owns(item.id) else { return Outcome(ok: false, line: "You already have it.") }
+        guard isAvailable(item.unlock, now: now) else { return Outcome(ok: false, line: "Still locked.") }
         guard wallet.spend(item.price) else {
             return Outcome(ok: false, line: Dialogue.say(.noCoins, in: &self, at: now))
         }
@@ -316,8 +361,8 @@ extension GameState {
     }
 
     mutating func buy(_ habitat: Habitat, now: Date) -> Outcome {
-        guard !inventory.habitats.contains(habitat) else { return Outcome(ok: false, line: "you already have it") }
-        guard isAvailable(habitat.unlock, now: now) else { return Outcome(ok: false, line: "still locked") }
+        guard !inventory.habitats.contains(habitat) else { return Outcome(ok: false, line: "You already have it.") }
+        guard isAvailable(habitat.unlock, now: now) else { return Outcome(ok: false, line: "Still locked.") }
         guard wallet.spend(habitat.price) else {
             return Outcome(ok: false, line: Dialogue.say(.noCoins, in: &self, at: now))
         }
@@ -366,7 +411,9 @@ extension GameState {
         let day = Challenges.dayKey(now, calendar: calendar)
         if progress.challenges.dayKey != day {
             progress.challenges.dayKey = day
-            progress.challenges.daily = Challenges.pick(Challenges.dailyPool, count: 3, key: day).map { template in
+            // Same seed for everyone each day; locked games are left out.
+            let pool = Challenges.dailyOptions(forLevel: slime.level)
+            progress.challenges.daily = Challenges.pick(pool, count: 3, key: day).map { template in
                 var c = ChallengeState(id: template.id)
                 if case .stat(let key, _) = template.goal { c.baseline = progress.stats[key] }
                 return c
@@ -387,10 +434,10 @@ extension GameState {
         let board = progress.challenges
         let isDaily = board.daily.contains { $0.id == id }
         guard let challenge = (board.daily + board.weekly).first(where: { $0.id == id }),
-              let template = Challenges.template(id) else { return Outcome(ok: false, line: "doesn't exist") }
-        guard Challenges.isDone(challenge, in: self) else { return Outcome(ok: false, line: "not done yet") }
+              let template = Challenges.template(id) else { return Outcome(ok: false, line: "This challenge is over.") }
+        guard Challenges.isDone(challenge, in: self) else { return Outcome(ok: false, line: "Not done yet.") }
         let key = "challenge:\(isDaily ? board.dayKey : board.weekKey):\(id)"
-        guard wallet.claim(key, coins: template.coins, at: now) else { return Outcome(ok: false, line: "already collected") }
+        guard wallet.claim(key, coins: template.coins, at: now) else { return Outcome(ok: false, line: "Already collected.") }
         if isDaily, let i = progress.challenges.daily.firstIndex(where: { $0.id == id }) {
             progress.challenges.daily[i].claimed = true
         } else if let i = progress.challenges.weekly.firstIndex(where: { $0.id == id }) {
@@ -479,21 +526,37 @@ extension GameState {
         return (wish, line)
     }
 
-    /// What it says when nothing in particular happened.
+    /// What it says when nothing in particular happened: what it needs
+    /// first, then birthday and season talk, the streak, closeness, the time
+    /// of day, or just idle thoughts.
     mutating func chatter(now: Date, calendar: Calendar = .current) -> String {
         tick(now: now, calendar: calendar)
         let hour = calendar.component(.hour, from: now)
+        let streakDays = streakInfo(at: now, calendar: calendar).current
+        let years = Birthday.years(born: slime.birthday, at: now, calendar: calendar) ?? 0
+        // Deterministic per moment, like the lines themselves.
+        var rng = SplitMix(seed: SplitMix.seed("chatter\(Int(now.timeIntervalSince1970 / 30))"))
+        let roll = rng.unit()
         let category: LineCategory
         if slime.isAsleep {
             category = .sleeping
         } else if let wish = slime.wish {
             category = Dialogue.category(for: wish)
-        } else if slime.bond >= 50, hour % 3 == 0 {
+        } else if years > 0, roll < 0.5 {
+            category = .birthday
+        } else if let seasonal = Season.at(now, calendar: calendar).lines, roll < 0.3 {
+            category = seasonal
+        } else if streakDays >= 3, roll > 0.9 {
+            category = .streak
+        } else if slime.bond >= 50, hour % 3 == 0, roll < 0.6 {
             category = .idleClose
+        } else if rng.unit() < 0.45 {
+            category = Dialogue.timeOfDay(hour: hour)
         } else {
             category = .idle
         }
-        let line = Dialogue.say(category, in: &self, context: .init(game: slime.favoriteGame.title), at: now, calendar: calendar)
+        let context = LineContext(game: slime.favoriteGame.title, streak: streakDays, years: years)
+        let line = Dialogue.say(category, in: &self, context: context, at: now, calendar: calendar)
         slime.say = Utterance(text: line, at: now)
         return line
     }
@@ -510,7 +573,7 @@ extension GameState {
 
     // MARK: Progress
 
-    private mutating func gainXP(_ amount: Int, now: Date, line: inout String) -> [GameEvent] {
+    mutating func gainXP(_ amount: Int, now: Date, line: inout String) -> [GameEvent] {
         let levelBefore = slime.level
         let stageBefore = slime.stage
         slime.xp += amount

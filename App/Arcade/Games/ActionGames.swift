@@ -41,7 +41,7 @@ struct SnackCatcherView: View {
                     Text("\(engine.combo)x combo")
                         .font(Theme.label(14)).foregroundStyle(Theme.ink)
                         .padding(.horizontal, 8).padding(.vertical, 3)
-                        .background(Theme.paper.opacity(0.85))
+                        .background(Theme.card.opacity(0.85))
                         .position(space.point(50, 12))
                 }
             }
@@ -343,8 +343,9 @@ struct BasketballView: View {
                 GameSlime(anim: engine.streak >= 2 ? .celebrate : .idle, height: 12 * space.scale, time: engine.time)
                     .position(space.point(50, 152))
                 if engine.streak >= 2 {
+                    // The court is always light, so the text stays dark in Dark Mode too.
                     Text("\(engine.streak) in a row")
-                        .font(Theme.label(14)).foregroundStyle(Theme.ink)
+                        .font(Theme.label(14)).foregroundStyle(Color(hex: 0x3A2B2E))
                         .position(space.point(50, 70))
                 }
             }

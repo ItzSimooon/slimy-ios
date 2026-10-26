@@ -109,8 +109,9 @@ struct MemoryGardenView: View {
 
     var body: some View {
         VStack(spacing: 16) {
+            // The garden is always light green, so the text stays dark in Dark Mode too.
             Text(engine.isListening ? "Your turn" : "Watch closely")
-                .font(Theme.title(20)).foregroundStyle(Theme.ink)
+                .font(Theme.title(20)).foregroundStyle(Color(hex: 0x1F3D1A))
                 .padding(.top, 16)
                 .accessibilityAddTraits(.updatesFrequently)
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 3), spacing: 10) {
@@ -202,9 +203,19 @@ struct GardenPuzzleView: View {
             .padding(10)
 
             HStack(spacing: 8) {
-                PixelButton(title: "Reset", systemIcon: "arrow.counterclockwise", kind: .quiet, compact: true) {
+                Button {
+                    guard session.running else { return }
+                    Feedback.shared.play(.tap)
                     engine.restartLevel()
+                } label: {
+                    Label("Restart", systemImage: "arrow.counterclockwise")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(Theme.ink)
+                        .padding(.horizontal, 14)
+                        .frame(minHeight: 48)
                 }
+                .buttonStyle(TileStyle(fill: Theme.card, radius: 14))
+                .accessibilityLabel("Restart level")
                 Spacer()
                 arrow(.left, "arrow.left", "Left")
                 VStack(spacing: 6) {
@@ -213,8 +224,8 @@ struct GardenPuzzleView: View {
                 }
                 arrow(.right, "arrow.right", "Right")
             }
-            .padding(.horizontal, 12)
-            .padding(.bottom, 10)
+            .padding(.horizontal, 14)
+            .padding(.bottom, 14)
         }
         .background(Color(hex: 0x8FCB76))
         .onAppear { session.status = "Level 1/\(GardenPuzzleEngine.levels.count)" }
@@ -223,10 +234,10 @@ struct GardenPuzzleView: View {
 
     private func arrow(_ d: GardenPuzzleEngine.Direction, _ icon: String, _ label: String) -> some View {
         Button { move(d) } label: {
-            Image(systemName: icon).font(.system(size: 16, weight: .black)).foregroundStyle(Theme.ink)
-                .frame(width: 48, height: 40)
+            Image(systemName: icon).font(.body.weight(.bold)).foregroundStyle(Theme.ink)
+                .frame(width: 56, height: 48)
         }
-        .buttonStyle(KeyStyle(fill: Theme.paper))
+        .buttonStyle(TileStyle(fill: Theme.card, radius: 14))
         .accessibilityLabel(label)
     }
 
@@ -412,14 +423,14 @@ struct ColorMatchView: View {
             }
             Spacer()
             HStack(spacing: 12) {
-                PixelButton(title: "No", kind: .danger) { answer(false) }
-                PixelButton(title: "Yes") { answer(true) }
+                AppButton(title: "No", kind: .danger) { answer(false) }
+                AppButton(title: "Yes") { answer(true) }
             }
             .padding(.horizontal, 16)
             .padding(.bottom, 16)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Theme.paperShade)
+        .background(Theme.well)
         .onAppear { session.status = clock(engine.timeLeft) }
         .gameLoop(running: session.running) { dt in
             engine.step(dt)
@@ -429,7 +440,7 @@ struct ColorMatchView: View {
     }
 
     private func card(_ piece: ColorMatchEngine.Piece, title: String) -> some View {
-        PixelWindow {
+        Card {
             Text(title).font(Theme.label(13)).foregroundStyle(Theme.inkSoft)
             IconShape(rows: Self.shapes[piece.shape])
                 .fill(Color(hex: Self.colors[piece.color]))

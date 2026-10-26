@@ -1,3 +1,4 @@
+import ActivityKit
 import BackgroundTasks
 import Foundation
 import Network
@@ -236,11 +237,15 @@ final class PhoneMonitor {
         lastFired = fired.filter { now.timeIntervalSince($0.value) < 3 * 86400 }
 
         let said = GameStore.shared.handle(event)
-        let name = GameStore.shared.slime.name
+        let slime = GameStore.shared.slime
+        // Only news that matters opens the island with a sound, and never
+        // while the slime sleeps (a battery that fills up overnight stays
+        // quiet). IslandController adds quiet hours and the daily limit.
+        let alert = event.alerts && !slime.isAsleep
+            ? AlertConfiguration(title: "\(slime.name)", body: "\(said)", sound: .default) : nil
         let background = UIApplication.shared.applicationState != .active
         Task {
-            await IslandController.shared.sync(alert: event.alerts
-                ? .init(title: "\(name)", body: "\(said)", sound: .default) : nil)
+            await IslandController.shared.sync(alert: alert)
             if !background { await IslandController.shared.settle() }
         }
     }
@@ -248,7 +253,9 @@ final class PhoneMonitor {
     // MARK: Background task while charging
 
     /// Asks iOS for a run while the phone charges, which is usually soon
-    /// after the cable goes in (and often overnight).
+    /// after the cable goes in (and often overnight). The run notices the
+    /// charger and updates the island; it can't start a Live Activity, iOS
+    /// only allows that from the foreground or an intent.
     static func schedulePowerCheck() {
         let request = BGProcessingTaskRequest(identifier: powerTaskID)
         request.requiresExternalPower = true
@@ -260,10 +267,13 @@ final class PhoneMonitor {
     static func registerPowerTask() {
         BGTaskScheduler.shared.register(forTaskWithIdentifier: powerTaskID, using: .main) { task in
             let work = Task { @MainActor in
-                await PhoneMonitor.shared.checkInBackground()
-                await IslandController.shared.ensureRunning()
                 schedulePowerCheck()
-                task.setTaskCompleted(success: true)
+                if GameStore.shared.state.hatched {
+                    GameStore.shared.tick()
+                    await PhoneMonitor.shared.checkInBackground()
+                    await IslandController.shared.sync()
+                }
+                task.setTaskCompleted(success: !Task.isCancelled)
             }
             task.expirationHandler = { work.cancel() }
         }

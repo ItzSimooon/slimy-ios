@@ -54,6 +54,8 @@ struct AnimatedSlime: View {
     var accessories = Accessories()
     let height: CGFloat
     var mirrored = false
+    /// What VoiceOver says for the slime.
+    var label = "Slime"
 
     var body: some View {
         let width = height * SlimeFont.aspect
@@ -62,16 +64,32 @@ struct AnimatedSlime: View {
                 TickingGlyph(font: SlimeFont.name(stage: stage, anim: anim, layer: layer), anchor: anchor,
                              height: height, width: width, color: skin.color(for: layer))
             }
-            ForEach([accessories.scarf, accessories.glasses, accessories.hat].compactMap { $0 }, id: \.self) { item in
-                TickingGlyph(font: SlimeFont.accessory(item, stage: stage, anim: anim), anchor: anchor,
-                             height: height, width: width,
-                             color: Color(hex: SlimeSprites.data.accessories[item]?.island ?? 0xFFFFFF))
+            // Only accessories with sprite art have an island font; anything
+            // else would show the timer's digits instead of a glyph.
+            ForEach(islandAccessories, id: \.name) { item in
+                TickingGlyph(font: SlimeFont.accessory(item.name, stage: stage, anim: anim), anchor: anchor,
+                             height: height, width: width, color: Color(hex: item.sprite.island))
             }
         }
         .frame(width: width, height: height)
         .scaleEffect(x: mirrored ? -1 : 1, y: 1)
-        .accessibilityElement()
-        .accessibilityLabel("Slime")
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(label)
+    }
+
+    private struct IslandAccessory {
+        let name: String
+        let sprite: AccessorySprite
+    }
+
+    /// Scarf, glasses and hat, in the order the generator layers them.
+    private var islandAccessories: [IslandAccessory] {
+        var out: [IslandAccessory] = []
+        for item in [accessories.scarf, accessories.glasses, accessories.hat].compactMap({ $0 }) {
+            guard let sprite = SlimeSprites.data.accessories[item] else { continue }
+            out.append(IslandAccessory(name: item, sprite: sprite))
+        }
+        return out
     }
 }
 
@@ -86,20 +104,27 @@ struct IslandSlime: View {
     let height: CGFloat
     var animated = true
     var mirrored = false
+    /// What VoiceOver says for the slime.
+    var label = "Slime"
+
+    /// With Reduce Motion on, the slime holds a pose instead of looping.
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        if animated {
+        if animated && !reduceMotion {
             AnimatedSlime(stage: stage, anim: anim, anchor: anchor, skin: skin, accessories: accessories,
-                          height: height, mirrored: mirrored)
+                          height: height, mirrored: mirrored, label: label)
         } else {
             let frames = SlimeSprites.frames(stage, anim)
             let anchors = SlimeSprites.anchors(stage, anim)
-            let i = min(anim.posterIndex(at: anchor), frames.count - 1)
-            PixelSlime(frame: frames[i], skin: skin, accessories: accessories, stage: stage,
-                       anchor: i < anchors.count ? anchors[i] : nil)
+            let i = max(0, min(anim.posterIndex(at: anchor), frames.count - 1))
+            PixelSlime(frame: frames.isEmpty ? SlimeSprites.blank : frames[i], skin: skin,
+                       accessories: accessories, stage: stage, anchor: i < anchors.count ? anchors[i] : nil)
                 .frame(width: height * SlimeFont.aspect, height: height)
                 .scaleEffect(x: mirrored ? -1 : 1, y: 1)
-                .accessibilityLabel("Slime")
+                // PixelSlime hides itself from VoiceOver; this element speaks for it.
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(label)
         }
     }
 }

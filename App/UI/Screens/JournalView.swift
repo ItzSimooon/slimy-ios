@@ -1,58 +1,167 @@
 import SwiftUI
 
-/// The slime's diary: today's tasks, achievements, memories, collection
-/// and who the slime is.
+/// The slime's diary: today's challenges, achievements, memories, the
+/// collection and who the slime is. The photo booth opens from here.
 struct JournalView: View {
     @EnvironmentObject private var store: GameStore
-    @Environment(\.dismiss) private var dismiss
 
-    enum Tab: Hashable { case tasks, achievements, memories, collection, about }
-    @State private var tab: Tab = .tasks
+    enum Tab: Hashable { case challenges, achievements, memories, collection, about }
+
+    @State private var tab: Tab = .challenges
+    @State private var showBooth = false
+
+    private var tabs: [(Tab, String)] {
+        [(.challenges, "Challenges"), (.achievements, "Achievements"), (.memories, "Memories"),
+         (.collection, "Collection"), (.about, "About")]
+    }
 
     var body: some View {
-        ZStack {
-            MenuBackdrop()
-            ScrollView {
-                VStack(spacing: 14) {
-                    MenuHeader(title: "Journal", subtitle: store.state.slime.name) { dismiss() }
-                    PixelTabs(options: [(Tab.tasks, "Challenges"), (.achievements, "Achievements"), (.memories, "Memories"),
-                                        (.collection, "Collection"), (.about, "About")],
-                              selection: $tab)
-                    switch tab {
-                    case .tasks: TasksSection()
-                    case .achievements: AchievementsSection()
-                    case .memories: MemoriesSection()
-                    case .collection: CollectionSection()
-                    case .about: AboutSection()
+        let name = store.state.slime.name
+        NavigationStack {
+            List {
+                Section {
+                    JournalHeader()
+                    Button {
+                        Feedback.shared.play(.tap)
+                        showBooth = true
+                    } label: {
+                        Label("Photo Booth", systemImage: "camera")
                     }
+                    .accessibilityHint("Makes a picture of \(name) to share")
                 }
-                .padding(16)
+
+                Section {
+                    ChipTabs(options: tabs, selection: $tab)
+                        .contentMargins(.horizontal, 16, for: .scrollContent)
+                        .listRowInsets(EdgeInsets(top: 2, leading: 0, bottom: 2, trailing: 0))
+                        .listRowBackground(Color.clear)
+                }
+
+                switch tab {
+                case .challenges: ChallengesContent()
+                case .achievements: AchievementsContent()
+                case .memories: MemoriesContent()
+                case .collection: CollectionContent()
+                case .about: AboutContent()
+                }
+            }
+            .listStyle(.insetGrouped)
+            .listSectionSpacing(.compact)
+            .sheetTitle("Journal")
+            .sheet(isPresented: $showBooth) {
+                PhotoBoothView()
             }
         }
-        .presentationDetents([.large])
         .onAppear { store.tick() }
     }
 }
 
-private struct TasksSection: View {
+// MARK: - Header
+
+private struct JournalHeader: View {
+    @EnvironmentObject private var store: GameStore
+    @Environment(\.dynamicTypeSize) private var typeSize
+
+    var body: some View {
+        let slime = store.state.slime
+        let layout = typeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: 10))
+            : AnyLayout(HStackLayout(spacing: 14))
+        layout {
+            LiveSlimeView(height: 64, interactive: false)
+            VStack(alignment: .leading, spacing: 6) {
+                Text(slime.name)
+                    .font(.title2.weight(.bold))
+                    .foregroundStyle(Theme.ink)
+                    .lineLimit(2)
+                Text("\(slime.stage.title) · Level \(slime.level) · Day \(slime.ageDays() + 1)")
+                    .font(.subheadline)
+                    .foregroundStyle(Theme.inkSoft)
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Text("Bond")
+                        Spacer()
+                        Text(slime.bondStage.title)
+                    }
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Theme.inkSoft)
+                    Meter(value: slime.bond / 100, color: Theme.love)
+                }
+                .padding(.top, 2)
+            }
+        }
+        .padding(.vertical, 6)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(slime.name), \(slime.stage.title), level \(slime.level), day \(slime.ageDays() + 1)")
+        .accessibilityValue("Bond: \(slime.bondStage.title), \(Int(slime.bond)) of 100")
+    }
+}
+
+// MARK: - Challenges
+
+private struct ChallengesContent: View {
     @EnvironmentObject private var store: GameStore
 
     var body: some View {
-        let board = store.state.progress.challenges
-        VStack(spacing: 12) {
-            PixelWindow(title: "Today") {
-                ForEach(board.daily) { c in ChallengeRow(challenge: c) }
+        let s = store.state
+        let board = s.progress.challenges
+        let claimable = (board.daily + board.weekly).filter { !$0.claimed && Challenges.isDone($0, in: s) }
+        let claimableCoins = claimable.reduce(0) { $0 + (Challenges.template($1.id)?.coins ?? 0) }
+
+        if claimable.count > 1 {
+            Section {
+                Button {
+                    claimAll(claimable)
+                } label: {
+                    HStack(spacing: 10) {
+                        PixelItem(name: "coin").frame(width: 20, height: 20)
+                        Text("Claim all rewards")
+                            .font(.body.weight(.semibold))
+                        Spacer()
+                        Text(verbatim: "+\(claimableCoins)")
+                            .font(.body.weight(.semibold))
+                            .monospacedDigit()
+                    }
+                }
+                .accessibilityLabel("Claim all rewards, \(claimableCoins) coins")
             }
-            PixelWindow(title: "This week") {
-                ForEach(board.weekly) { c in ChallengeRow(challenge: c) }
+        }
+
+        Section {
+            if board.daily.isEmpty {
+                Text("Today's challenges show up in the morning.")
+                    .foregroundStyle(Theme.inkSoft)
+            } else {
+                ForEach(board.daily) { JournalChallengeRow(challenge: $0) }
             }
-            Text("New challenges every morning and every Monday.")
-                .font(Theme.text(13)).foregroundStyle(Theme.inkSoft)
+        } header: {
+            Text("Today")
+        } footer: {
+            Text("New challenges every morning.")
+        }
+
+        Section {
+            if board.weekly.isEmpty {
+                Text("This week's challenges show up on Monday.")
+                    .foregroundStyle(Theme.inkSoft)
+            } else {
+                ForEach(board.weekly) { JournalChallengeRow(challenge: $0) }
+            }
+        } header: {
+            Text("This week")
+        } footer: {
+            Text("New weekly challenges every Monday.")
+        }
+    }
+
+    private func claimAll(_ challenges: [ChallengeState]) {
+        for challenge in challenges {
+            store.apply({ $0.claimChallenge(challenge.id, now: .now) }, sound: .coin)
         }
     }
 }
 
-private struct ChallengeRow: View {
+private struct JournalChallengeRow: View {
     @EnvironmentObject private var store: GameStore
     let challenge: ChallengeState
 
@@ -60,207 +169,581 @@ private struct ChallengeRow: View {
         let template = Challenges.template(challenge.id)
         let p = Challenges.progress(challenge, in: store.state)
         let done = p.value >= p.target
-        HStack(spacing: 10) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(template?.title ?? challenge.id).font(Theme.label(15)).foregroundStyle(Theme.ink)
-                HStack(spacing: 6) {
-                    BlockBar(value: Double(p.value) / Double(max(1, p.target)), color: Theme.accent, blocks: 8, height: 6)
-                        .frame(maxWidth: 120)
-                    Text("\(p.value)/\(p.target)").font(Theme.label(12)).foregroundStyle(Theme.inkSoft)
+        let coins = template?.coins ?? 0
+        let title = template?.title ?? "Challenge"
+        let status: String = challenge.claimed ? "Done, reward claimed"
+            : done ? "Done, \(coins) coins to claim"
+            : "\(p.value) of \(p.target), reward \(coins) coins"
+
+        HStack(spacing: 12) {
+            ItemIcon(name: icon(template), size: 40)
+            VStack(alignment: .leading, spacing: 6) {
+                Text(title)
+                    .font(.body.weight(.semibold))
+                    .foregroundStyle(Theme.ink)
+                    .fixedSize(horizontal: false, vertical: true)
+                HStack(spacing: 8) {
+                    Meter(value: Double(p.value) / Double(max(1, p.target)), color: done ? Theme.accent : Theme.sky)
+                        .frame(maxWidth: 140)
+                    Text(verbatim: "\(p.value)/\(p.target)")
+                        .font(.caption.weight(.semibold))
+                        .monospacedDigit()
+                        .foregroundStyle(Theme.inkSoft)
                 }
             }
-            Spacer()
+            Spacer(minLength: 8)
             if challenge.claimed {
-                Text("done").font(Theme.label(13)).foregroundStyle(Theme.accentInk)
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.title3)
+                    .foregroundStyle(Theme.accent)
             } else if done {
-                PixelButton(title: "+\(template?.coins ?? 0)", icon: "coin", compact: true) {
-                    store.apply({ $0.claimChallenge(challenge.id, now: .now) }, sound: .coin)
-                }
+                AppButton(title: "+\(coins)", icon: "coin", compact: true) { claim() }
             } else {
-                HStack(spacing: 3) {
-                    PixelItem(name: "coin").frame(width: 12, height: 12)
-                    Text("\(template?.coins ?? 0)").font(Theme.label(13)).foregroundStyle(Theme.inkSoft)
+                HStack(spacing: 4) {
+                    PixelItem(name: "coin").frame(width: 14, height: 14)
+                    Text(coins, format: .number)
+                        .font(.subheadline.weight(.semibold))
+                        .monospacedDigit()
+                        .foregroundStyle(Theme.inkSoft)
                 }
             }
         }
         .padding(.vertical, 4)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(title)
+        .accessibilityValue(status)
+        .accessibilityActions {
+            if done && !challenge.claimed {
+                Button("Claim \(coins) coins") { claim() }
+            }
+        }
     }
+
+    private func claim() {
+        store.apply({ $0.claimChallenge(challenge.id, now: .now) }, sound: .coin)
+    }
+
+    private func icon(_ template: ChallengeTemplate?) -> String {
+        guard let template else { return "coin" }
+        if case .score(let game, _) = template.goal { return game.icon }
+        if case .stat(let key, _) = template.goal { return Self.statIcons[key] ?? "coin" }
+        return "coin"
+    }
+
+    private static let statIcons: [StatKey: String] = [
+        .feeds: "apple", .pets: "heart", .baths: "bubbleItem", .plays: "ball", .goodGames: "furn.trophy",
+        .sleeps: "starJelly", .giftsSent: "chest", .giftsReceived: "chest", .eventsSeen: "speech",
+        .friends: "heart", .hugs: "heart", .visits: "flower", .purchases: "coin",
+    ]
 }
 
-private struct AchievementsSection: View {
+// MARK: - Achievements
+
+private struct AchievementsContent: View {
     @EnvironmentObject private var store: GameStore
 
     var body: some View {
         let unlocked = store.state.progress.achievements
-        PixelWindow(title: "\(unlocked.count) of \(Achievements.all.count)") {
-            ForEach(Achievements.all) { a in
-                let date = unlocked[a.id]
-                HStack(spacing: 10) {
-                    PixelItem(name: date == nil ? "rock" : "furn.trophy")
-                        .frame(width: 26, height: 26)
-                        .opacity(date == nil ? 0.5 : 1)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(a.title).font(Theme.label(15)).foregroundStyle(date == nil ? Theme.inkSoft : Theme.ink)
-                        Text(a.detail).font(Theme.text(13)).foregroundStyle(Theme.inkSoft)
-                    }
+        let total = Achievements.all.count
+        let done = Achievements.all
+            .compactMap { a in unlocked[a.id].map { UnlockedAchievement(achievement: a, date: $0) } }
+            .sorted { $0.date > $1.date }
+        let open = Achievements.all.filter { unlocked[$0.id] == nil }
+        let earned = done.reduce(0) { $0 + $1.achievement.coins }
+
+        Section {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("\(done.count) of \(total) unlocked")
+                        .font(.headline)
+                        .foregroundStyle(Theme.ink)
                     Spacer()
-                    if let date {
-                        Text(date.formatted(.dateTime.day().month(.abbreviated))).font(Theme.label(12)).foregroundStyle(Theme.accentInk)
-                    } else {
-                        Text("+\(a.coins)").font(Theme.label(12)).foregroundStyle(Theme.inkSoft)
+                    HStack(spacing: 4) {
+                        PixelItem(name: "coin").frame(width: 14, height: 14)
+                        Text(earned, format: .number)
+                            .font(.subheadline.weight(.semibold))
+                            .monospacedDigit()
+                            .foregroundStyle(Theme.inkSoft)
                     }
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel("\(earned) coins earned")
                 }
-                .padding(.vertical, 3)
-                .accessibilityElement(children: .combine)
+                Meter(value: Double(done.count) / Double(max(1, total)), color: Theme.accent, height: 8)
+            }
+            .padding(.vertical, 4)
+            .accessibilityElement(children: .combine)
+        }
+
+        if !done.isEmpty {
+            Section("Unlocked") {
+                ForEach(done) { item in
+                    AchievementRow(achievement: item.achievement, date: item.date)
+                }
+            }
+        }
+
+        if !open.isEmpty {
+            Section("Still to do") {
+                ForEach(open) { achievement in
+                    AchievementRow(achievement: achievement, date: nil)
+                }
             }
         }
     }
 }
 
-private struct MemoriesSection: View {
+private struct UnlockedAchievement: Identifiable {
+    let achievement: Achievement
+    let date: Date
+    var id: String { achievement.id }
+}
+
+private struct AchievementRow: View {
+    let achievement: Achievement
+    let date: Date?
+
+    private var status: String {
+        if let date { return "Unlocked \(date.formatted(date: .long, time: .omitted))" }
+        return "Locked, reward \(achievement.coins) coins"
+    }
+
+    var body: some View {
+        HStack(spacing: 12) {
+            ItemIcon(name: "furn.trophy", size: 40)
+                .saturation(date == nil ? 0 : 1)
+                .opacity(date == nil ? 0.45 : 1)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(achievement.title)
+                    .font(.body.weight(.semibold))
+                    .foregroundStyle(Theme.ink)
+                Text(achievement.detail)
+                    .font(.subheadline)
+                    .foregroundStyle(Theme.inkSoft)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 8)
+            if let date {
+                Text(date.formatted(date: .abbreviated, time: .omitted))
+                    .font(.caption)
+                    .foregroundStyle(Theme.inkSoft)
+                    .multilineTextAlignment(.trailing)
+            } else {
+                HStack(spacing: 4) {
+                    PixelItem(name: "coin").frame(width: 14, height: 14)
+                    Text(achievement.coins, format: .number)
+                        .font(.subheadline.weight(.semibold))
+                        .monospacedDigit()
+                        .foregroundStyle(Theme.inkSoft)
+                }
+            }
+        }
+        .padding(.vertical, 2)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(achievement.title). \(achievement.detail)")
+        .accessibilityValue(status)
+    }
+}
+
+// MARK: - Memories
+
+private struct MemoriesContent: View {
     @EnvironmentObject private var store: GameStore
 
     var body: some View {
-        let keepsakes = store.state.memory.keepsakes.reversed()
-        PixelWindow(title: "Special moments") {
-            if keepsakes.isEmpty {
-                Text("Your special moments end up here.").font(Theme.text(14)).foregroundStyle(Theme.inkSoft)
+        let entries = store.state.memory.keepsakes.sorted { $0.at > $1.at }
+        let months = Self.months(entries)
+
+        if entries.isEmpty {
+            Section {
+                ContentUnavailableView {
+                    Label("No memories yet", systemImage: "book.closed")
+                } description: {
+                    Text("Big moments end up here: a favourite food found, records, new friends and growing up.")
+                }
             }
-            ForEach(Array(keepsakes)) { entry in
-                HStack(alignment: .top, spacing: 10) {
-                    PixelItem(name: icon(entry)).frame(width: 24, height: 24)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(describe(entry)).font(Theme.label(15)).foregroundStyle(Theme.ink)
-                        Text(entry.at.formatted(date: .abbreviated, time: .omitted)).font(Theme.text(12)).foregroundStyle(Theme.inkSoft)
+        } else {
+            ForEach(months) { month in
+                Section(month.start.formatted(.dateTime.month(.wide).year())) {
+                    ForEach(month.entries) { MemoryRow(entry: $0) }
+                }
+            }
+        }
+    }
+
+    private static func months(_ entries: [MemoryEntry]) -> [MemoryMonth] {
+        let calendar = Calendar.current
+        var out: [MemoryMonth] = []
+        for entry in entries {
+            let start = calendar.dateInterval(of: .month, for: entry.at)?.start ?? entry.at
+            if let last = out.indices.last, out[last].start == start {
+                out[last].entries.append(entry)
+            } else {
+                out.append(MemoryMonth(start: start, entries: [entry]))
+            }
+        }
+        return out
+    }
+}
+
+private struct MemoryMonth: Identifiable {
+    let start: Date
+    var entries: [MemoryEntry]
+    var id: Date { start }
+}
+
+private struct MemoryRow: View {
+    let entry: MemoryEntry
+
+    var body: some View {
+        HStack(spacing: 12) {
+            ItemIcon(name: entry.icon, size: 40)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(entry.summary)
+                    .font(.body)
+                    .foregroundStyle(Theme.ink)
+                    .fixedSize(horizontal: false, vertical: true)
+                Text(entry.at.formatted(date: .abbreviated, time: .omitted))
+                    .font(.caption)
+                    .foregroundStyle(Theme.inkSoft)
+            }
+        }
+        .padding(.vertical, 2)
+        .accessibilityElement(children: .combine)
+    }
+}
+
+// MARK: - Collection
+
+private struct CollectionContent: View {
+    @EnvironmentObject private var store: GameStore
+    @ScaledMetric(relativeTo: .caption) private var cell: CGFloat = 64
+
+    var body: some View {
+        let s = store.state
+        let tasted = s.inventory.foodsTasted
+        let wardrobe = Catalog.items.filter { $0.kind != .furniture }
+        let furniture = Catalog.items(.furniture)
+        let skins = Skin.allCases.filter { s.slime.isUnlocked($0) }
+
+        Section {
+            grid {
+                ForEach(Food.allCases) { food in
+                    let have = tasted.contains(food)
+                    CollectionCell(title: have ? food.title : "???", have: have,
+                                   accessibility: have ? food.title : "Not tried yet") {
+                        ItemIcon(name: food.sprite, size: 44)
+                            .overlay(alignment: .topTrailing) {
+                                if have && s.inventory.favoriteFound && food == s.slime.favorite {
+                                    PixelItem(name: "heart").frame(width: 12, height: 10).offset(x: 4, y: -3)
+                                }
+                            }
                     }
                 }
-                .padding(.vertical, 3)
-                .accessibilityElement(children: .combine)
+            }
+        } header: {
+            countHeader("Food", tasted.count, Food.allCases.count)
+        }
+
+        Section {
+            grid {
+                ForEach(wardrobe) { item in
+                    let have = s.owns(item.id)
+                    CollectionCell(title: item.title, have: have,
+                                   accessibility: "\(item.title), \(have ? "owned" : "not owned yet")") {
+                        CollectionItemIcon(item: item)
+                    }
+                }
+            }
+        } header: {
+            countHeader("Wardrobe", wardrobe.filter { s.owns($0.id) }.count, wardrobe.count)
+        }
+
+        Section {
+            grid {
+                ForEach(furniture) { item in
+                    let have = s.owns(item.id)
+                    CollectionCell(title: item.title, have: have,
+                                   accessibility: "\(item.title), \(have ? "owned" : "not owned yet")") {
+                        ItemIcon(name: item.sprite, size: 44)
+                    }
+                }
+            }
+        } header: {
+            countHeader("Furniture", furniture.filter { s.owns($0.id) }.count, furniture.count)
+        }
+
+        Section {
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: cell * 1.7), spacing: 10)], spacing: 12) {
+                ForEach(Habitat.allCases) { habitat in
+                    let have = s.inventory.habitats.contains(habitat)
+                    CollectionCell(title: habitat.title, have: have,
+                                   accessibility: "\(habitat.title), \(have ? "owned" : "not owned yet")") {
+                        CroppedHabitat(habitat: habitat, furniture: habitat == .room ? s.inventory.furniture : [:])
+                            .frame(height: 56)
+                            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    }
+                }
+            }
+            .padding(.vertical, 8)
+        } header: {
+            countHeader("Places", s.inventory.habitats.count, Habitat.allCases.count)
+        }
+
+        Section {
+            grid {
+                ForEach(Skin.allCases) { skin in
+                    let have = s.slime.isUnlocked(skin)
+                    CollectionCell(title: skin.title, have: have,
+                                   accessibility: "\(skin.title), \(have ? "unlocked" : "unlocks at level \(skin.unlockLevel)")") {
+                        CollectionSkin(skin: skin, stage: s.slime.stage)
+                            .frame(width: 53, height: 44)
+                    }
+                }
+            }
+        } header: {
+            countHeader("Colours", skins.count, Skin.allCases.count)
+        }
+
+        Section("Records") {
+            ForEach(GameID.classics) { game in
+                let record = s.record(game)
+                let rounds: String = record.plays == 0 ? "Not played yet"
+                    : "\(record.plays) \(record.plays == 1 ? "round" : "rounds")"
+                HStack(spacing: 12) {
+                    ItemIcon(name: game.icon, size: 36)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(game.title)
+                            .font(.body)
+                            .foregroundStyle(Theme.ink)
+                        Text(rounds)
+                            .font(.caption)
+                            .foregroundStyle(Theme.inkSoft)
+                    }
+                    Spacer(minLength: 8)
+                    if record.plays > 0 {
+                        Text(record.best, format: .number)
+                            .font(.headline)
+                            .monospacedDigit()
+                            .foregroundStyle(Theme.ink)
+                    }
+                }
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(game.title)
+                .accessibilityValue(record.plays == 0 ? rounds : "Best \(record.best), \(rounds)")
             }
         }
     }
 
-    private func highScoreText(_ detail: String) -> String {
-        let parts = detail.split(separator: ":")
-        let game = GameID(rawValue: String(parts.first ?? ""))?.title ?? "a game"
-        return "Record in \(game): \(parts.last ?? "")"
-    }
-
-    private func icon(_ e: MemoryEntry) -> String {
-        switch e.kind {
-        case .hatched: "starJelly"
-        case .favoriteFound: Food(rawValue: e.detail)?.sprite ?? "apple"
-        case .highScore: "furn.trophy"
-        case .levelUp, .stageUp: "coin"
-        case .achievement: "furn.trophy"
-        case .giftReceived, .gift: "chest"
-        case .friendMade, .inLove: "heart"
-        default: "flower"
+    private func grid<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
+        LazyVGrid(columns: [GridItem(.adaptive(minimum: cell), spacing: 8)], spacing: 12) {
+            content()
         }
+        .padding(.vertical, 8)
     }
 
-    private func describe(_ e: MemoryEntry) -> String {
-        switch e.kind {
-        case .hatched: "\(e.detail) hatched"
-        case .favoriteFound: "Found its favourite food: \(Food(rawValue: e.detail)?.title ?? e.detail)"
-        case .highScore: highScoreText(e.detail)
-        case .levelUp: "Reached level \(e.detail)"
-        case .stageUp: "Grew up: \(Stage(rawValue: e.detail)?.title ?? e.detail)"
-        case .achievement: "Achievement: \(Achievements.achievement(e.detail)?.title ?? e.detail)"
-        case .giftReceived: "First gift from \(e.detail)"
-        case .friendMade: "New friend: \(e.detail)"
-        case .inLove: "In love with \(e.detail)"
-        case .reunion: "Back together after \(e.detail) days"
-        default: e.kind.rawValue
+    private func countHeader(_ title: String, _ have: Int, _ total: Int) -> some View {
+        HStack {
+            Text(title)
+            Spacer()
+            Text(verbatim: "\(have)/\(total)")
+                .monospacedDigit()
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(title), \(have) of \(total)")
+        .accessibilityAddTraits(.isHeader)
+    }
+}
+
+private struct CollectionCell<Art: View>: View {
+    let title: String
+    let have: Bool
+    let accessibility: String
+    @ViewBuilder let art: Art
+
+    var body: some View {
+        VStack(spacing: 4) {
+            art
+                .saturation(have ? 1 : 0)
+                .opacity(have ? 1 : 0.35)
+            Text(title)
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(have ? Theme.ink : Theme.inkSoft)
+                .multilineTextAlignment(.center)
+                .lineLimit(2, reservesSpace: true)
+        }
+        .frame(maxWidth: .infinity)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(accessibility)
+    }
+}
+
+/// Accessories show their sprite; effects show what floats around the slime.
+private struct CollectionItemIcon: View {
+    let item: CatalogItem
+
+    var body: some View {
+        if item.kind == .effect {
+            ZStack {
+                RoundedRectangle(cornerRadius: 44 * 0.26, style: .continuous).fill(Theme.well)
+                Group {
+                    switch item.id {
+                    case "effect.hearts": PixelItem(name: "heart")
+                    case "effect.bubbles": PixelItem(name: "bubbleItem")
+                    default: IconShape(rows: SlimeSprites.emoteIcons["sparkle"] ?? []).fill(Theme.gold)
+                    }
+                }
+                .padding(10)
+            }
+            .frame(width: 44, height: 44)
+        } else {
+            ItemIcon(name: item.sprite, size: 44)
         }
     }
 }
 
-private struct CollectionSection: View {
+private struct CollectionSkin: View {
+    let skin: Skin
+    let stage: Stage
+
+    var body: some View {
+        let frames = SlimeSprites.frames(stage, .idle)
+        let anchors = SlimeSprites.anchors(stage, .idle)
+        PixelSlime(frame: frames.first ?? SlimeSprites.blank, skin: skin, stage: stage, anchor: anchors.first)
+    }
+}
+
+// MARK: - About
+
+private struct AboutContent: View {
     @EnvironmentObject private var store: GameStore
 
     var body: some View {
         let s = store.state
-        VStack(spacing: 12) {
-            PixelWindow(title: "Food") {
-                LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 5), spacing: 10) {
-                    ForEach(Food.allCases) { food in
-                        let tasted = s.inventory.foodsTasted.contains(food)
-                        VStack(spacing: 2) {
-                            PixelItem(name: food.sprite).frame(width: 30, height: 30)
-                                .saturation(tasted ? 1 : 0).opacity(tasted ? 1 : 0.35)
-                            Text(tasted ? food.title : "???").font(Theme.label(10)).foregroundStyle(Theme.inkSoft).lineLimit(1)
-                        }
-                        .accessibilityElement(children: .ignore)
-                        .accessibilityLabel(tasted ? food.title : "Not tried yet")
-                    }
-                }
+        let slime = s.slime
+        let stats = s.progress.stats
+        let traits = slime.personality.top.map(\.title)
+
+        Section {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("\(slime.name) is \(traits.joined(separator: " and ")).")
+                    .font(.body.weight(.semibold))
+                    .foregroundStyle(Theme.ink)
+                Text(slime.personality.dominant.blurb)
+                    .font(.subheadline)
+                    .foregroundStyle(Theme.inkSoft)
             }
-            PixelWindow(title: "Records") {
-                ForEach(GameID.classics) { game in
-                    let record = s.record(game)
+            .padding(.vertical, 2)
+            .accessibilityElement(children: .combine)
+
+            ForEach(Personality.Trait.allCases, id: \.self) { trait in
+                let value = min(1, max(0, slime.personality[trait]))
+                let title: String = trait.title.prefix(1).uppercased() + trait.title.dropFirst()
+                VStack(alignment: .leading, spacing: 6) {
                     HStack {
-                        PixelItem(name: game.icon).frame(width: 20, height: 20)
-                        Text(game.title).font(Theme.label(14)).foregroundStyle(Theme.ink)
+                        Text(title)
+                            .font(.subheadline)
+                            .foregroundStyle(Theme.ink)
                         Spacer()
-                        Text(record.plays == 0 ? "–" : "\(record.best)").font(Theme.label(14)).foregroundStyle(Theme.inkSoft)
+                        Text(verbatim: "\(Int((value * 100).rounded()))%")
+                            .font(.subheadline)
+                            .monospacedDigit()
+                            .foregroundStyle(Theme.inkSoft)
                     }
+                    Meter(value: value, color: Theme.sky)
                 }
+                .padding(.vertical, 2)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(title)
+                .accessibilityValue("\(Int((value * 100).rounded())) percent")
             }
+        } header: {
+            Text("Personality")
+        } footer: {
+            Text("Its personality shifts a little with how you spend time together.")
         }
-    }
-}
 
-private struct AboutSection: View {
-    @EnvironmentObject private var store: GameStore
-
-    var body: some View {
-        let s = store.state.slime
-        let stats = store.state.progress.stats
-        VStack(spacing: 12) {
-            PixelWindow(title: "Who is \(s.name)?") {
-                HStack(spacing: 12) {
-                    LiveSlimeView(height: 80, interactive: false)
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("\(s.stage.title), day \(s.ageDays() + 1)").font(Theme.label(15)).foregroundStyle(Theme.ink)
-                        Text("It's \(s.personality.top.map(\.title).joined(separator: " and ")).")
-                            .font(Theme.text(14)).foregroundStyle(Theme.ink)
-                        Text(s.personality.dominant.blurb).font(Theme.text(13)).foregroundStyle(Theme.inkSoft)
-                    }
-                }
-                ForEach(Personality.Trait.allCases, id: \.self) { trait in
-                    HStack {
-                        Text(trait.title).font(Theme.label(13)).foregroundStyle(Theme.ink).frame(width: 100, alignment: .leading)
-                        BlockBar(value: s.personality[trait], color: Theme.sky, blocks: 10, height: 6)
-                    }
-                }
-            }
-            PixelWindow(title: "Your bond") {
+        Section {
+            VStack(alignment: .leading, spacing: 8) {
                 HStack {
-                    Text(s.bondStage.title).font(Theme.label(16)).foregroundStyle(Theme.love)
+                    Text(slime.bondStage.title)
+                        .font(.headline)
+                        .foregroundStyle(Theme.ink)
                     Spacer()
-                    Text("\(Int(s.bond)) / 100").font(Theme.label(13)).foregroundStyle(Theme.inkSoft)
+                    Text(verbatim: "\(Int(slime.bond)) / 100")
+                        .font(.subheadline)
+                        .monospacedDigit()
+                        .foregroundStyle(Theme.inkSoft)
                 }
-                BlockBar(value: s.bond / 100, color: Theme.love)
-                Text("Grows with petting, feeding, baths and playing together. It never goes down.")
-                    .font(Theme.text(13)).foregroundStyle(Theme.inkSoft)
+                Meter(value: slime.bond / 100, color: Theme.love, height: 8)
+                if let next = Self.nextBond(slime.bond) {
+                    Text("\(next.title) at \(next.at)")
+                        .font(.caption)
+                        .foregroundStyle(Theme.inkSoft)
+                }
             }
-            PixelWindow(title: "Numbers") {
-                statRow("Fed", stats.feeds)
-                statRow("Petted", stats.pets)
-                statRow("Bathed", stats.baths)
-                statRow("Games", stats.plays)
-                statRow("Favourite game", nil, text: s.favoriteGame.title)
-                statRow("Coins earned", store.state.wallet.earnedTotal)
+            .padding(.vertical, 4)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("Bond")
+            .accessibilityValue("\(slime.bondStage.title), \(Int(slime.bond)) of 100")
+        } header: {
+            Text("Your bond")
+        } footer: {
+            Text("Grows with petting, feeding, baths and playing together. It never goes down.")
+        }
+
+        Section("Facts") {
+            LabeledContent("Birthday", value: slime.birthday.formatted(date: .long, time: .omitted))
+            LabeledContent("Age", value: Self.days(slime.ageDays()))
+            LabeledContent("Level") {
+                HStack(spacing: 8) {
+                    Meter(value: slime.levelProgress, height: 5)
+                        .frame(width: 60)
+                    Text(slime.level, format: .number)
+                        .monospacedDigit()
+                }
             }
+            LabeledContent("Colour", value: slime.skin.title)
+            LabeledContent("Favourite food",
+                           value: s.inventory.favoriteFound ? slime.favorite.title : "Still a secret")
+            LabeledContent("Favourite game", value: slime.favoriteGame.title)
+        }
+
+        Section("Together") {
+            Group {
+                stat("Meals", stats.feeds)
+                stat("Pets", stats.pets)
+                stat("Baths", stats.baths)
+                stat("Bedtimes", stats.sleeps)
+                stat("Rounds played", stats.plays)
+                stat("Really good rounds", stats.goodGames)
+            }
+            stat("Gifts given", stats.giftsSent)
+            stat("Gifts received", stats.giftsReceived)
+            stat("Friends", stats.friends)
+            stat("Coins earned", s.wallet.earnedTotal)
+            stat("Days visited", s.player.daysActive.count)
+            stat("Longest gift streak", s.streak.best)
         }
     }
 
-    private func statRow(_ title: String, _ value: Int?, text: String? = nil) -> some View {
-        HStack {
-            Text(title).font(Theme.text(14)).foregroundStyle(Theme.ink)
-            Spacer()
-            Text(text ?? "\(value ?? 0)").font(Theme.label(14)).foregroundStyle(Theme.inkSoft)
+    private func stat(_ title: String, _ value: Int) -> some View {
+        LabeledContent {
+            Text(value, format: .number).monospacedDigit()
+        } label: {
+            Text(title)
+        }
+    }
+
+    private static func days(_ n: Int) -> String {
+        n == 1 ? "1 day" : "\(n) days"
+    }
+
+    private static func nextBond(_ bond: Double) -> (title: String, at: Int)? {
+        switch bond {
+        case ..<20: (title: "Next: Familiar", at: 20)
+        case ..<50: (title: "Next: Close", at: 50)
+        case ..<80: (title: "Next: Inseparable", at: 80)
+        default: nil
         }
     }
 }

@@ -1,10 +1,9 @@
 import Foundation
 
 // The daily plan: every day there is a new game built from blocks, a quest
-// and a short story for the slime. The server has Claude compose it (see
-// server/src/daily.js); without the server, DailyPlanner makes one from the
-// same blocks. Either way the app only ever receives data, never code, and
-// everything is clamped to safe ranges before it is played.
+// and a short story for the slime. DailyPlanner composes it on the phone from
+// the date. A plan is only data, never code, and everything is clamped to
+// safe ranges before it is played, wherever it came from.
 
 /// How the player moves the slime.
 enum GameControl: String, Codable, CaseIterable, Hashable {
@@ -264,7 +263,8 @@ struct DailyPlan: Codable, Hashable, Identifiable {
     var quest: DailyQuest
     /// What the slime is thinking about today, one or two short sentences.
     var story: String
-    /// "ai" when Claude made it on the server, "local" when the app did.
+    /// "local" for plans made by DailyPlanner. Saves from older versions
+    /// may say "ai"; the plan is played the same way.
     var source: String
 
     var id: String { day }

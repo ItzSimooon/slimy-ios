@@ -1,7 +1,8 @@
 import SwiftUI
 
 /// The slime in the app: animated, jiggly, pokeable. Tap to poke it, rub it
-/// to pet it, pull it to stretch it.
+/// to pet it, pull it to stretch it. With Reduce Motion it holds still in
+/// the pose that fits, checked once a second so reactions still end.
 struct LiveSlimeView: View {
     @EnvironmentObject private var store: GameStore
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -9,6 +10,9 @@ struct LiveSlimeView: View {
     var interactive = true
     /// Shows a specific slime instead of the player's (friends, previews).
     var override: Slime? = nil
+    /// Whether petting shows its line as a toast. Off where the slime's
+    /// speech bubble is already on screen.
+    var showsToast = true
 
     @State private var poke: CGFloat = 0
     @State private var drag: CGSize = .zero
@@ -18,40 +22,14 @@ struct LiveSlimeView: View {
     @State private var hearts: [FloatingHeart] = []
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1 / 30, paused: reduceMotion && hearts.isEmpty)) { context in
-            let now = context.date
-            let t = now.timeIntervalSinceReferenceDate
-            let s = override ?? store.state.slime
-            let anim = animation(for: s, at: now)
-            let frames = SlimeSprites.frames(s.stage, anim)
-            let anchors = SlimeSprites.anchors(s.stage, anim)
-            let i = Int(t * 2.5) % max(1, frames.count)
-            let breathe = reduceMotion ? 0 : CGFloat(sin(t * 2.4)) * (s.isAsleep ? 0.035 : 0.022)
-            let pull = max(-0.3, min(0.3, -drag.height / 500))
-
-            ZStack(alignment: .bottom) {
-                Rectangle()
-                    .fill(Color.black.opacity(0.18))
-                    .frame(width: height * 0.8, height: max(3, height * 0.04))
-
-                PixelSlime(frame: frames[min(i, frames.count - 1)], skin: s.skin, accessories: s.equipped,
-                           stage: s.stage, anchor: i < anchors.count ? anchors[i] : nil)
-                    .frame(width: height * SlimeFont.aspect, height: height)
-                    .scaleEffect(x: 1 + breathe + poke * 0.14 - pull * 0.45,
-                                 y: 1 - breathe - poke * 0.16 + pull,
-                                 anchor: .bottom)
-                    .offset(x: drag.width * 0.18)
-
-                if let effect = s.equipped.effect, !reduceMotion {
-                    EffectParticles(effect: effect, t: t, height: height)
+        Group {
+            if reduceMotion {
+                TimelineView(.periodic(from: .now, by: 1)) { context in
+                    slime(at: context.date, still: true)
                 }
-
-                ForEach(hearts) { heart in
-                    let age = now.timeIntervalSince(heart.born)
-                    PixelItem(name: "heart")
-                        .frame(width: 22, height: 17)
-                        .offset(x: heart.x, y: -height * 0.8 - CGFloat(age) * 60)
-                        .opacity(max(0, 1 - age / 1.4))
+            } else {
+                TimelineView(.animation(minimumInterval: 1 / 30)) { context in
+                    slime(at: context.date, still: false)
                 }
             }
         }
@@ -62,7 +40,61 @@ struct LiveSlimeView: View {
         .accessibilityElement()
         .accessibilityLabel("\((override ?? store.state.slime).name), your slime")
         .accessibilityHint(interactive ? "Tap to poke, rub to pet" : "")
-        .accessibilityAction(named: "Pet") { pet() }
+        .accessibilityActions {
+            // Only where it can be touched; elsewhere it's a picture.
+            if interactive {
+                Button("Pet") { pet() }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func slime(at now: Date, still: Bool) -> some View {
+        let t = now.timeIntervalSinceReferenceDate
+        let s = override ?? store.state.slime
+        let anim = animation(for: s, at: now)
+        let frames = SlimeSprites.frames(s.stage, anim)
+        let anchors = SlimeSprites.anchors(s.stage, anim)
+        let i = (still ? anim.posterIndex(at: now) : Int(t * 2.5)) % max(1, frames.count)
+        let breathe = still ? 0 : CGFloat(sin(t * 2.4)) * (s.isAsleep ? 0.035 : 0.022)
+        let pull = max(-0.3, min(0.3, -drag.height / 500))
+        let worn = outfit(for: s, at: now)
+
+        ZStack(alignment: .bottom) {
+            Rectangle()
+                .fill(Color.black.opacity(0.18))
+                .frame(width: height * 0.8, height: max(3, height * 0.04))
+
+            PixelSlime(frame: frames[min(i, frames.count - 1)], skin: s.skin, accessories: worn,
+                       stage: s.stage, anchor: i < anchors.count ? anchors[i] : nil)
+                .frame(width: height * SlimeFont.aspect, height: height)
+                .scaleEffect(x: 1 + breathe + poke * 0.14 - pull * 0.45,
+                             y: 1 - breathe - poke * 0.16 + pull,
+                             anchor: .bottom)
+                .offset(x: drag.width * 0.18)
+
+            if let effect = s.equipped.effect, !still {
+                EffectParticles(effect: effect, t: t, height: height)
+            }
+
+            ForEach(hearts) { heart in
+                let age = now.timeIntervalSince(heart.born)
+                PixelItem(name: "heart")
+                    .frame(width: 22, height: 17)
+                    .offset(x: heart.x, y: -height * 0.8 - CGFloat(age) * 60)
+                    .opacity(max(0, 1 - age / 1.4))
+            }
+        }
+    }
+
+    /// What it wears: its own things, plus a party hat on its birthday if
+    /// its head is free.
+    private func outfit(for s: Slime, at now: Date) -> Accessories {
+        var worn = s.equipped
+        if override == nil, worn.hat == nil, store.state.isBirthday(at: now) {
+            worn.hat = "hat.party"
+        }
+        return worn
     }
 
     private func animation(for s: Slime, at now: Date) -> SpriteAnim {
@@ -96,21 +128,27 @@ struct LiveSlimeView: View {
             }
             .onEnded { _ in
                 lastDrag = .zero
-                withAnimation(.interpolatingSpring(stiffness: 220, damping: 7)) { drag = .zero }
+                let settle = reduceMotion ? Animation.easeOut(duration: 0.15)
+                                          : Animation.interpolatingSpring(stiffness: 220, damping: 7)
+                withAnimation(settle) { drag = .zero }
             }
     }
 
     private func pokeIt() {
         taps += 1
-        poke = 1
         Feedback.shared.play(.pop)
-        withAnimation(.interpolatingSpring(stiffness: 320, damping: 6)) { poke = 0 }
+        if !reduceMotion {
+            poke = 1
+            withAnimation(.interpolatingSpring(stiffness: 320, damping: 6)) { poke = 0 }
+        }
         if taps % 5 == 0 { pet() }
     }
 
     private func pet() {
         guard override == nil else { return }
-        store.pet()
+        store.pet(toast: showsToast)
+        // Floating hearts are motion; with Reduce Motion the pet reaction says it.
+        guard !reduceMotion else { return }
         let now = Date.now
         hearts.append(FloatingHeart(x: .random(in: -50...50), born: now))
         hearts.removeAll { now.timeIntervalSince($0.born) > 1.5 }

@@ -4,12 +4,13 @@ import Foundation
 enum GameID: String, Codable, CaseIterable, Identifiable, Hashable {
     case snackCatcher, slimeJump, bubblePop, memoryGarden, slimeRacing
     case rhythmBounce, gardenPuzzle, treasureDig, basketball, colorMatch
+    case slimeStack, jellyDash
     /// The day's game, built from blocks (DailyPlan).
     case daily
 
     var id: String { rawValue }
 
-    /// The ten fixed games, without the daily one.
+    /// The fixed games, without the daily one, in arcade order.
     static var classics: [GameID] { allCases.filter { $0 != .daily } }
 
     var title: String {
@@ -24,6 +25,8 @@ enum GameID: String, Codable, CaseIterable, Identifiable, Hashable {
         case .treasureDig: "Treasure Dig"
         case .basketball: "Slime Basketball"
         case .colorMatch: "Color Match"
+        case .slimeStack: "Slime Stack"
+        case .jellyDash: "Jelly Dash"
         case .daily: "Today's game"
         }
     }
@@ -40,6 +43,8 @@ enum GameID: String, Codable, CaseIterable, Identifiable, Hashable {
         case .treasureDig: "Dig for treasure with few shovels. The numbers help."
         case .basketball: "Swipe to throw. The hoop moves."
         case .colorMatch: "Does the color or the shape match? Decide fast."
+        case .slimeStack: "Drop jelly blocks and build the tallest tower."
+        case .jellyDash: "Run, jump and grab berries. Hold to jump higher."
         case .daily: "A new game every day."
         }
     }
@@ -57,6 +62,8 @@ enum GameID: String, Codable, CaseIterable, Identifiable, Hashable {
         case .treasureDig: ["Tap a square to dig.", "Numbers show how far the nearest treasure is.", "You only have a few shovels."]
         case .basketball: ["Swipe up from the ball toward the hoop.", "A longer swipe throws farther.", "Hits in a row count double."]
         case .colorMatch: ["The rule at the top says color or shape.", "Tap Yes if the piece matches the sample, otherwise No.", "Be quick, the clock is running."]
+        case .slimeStack: ["Tap to drop the sliding block onto the tower.", "Whatever hangs over the edge is cut off.", "Perfect drops in a row score more and widen the tower again."]
+        case .jellyDash: ["Tap to jump. Hold for a higher, longer jump.", "Puddles and rocks cost a heart. Tall rocks need a held jump.", "Coins and berries give extra points. It keeps getting faster."]
         case .daily: ["Every day brings a different game."]
         }
     }
@@ -74,6 +81,8 @@ enum GameID: String, Codable, CaseIterable, Identifiable, Hashable {
         case .treasureDig: "chest"
         case .basketball: "ball"
         case .colorMatch: "gem"
+        case .slimeStack: "cake"
+        case .jellyDash: "berry"
         case .daily: "starJelly"
         }
     }
@@ -93,6 +102,8 @@ enum GameID: String, Codable, CaseIterable, Identifiable, Hashable {
         case .treasureDig: 60
         case .basketball: 12
         case .colorMatch: 25
+        case .slimeStack: 30
+        case .jellyDash: 150
         case .daily: 100
         }
     }
@@ -101,9 +112,9 @@ enum GameID: String, Codable, CaseIterable, Identifiable, Hashable {
     var unlockLevel: Int {
         switch self {
         case .snackCatcher, .bubblePop, .memoryGarden: 1
-        case .slimeJump, .colorMatch: 2
+        case .slimeJump, .colorMatch, .slimeStack: 2
         case .basketball, .treasureDig: 3
-        case .rhythmBounce: 4
+        case .rhythmBounce, .jellyDash: 4
         case .slimeRacing: 5
         case .gardenPuzzle: 6
         case .daily: 1

@@ -1,108 +1,66 @@
 import AppIntents
 import SwiftUI
+import UIKit
 import WidgetKit
 
-// Home Screen, Lock Screen and StandBy widgets. They read the snapshot the
-// app writes into the shared App Group container and project the needs
-// forward, so the bars keep moving between app launches. Without the App
-// Group (some sideloading setups) they show a short note instead.
+// Home Screen, Lock Screen and StandBy widgets. Native chrome (SF Rounded,
+// system colours, light and dark) around the pixel slime. The data comes from
+// `SlimeProvider` (WidgetData.swift).
 
-struct SlimeEntry: TimelineEntry {
-    let date: Date
-    let snapshot: WidgetSnapshot?
-    let needs: Needs
-}
-
-struct SlimeProvider: TimelineProvider {
-    func placeholder(in context: Context) -> SlimeEntry {
-        SlimeEntry(date: .now, snapshot: nil, needs: Needs())
-    }
-
-    func getSnapshot(in context: Context, completion: @escaping (SlimeEntry) -> Void) {
-        completion(entry(at: .now))
-    }
-
-    func getTimeline(in context: Context, completion: @escaping (Timeline<SlimeEntry>) -> Void) {
-        let now = Date.now
-        // Every 30 minutes for six hours; WidgetKit decides the real pace.
-        let entries = (0..<12).map { entry(at: now.addingTimeInterval(Double($0) * 1800)) }
-        completion(Timeline(entries: entries, policy: .after(now.addingTimeInterval(6 * 3600))))
-    }
-
-    private func entry(at date: Date) -> SlimeEntry {
-        guard let snapshot = GameStorage.readSnapshot() else {
-            return SlimeEntry(date: date, snapshot: nil, needs: Needs())
+/// The slime itself: Home Screen small and medium (with Feed and Pet
+/// buttons), Lock Screen circular, rectangular and inline.
+struct SlimeHomeWidget: Widget {
+    var body: some WidgetConfiguration {
+        StaticConfiguration(kind: "de.hyprnode.slime.home", provider: SlimeProvider()) { entry in
+            SlimeWidgetView(entry: entry)
+                .containerBackground(for: .widget) { WidgetBackground(skin: entry.snapshot?.skin) }
+                .widgetURL(URL(string: "slimy://home"))
         }
-        return SlimeEntry(date: date, snapshot: snapshot, needs: snapshot.projectedNeeds(at: date))
+        .configurationDisplayName("Slime")
+        .description("Your slime and how it's doing. The medium size can feed and pet it.")
+        .supportedFamilies([.systemSmall, .systemMedium, .accessoryCircular, .accessoryRectangular, .accessoryInline])
     }
 }
 
-extension SlimeEntry {
-    /// The need to mention, if one is low.
-    var wish: Need? {
-        let lowest = needs.lowest
-        return lowest.value < 35 ? lowest.need : nil
-    }
-
-    var anim: SpriteAnim {
-        guard let snapshot else { return .idle }
-        if snapshot.isAsleep { return .sleep }
-        return wish == nil ? .idle : .sad
+/// All five needs at a glance.
+struct SlimeNeedsWidget: Widget {
+    var body: some WidgetConfiguration {
+        StaticConfiguration(kind: "de.hyprnode.slime.needs", provider: SlimeProvider()) { entry in
+            NeedsWidgetView(entry: entry)
+                .containerBackground(for: .widget) { WidgetBackground(skin: entry.snapshot?.skin) }
+                .widgetURL(URL(string: "slimy://home"))
+        }
+        .configurationDisplayName("Needs")
+        .description("Food, fun, energy, clean and love at a glance.")
+        .supportedFamilies([.systemSmall, .accessoryCircular, .accessoryRectangular])
     }
 }
 
-/// The slime, drawn still (widgets don't animate).
-private struct WidgetSlime: View {
-    let entry: SlimeEntry
-    var mirrored = false
+/// The system background with a faint wash of the slime's own colour.
+private struct WidgetBackground: View {
+    let skin: Skin?
 
     var body: some View {
-        let stage = entry.snapshot?.stage ?? .young
-        let frames = SlimeSprites.frames(stage, entry.anim)
-        let anchors = SlimeSprites.anchors(stage, entry.anim)
-        let i = min(entry.anim.posterIndex(at: entry.date), frames.count - 1)
-        PixelSlime(frame: frames[max(0, i)], skin: entry.snapshot?.skin ?? .lime,
-                   accessories: entry.snapshot?.equipped ?? Accessories(), stage: stage,
-                   anchor: i < anchors.count ? anchors[max(0, i)] : nil)
-            .scaleEffect(x: mirrored ? -1 : 1, y: 1)
-            .accessibilityHidden(true)
-    }
-}
-
-private struct NeedRow: View {
-    let needs: Needs
-    var compact = false
-
-    var body: some View {
-        HStack(spacing: compact ? 4 : 6) {
-            ForEach(Need.allCases) { need in
-                VStack(spacing: 2) {
-                    PixelItem(name: iconName(need)).frame(width: 11, height: 11)
-                    PixelBar(value: Int(needs[need].rounded()), segments: 4, color: Brand.color(for: need), height: 4, gap: 1)
-                }
+        ZStack {
+            Color(uiColor: .systemBackground)
+            if let skin {
+                Brand.accent(skin).opacity(0.1)
             }
         }
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Need.allCases.map { "\($0.title) \(Int(needs[$0].rounded())) percent" }.joined(separator: ", "))
-    }
-
-    private func iconName(_ need: Need) -> String {
-        switch need {
-        case .hunger: "apple"
-        case .fun: "ball"
-        case .energy: "starJelly"
-        case .clean: "bubbleItem"
-        case .love: "heart"
-        }
     }
 }
 
-private func statusLine(_ entry: SlimeEntry) -> String {
-    guard let s = entry.snapshot else { return "Open Slimy once." }
-    if s.isAsleep { return "sleeping" }
-    if let wish = entry.wish { return wish.lowHint }
-    return entry.date.timeIntervalSince(s.writtenAt) < 1800 ? s.line : "how are you?"
+private enum WidgetType {
+    static let title = Font.system(.headline, design: .rounded)
+    static let status = Font.system(.subheadline, design: .rounded, weight: .semibold)
+    static let statusSmall = Font.system(.footnote, design: .rounded, weight: .semibold)
+    static let detail = Font.system(.footnote, design: .rounded)
+    static let caption = Font.system(.caption, design: .rounded, weight: .semibold)
+    static let value = Font.system(.caption2, design: .rounded, weight: .semibold)
+    static let button = Font.system(.subheadline, design: .rounded, weight: .semibold)
 }
+
+// MARK: - Slime widget
 
 struct SlimeWidgetView: View {
     let entry: SlimeEntry
@@ -111,78 +69,347 @@ struct SlimeWidgetView: View {
     var body: some View {
         switch family {
         case .accessoryCircular:
-            ZStack {
-                AccessoryWidgetBackground()
-                WidgetSlime(entry: entry).padding(6)
-            }
-            .accessibilityLabel("\(entry.snapshot?.name ?? "Slime"): \(statusLine(entry))")
-        case .accessoryInline:
-            Text("\(entry.snapshot?.name ?? "Slime"): \(statusLine(entry))")
+            CircularSlime(entry: entry)
         case .accessoryRectangular:
-            HStack(spacing: 6) {
-                WidgetSlime(entry: entry).frame(width: 36, height: 30)
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(entry.snapshot?.name ?? "Slime").font(Brand.pixelFixed(13))
-                    Text(statusLine(entry)).font(.system(size: 12, weight: .medium, design: .rounded)).lineLimit(2)
-                }
-                Spacer(minLength: 0)
-            }
+            RectangularSlime(entry: entry)
+        case .accessoryInline:
+            InlineSlime(entry: entry)
         case .systemMedium:
-            HStack(spacing: 12) {
-                VStack(spacing: 0) {
-                    WidgetSlime(entry: entry).frame(width: 96, height: 80)
-                    Rectangle().fill(Brand.line).frame(width: 100, height: 3)
-                }
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack {
-                        Text(entry.snapshot?.name ?? "Slimy").font(Brand.pixelFixed(17)).foregroundStyle(Brand.text)
-                        Spacer()
-                        if let s = entry.snapshot {
-                            Text("LV \(s.level)").font(Brand.pixelFixed(12)).foregroundStyle(Brand.accent(s.skin))
-                        }
-                    }
-                    Text(statusLine(entry)).font(Brand.body(13, .medium)).foregroundStyle(Brand.muted).lineLimit(2)
-                    if entry.snapshot != nil { NeedRow(needs: entry.needs) }
-                    HStack(spacing: 6) {
-                        Button(intent: FeedSlimeIntent()) { chip("Feed", "apple") }.buttonStyle(.plain)
-                        Button(intent: PetSlimeIntent()) { chip("Pet", "heart") }.buttonStyle(.plain)
-                    }
-                }
-            }
+            MediumSlime(entry: entry)
         default:
-            VStack(spacing: 6) {
-                HStack {
-                    Text(entry.snapshot?.name ?? "Slimy").font(Brand.pixelFixed(14)).foregroundStyle(Brand.text).lineLimit(1)
-                    Spacer()
-                }
-                WidgetSlime(entry: entry).frame(maxWidth: .infinity, maxHeight: .infinity)
-                Text(statusLine(entry)).font(Brand.body(11, .medium)).foregroundStyle(Brand.muted).lineLimit(1)
-                if entry.snapshot != nil { NeedRow(needs: entry.needs, compact: true) }
-            }
+            SmallSlime(entry: entry)
         }
-    }
-
-    private func chip(_ title: String, _ icon: String) -> some View {
-        HStack(spacing: 4) {
-            PixelItem(name: icon).frame(width: 12, height: 12)
-            Text(title).font(Brand.pixelFixed(11)).foregroundStyle(Brand.text)
-        }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 5)
-        .background(Brand.raised)
-        .overlay(Rectangle().strokeBorder(Brand.line, lineWidth: 1.5))
     }
 }
 
-struct SlimeHomeWidget: Widget {
-    var body: some WidgetConfiguration {
-        StaticConfiguration(kind: "de.hyprnode.slime.home", provider: SlimeProvider()) { entry in
-            SlimeWidgetView(entry: entry)
-                .containerBackground(Brand.bg, for: .widget)
-                .widgetURL(URL(string: "slimy://home"))
+/// "Hungry", with the need's symbol in its colour.
+private struct StatusLabel: View {
+    let status: SlimeStatus
+    let font: Font
+
+    var body: some View {
+        Label {
+            Text(status.title)
+                .foregroundStyle(.primary)
+        } icon: {
+            Image(systemName: status.symbol)
+                .foregroundStyle(status.tint ?? Color.secondary)
         }
-        .configurationDisplayName("Slime")
-        .description("Your slime and what it needs right now.")
-        .supportedFamilies([.systemSmall, .systemMedium, .accessoryCircular, .accessoryRectangular, .accessoryInline])
+        .font(font)
+        .lineLimit(1)
+    }
+}
+
+/// Name on the left, level on the right.
+private struct WidgetHeader: View {
+    let entry: SlimeEntry
+    var longLevel = false
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 4) {
+            Text(entry.name)
+                .font(WidgetType.title)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+            Spacer(minLength: 4)
+            if let level = entry.snapshot?.level {
+                Text(levelText(level))
+                    .font(WidgetType.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .accessibilityLabel("Level \(level)")
+            }
+        }
+    }
+
+    private func levelText(_ level: Int) -> String {
+        longLevel ? "Level \(level)" : "Lv \(level)"
+    }
+}
+
+private struct SmallSlime: View {
+    let entry: SlimeEntry
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            WidgetHeader(entry: entry)
+            SlimeHero(slime: entry.slime)
+                .padding(.vertical, 4)
+            StatusLabel(status: entry.status, font: WidgetType.statusSmall)
+                .invalidatableContent()
+        }
+        .dynamicTypeSize(...DynamicTypeSize.xLarge)
+        .accessibilityElement(children: .combine)
+    }
+}
+
+private struct MediumSlime: View {
+    let entry: SlimeEntry
+
+    var body: some View {
+        let status = entry.status
+        HStack(spacing: 14) {
+            VStack(spacing: 8) {
+                SlimeHero(slime: entry.slime)
+                if entry.snapshot != nil {
+                    NeedDials(needs: entry.needs, size: 22)
+                        .invalidatableContent()
+                }
+            }
+            .frame(width: 128)
+
+            VStack(alignment: .leading, spacing: 2) {
+                WidgetHeader(entry: entry, longLevel: true)
+                StatusLabel(status: status, font: WidgetType.status)
+                    .invalidatableContent()
+                detail(status)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+                    .padding(.top, 1)
+                // Lowest priority, so the detail gets its second line first.
+                Spacer(minLength: 4)
+                    .layoutPriority(-1)
+                if entry.snapshot != nil {
+                    HStack(spacing: 8) {
+                        WidgetActionButton(intent: FeedSlimeIntent(), title: "Feed", symbol: "fork.knife",
+                                           tint: Brand.tint(for: .hunger))
+                        WidgetActionButton(intent: PetSlimeIntent(), title: "Pet", symbol: "hand.raised.fill",
+                                           tint: Brand.tint(for: .love))
+                    }
+                }
+            }
+        }
+        .dynamicTypeSize(...DynamicTypeSize.xLarge)
+    }
+
+    /// The slime's own words while they're fresh and nothing is low,
+    /// otherwise what would help.
+    @ViewBuilder
+    private func detail(_ status: SlimeStatus) -> some View {
+        if entry.lowNeed == nil, let speech = entry.speech {
+            Text(speech)
+                .font(Brand.voice(14, relativeTo: .footnote))
+                .accessibilityLabel("\(entry.name) says: \(speech)")
+        } else {
+            Text(status.detail)
+                .font(WidgetType.detail)
+        }
+    }
+}
+
+/// A capsule button in an interactive widget. The intent runs in the app's
+/// process and the widget reloads when it's done.
+private struct WidgetActionButton<Action: AppIntent>: View {
+    let intent: Action
+    let title: String
+    let symbol: String
+    let tint: Color
+
+    var body: some View {
+        Button(intent: intent) {
+            Label {
+                Text(title)
+                    .foregroundStyle(.primary)
+            } icon: {
+                Image(systemName: symbol)
+                    .foregroundStyle(tint)
+            }
+            .font(WidgetType.button)
+            .lineLimit(1)
+            .minimumScaleFactor(0.8)
+            .frame(maxWidth: .infinity, minHeight: 44)
+            .background(tint.opacity(0.16), in: Capsule())
+            .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+/// Lock Screen: the slime inside a ring that fills with how well it's doing.
+private struct CircularSlime: View {
+    let entry: SlimeEntry
+
+    var body: some View {
+        Gauge(value: entry.snapshot == nil ? 0 : entry.needs.average, in: 0...100) {
+            Text("Wellbeing")
+        } currentValueLabel: {
+            entry.slime
+                .padding(2)
+        }
+        .gaugeStyle(.accessoryCircularCapacity)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(entry.accessibilitySummary)
+    }
+}
+
+private struct RectangularSlime: View {
+    let entry: SlimeEntry
+
+    var body: some View {
+        let status = entry.status
+        HStack(spacing: 8) {
+            entry.slime
+                .frame(width: 44, height: 37)
+            VStack(alignment: .leading, spacing: 0) {
+                Text(entry.name)
+                    .font(WidgetType.title)
+                    .lineLimit(1)
+                    .widgetAccentable()
+                Label(status.title, systemImage: status.symbol)
+                    .font(.system(.subheadline, design: .rounded, weight: .medium))
+                    .lineLimit(1)
+                Text(status.detail)
+                    .font(.system(.caption, design: .rounded))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+            Spacer(minLength: 0)
+        }
+        .dynamicTypeSize(...DynamicTypeSize.xLarge)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(entry.accessibilitySummary)
+    }
+}
+
+private struct InlineSlime: View {
+    let entry: SlimeEntry
+
+    var body: some View {
+        let status = entry.status
+        Label(status.sentence, systemImage: status.symbol)
+    }
+}
+
+// MARK: - Needs widget
+
+struct NeedsWidgetView: View {
+    let entry: SlimeEntry
+    @Environment(\.widgetFamily) private var family
+
+    var body: some View {
+        switch family {
+        case .accessoryCircular:
+            LowestNeedGauge(entry: entry)
+        case .accessoryRectangular:
+            NeedsRectangular(entry: entry)
+        default:
+            NeedsSmall(entry: entry)
+        }
+    }
+}
+
+private struct NeedsSmall: View {
+    let entry: SlimeEntry
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                Text(entry.name)
+                    .font(.system(.subheadline, design: .rounded, weight: .semibold))
+                    .lineLimit(1)
+                Spacer(minLength: 4)
+                Image(systemName: entry.status.symbol)
+                    .font(WidgetType.caption)
+                    .foregroundStyle(entry.status.tint ?? Color.secondary)
+                    .accessibilityLabel(entry.status.title)
+            }
+            Spacer(minLength: 6)
+            if entry.snapshot == nil {
+                Text(entry.status.detail)
+                    .font(WidgetType.detail)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(3)
+                Spacer(minLength: 0)
+            } else {
+                // Fits the smallest small widget (148 pt) at the largest
+                // allowed text size.
+                VStack(spacing: 5) {
+                    ForEach(Need.allCases) { need in
+                        NeedRow(need: need, value: entry.needs[need])
+                    }
+                }
+                .invalidatableContent()
+            }
+        }
+        .dynamicTypeSize(...DynamicTypeSize.large)
+    }
+}
+
+/// Pixel icon, meter and percentage for one need.
+private struct NeedRow: View {
+    let need: Need
+    let value: Double
+
+    var body: some View {
+        HStack(spacing: 7) {
+            PixelItem(name: Brand.icon(for: need))
+                .frame(width: 13, height: 13)
+            NeedBar(need: need, value: value, height: 6)
+            Text("\(Int(value.rounded()))")
+                .font(WidgetType.value)
+                .monospacedDigit()
+                .foregroundStyle(.secondary)
+                .frame(minWidth: 22, alignment: .trailing)
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(need.title)
+        .accessibilityValue("\(Int(value.rounded())) percent")
+    }
+}
+
+private struct NeedsRectangular: View {
+    let entry: SlimeEntry
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(entry.name)
+                .font(WidgetType.title)
+                .lineLimit(1)
+                .widgetAccentable()
+            if entry.snapshot == nil {
+                Text(entry.status.detail)
+                    .font(.system(.caption, design: .rounded))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+            } else {
+                NeedDials(needs: entry.needs, size: 26)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .dynamicTypeSize(...DynamicTypeSize.xLarge)
+    }
+}
+
+/// Lock Screen: the need that is lowest right now, as a ring.
+private struct LowestNeedGauge: View {
+    let entry: SlimeEntry
+
+    var body: some View {
+        if entry.snapshot == nil {
+            ZStack {
+                AccessoryWidgetBackground()
+                Image(systemName: "drop.fill")
+                    .font(.system(.title3, design: .rounded, weight: .semibold))
+            }
+            .accessibilityLabel(entry.accessibilitySummary)
+        } else {
+            let lowest = entry.needs.lowest
+            Gauge(value: lowest.value, in: 0...100) {
+                Text(lowest.need.title)
+            } currentValueLabel: {
+                VStack(spacing: 0) {
+                    Image(systemName: lowest.need.symbol)
+                        .font(.system(size: 11, weight: .semibold))
+                    Text("\(Int(lowest.value.rounded()))")
+                        .font(.system(.title3, design: .rounded, weight: .semibold))
+                        .monospacedDigit()
+                        .minimumScaleFactor(0.6)
+                }
+            }
+            .gaugeStyle(.accessoryCircularCapacity)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("\(lowest.need.title), the lowest need")
+            .accessibilityValue("\(Int(lowest.value.rounded())) percent")
+        }
     }
 }

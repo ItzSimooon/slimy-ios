@@ -82,7 +82,12 @@ struct BlockGameView: View {
             case .jump, .flap: engine.tap()
             }
         }
-        .accessibilityAction(named: "Jump") { engine.tap() }
+        .accessibilityActions {
+            // Only games that jump or flap get the action; elsewhere it would do nothing.
+            if spec.control == .jump || spec.control == .flap {
+                Button(spec.control == .jump ? "Jump" : "Flap") { engine.tap() }
+            }
+        }
     }
 
     // MARK: Feedback
@@ -173,7 +178,7 @@ struct BlockGameView: View {
             ForEach(Array(engine.powers.keys).sorted { $0.rawValue < $1.rawValue }, id: \.self) { p in
                 VStack(spacing: 2) {
                     Text(p.title).font(Brand.pixel(10)).foregroundStyle(.white)
-                    BlockBar(value: (engine.powers[p] ?? 0) / max(1, p.seconds), color: Theme.gold, blocks: 5, height: 4)
+                    Meter(value: (engine.powers[p] ?? 0) / max(1, p.seconds), color: Theme.gold, height: 4)
                         .frame(width: 44)
                 }
                 .padding(4)

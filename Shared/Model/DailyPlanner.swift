@@ -1,8 +1,8 @@
 import Foundation
 
-/// Makes the day's plan in the app when the server can't: the same blocks
-/// the AI uses, picked by a generator seeded with the date. Everyone gets the
-/// same game on the same day, and no two days in a row feel alike.
+/// Makes the day's plan on the phone: game blocks picked by a generator
+/// seeded with the date. Everyone gets the same game on the same day, and no
+/// two days in a row feel alike.
 enum DailyPlanner {
     static func dayKey(_ date: Date, calendar: Calendar = .current) -> String {
         Challenges.dayKey(date, calendar: calendar)
@@ -210,8 +210,4 @@ private extension GameControl {
         case .flap: ["Flight", "Flutter", "Glide"]
         }
     }
-}
-
-private extension String {
-    var capitalizedFirst: String { prefix(1).uppercased() + dropFirst() }
 }

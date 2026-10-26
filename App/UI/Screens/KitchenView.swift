@@ -1,65 +1,149 @@
 import SwiftUI
+import UIKit
 
+/// Feeding: every food, what it costs and how much it fills. Tapping a food
+/// feeds it right away and the sheet stays open for another bite.
 struct KitchenView: View {
     @EnvironmentObject private var store: GameStore
-    @Environment(\.dismiss) private var dismiss
 
-    private let columns = [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)]
+    @State private var line: String?
+    @State private var lineID = 0
+    @ScaledMetric(relativeTo: .body) private var tileWidth: CGFloat = 104
 
     var body: some View {
         let s = store.state
-        ZStack {
-            MenuBackdrop()
+        NavigationStack {
             ScrollView {
-                VStack(spacing: 14) {
-                    MenuHeader(title: "Kitchen", subtitle: "What should \(s.slime.name) eat?") { dismiss() }
-
-                    PixelWindow {
-                        HStack(spacing: 14) {
-                            LiveSlimeView(height: 70, interactive: false)
-                            VStack(alignment: .leading, spacing: 6) {
-                                HStack {
-                                    Text("Hunger").font(Theme.label(15)).foregroundStyle(Theme.ink)
-                                    Spacer()
-                                    Text("\(Int(s.slime.needs.hunger)) %").font(Theme.label(15)).foregroundStyle(Theme.inkSoft)
-                                }
-                                BlockBar(value: s.slime.needs.hunger / 100, color: Theme.color(for: .hunger))
-                                Text(s.inventory.favoriteFound
-                                     ? "Favourite: \(s.slime.favorite.title)"
-                                     : "You don't know its favourite food yet. Try things out.")
-                                    .font(Theme.text(13))
-                                    .foregroundStyle(Theme.inkSoft)
-                            }
-                        }
-                    }
-
-                    LazyVGrid(columns: columns, spacing: 10) {
+                VStack(spacing: 16) {
+                    header(s)
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: tileWidth), spacing: 12)], spacing: 12) {
                         ForEach(Food.allCases) { food in
-                            FoodCard(food: food,
+                            FoodTile(food: food,
                                      locked: s.slime.level < food.unlockLevel,
                                      affordable: s.wallet.coins >= food.price,
                                      tasted: s.inventory.foodsTasted.contains(food),
                                      favorite: s.inventory.favoriteFound && food == s.slime.favorite) {
-                                store.feed(food)
+                                feed(food)
                             }
                         }
                     }
-
-                    HStack {
-                        Text("Tried: \(s.inventory.foodsTasted.count) of \(Food.allCases.count)")
-                            .font(Theme.label(14)).foregroundStyle(Theme.inkSoft)
-                        Spacer()
-                        CoinCounter(coins: s.wallet.coins)
-                    }
+                    footer(s)
                 }
                 .padding(16)
             }
+            .background(Theme.backdrop)
+            .sheetTitle("Kitchen")
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    CoinCounter(coins: s.wallet.coins)
+                }
+            }
         }
-        .presentationDetents([.large])
+        .onAppear { store.tick() }
+        .task(id: lineID) {
+            guard line != nil else { return }
+            try? await Task.sleep(for: .seconds(4))
+            guard !Task.isCancelled else { return }
+            line = nil
+        }
+    }
+
+    // MARK: Header
+
+    private func header(_ s: GameState) -> some View {
+        let hunger = s.slime.needs.hunger
+        let full = hunger >= 97
+        let percent = Int(hunger.rounded())
+        return Card {
+            SlimeShowcase(habitat: s.inventory.habitat, furniture: s.inventory.furniture,
+                          line: line ?? s.line(at: .now), height: 168, slimeHeight: 78)
+
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 8) {
+                    PixelItem(name: Theme.icon(for: .hunger))
+                        .frame(width: 18, height: 18)
+                    Text(Need.hunger.title)
+                        .font(.headline)
+                        .foregroundStyle(Theme.ink)
+                    if full { Tag(text: "FULL") }
+                    Spacer(minLength: 8)
+                    Text(verbatim: "\(percent)%")
+                        .font(.headline)
+                        .monospacedDigit()
+                        .foregroundStyle(Theme.inkSoft)
+                }
+                Meter(value: hunger / 100, color: hunger < 25 ? Theme.danger : Theme.color(for: .hunger), height: 8)
+            }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(Need.hunger.title)
+            .accessibilityValue(full ? "\(percent) percent, full" : "\(percent) percent")
+
+            HStack(alignment: .top, spacing: 10) {
+                if s.inventory.favoriteFound {
+                    PixelItem(name: "heart")
+                        .frame(width: 18, height: 15)
+                        .padding(.top, 2)
+                    Text("\(s.slime.name) loves \(s.slime.favorite.title.lowercased()). It fills more and gives extra love.")
+                } else {
+                    Image(systemName: "questionmark.circle")
+                        .foregroundStyle(Theme.inkSoft)
+                        .accessibilityHidden(true)
+                    Text("\(s.slime.name) has a favourite food. Try new things to find it.")
+                }
+            }
+            .font(.subheadline)
+            .foregroundStyle(Theme.inkSoft)
+            .fixedSize(horizontal: false, vertical: true)
+            .accessibilityElement(children: .combine)
+        }
+    }
+
+    // MARK: Footer
+
+    private func footer(_ s: GameState) -> some View {
+        let tried = s.inventory.foodsTasted.count
+        let total = Food.allCases.count
+        let hint: String = tried >= total
+            ? "Every food tried. A true gourmet."
+            : "Try every food once for the Gourmet achievement. New foods unlock as \(s.slime.name) levels up."
+        return Card {
+            HStack {
+                Text("Tried \(tried) of \(total)")
+                    .font(.headline)
+                    .foregroundStyle(Theme.ink)
+                Spacer()
+            }
+            Meter(value: Double(tried) / Double(max(1, total)))
+            Text(hint)
+                .font(.footnote)
+                .foregroundStyle(Theme.inkSoft)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    // MARK: Feeding
+
+    private func feed(_ food: Food) {
+        // GameStore plays the eating sound and its haptic, or a soft "nope".
+        // The line shows in the speech bubble above instead of the app-wide
+        // toast, which would cover the sheet's title bar, so VoiceOver hears
+        // it from here.
+        var said = ""
+        store.apply({ s in
+            var result = s.feed(food, now: .now)
+            said = result.line
+            result.line = ""
+            return result
+        }, sound: .eat)
+        guard !said.isEmpty else { return }
+        line = said
+        lineID += 1
+        UIAccessibility.post(notification: .announcement, argument: said)
     }
 }
 
-private struct FoodCard: View {
+private struct FoodTile: View {
     let food: Food
     let locked: Bool
     let affordable: Bool
@@ -67,40 +151,84 @@ private struct FoodCard: View {
     let favorite: Bool
     let action: () -> Void
 
+    @ScaledMetric(relativeTo: .body) private var iconSize: CGFloat = 56
+
     var body: some View {
         Button(action: action) {
             VStack(spacing: 6) {
-                ZStack(alignment: .topTrailing) {
-                    PixelItem(name: food.sprite)
-                        .frame(width: 44, height: 44)
-                        .saturation(locked ? 0 : 1)
-                        .opacity(locked ? 0.4 : 1)
-                    if favorite {
-                        PixelItem(name: "heart").frame(width: 14, height: 11).offset(x: 10, y: -4)
+                ItemIcon(name: food.sprite, size: iconSize)
+                    .saturation(locked ? 0 : 1)
+                    .overlay(alignment: .topTrailing) {
+                        if favorite {
+                            PixelItem(name: "heart")
+                                .frame(width: 16, height: 13)
+                                .padding(4)
+                                .background(Theme.card, in: Circle())
+                                .offset(x: 8, y: -8)
+                        }
                     }
+                    .padding(.top, 4)
+
+                Text(food.title)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(Theme.ink)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2, reservesSpace: true)
+
+                if locked {
+                    Label("Level \(food.unlockLevel)", systemImage: "lock.fill")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(Theme.inkSoft)
+                } else {
+                    price
                 }
-                Text(locked ? "from level \(food.unlockLevel)" : food.title)
-                    .font(Theme.label(15)).foregroundStyle(Theme.ink)
-                HStack(spacing: 4) {
-                    if food.price == 0 {
-                        Text("free").font(Theme.label(13)).foregroundStyle(Theme.accentInk)
-                    } else {
-                        PixelItem(name: "coin").frame(width: 12, height: 12)
-                        Text("\(food.price)").font(Theme.label(13)).foregroundStyle(Theme.ink)
-                    }
-                    Text("· +\(Int(food.nutrition))").font(Theme.label(12)).foregroundStyle(Theme.inkSoft)
-                    if !tasted && !locked {
-                        Text("new").font(Theme.label(11)).foregroundStyle(.white)
-                            .padding(.horizontal, 4).background(Theme.love)
-                    }
+
+                Label("+\(Int(food.nutrition))", systemImage: Need.hunger.symbol)
+                    .font(.caption)
+                    .foregroundStyle(Theme.inkSoft)
+            }
+            .padding(.vertical, 12)
+            .padding(.horizontal, 8)
+            .frame(maxWidth: .infinity)
+            .overlay(alignment: .topLeading) {
+                if !tasted && !locked {
+                    Tag(text: "NEW").padding(8)
                 }
             }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 12)
         }
-        .buttonStyle(KeyStyle(fill: Theme.paper))
-        .disabled(locked || !affordable)
-        .opacity(!locked && !affordable ? 0.55 : 1)
-        .accessibilityLabel("\(food.title), \(food.price == 0 ? "free" : "\(food.price) coins")\(locked ? ", locked" : "")")
+        .buttonStyle(TileStyle())
+        .disabled(locked)
+        .accessibilityLabel(accessibilityText)
+        .accessibilityHint(locked ? "" : "Feeds your slime")
+    }
+
+    @ViewBuilder private var price: some View {
+        if food.price == 0 {
+            Text("Free")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(Theme.accent)
+        } else {
+            HStack(spacing: 4) {
+                PixelItem(name: "coin").frame(width: 13, height: 13)
+                Text(food.price, format: .number)
+                    .font(.caption.weight(.semibold))
+                    .monospacedDigit()
+                    .foregroundStyle(affordable ? Theme.ink : Theme.inkSoft)
+            }
+        }
+    }
+
+    private var accessibilityText: String {
+        var parts = [food.title]
+        if favorite { parts.append("favourite") }
+        if locked {
+            parts.append("locked, unlocks at level \(food.unlockLevel)")
+        } else {
+            parts.append(food.price == 0 ? "free" : "\(food.price) coins")
+            if !affordable { parts.append("not enough coins") }
+            if !tasted { parts.append("not tried yet") }
+        }
+        parts.append("fills \(Int(food.nutrition))")
+        return parts.joined(separator: ", ")
     }
 }

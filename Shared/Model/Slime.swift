@@ -237,7 +237,11 @@ struct Slime: Codable, Hashable {
         }
     }
 
-    func isUnlocked(_ skin: Skin) -> Bool { level >= skin.unlockLevel }
+    /// The colours offered at hatching are open from the start; the
+    /// others unlock with levels.
+    func isUnlocked(_ skin: Skin) -> Bool {
+        Skin.hatchChoices.contains(skin) || level >= skin.unlockLevel
+    }
 
     /// How long a reaction plays in the island before it goes back to the mood.
     static let reactionWindow: TimeInterval = 8
@@ -246,10 +250,10 @@ struct Slime: Codable, Hashable {
         now.timeIntervalSince(reactionAt) < Self.reactionWindow ? reaction : .none
     }
 
-    /// The phone event it is still talking about, for 15 minutes.
     /// How long a phone event shows in the island (emote, icon) after it happened.
     static let eventWindow: TimeInterval = 3 * 60
 
+    /// The phone event it is still reacting to, if it happened within `eventWindow`.
     func recentEvent(at now: Date) -> PhoneEvent? {
         now.timeIntervalSince(eventAt) < Self.eventWindow ? lastEvent : nil
     }
@@ -318,6 +322,11 @@ struct Slime: Codable, Hashable {
         }
         lastUpdate = now
     }
+}
+
+extension Skin {
+    /// The colours to pick from when the egg hatches.
+    static let hatchChoices: [Skin] = [.lime, .bubblegum, .ocean]
 }
 
 struct SleepSchedule: Codable, Hashable {

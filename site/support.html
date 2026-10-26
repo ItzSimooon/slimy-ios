@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+<head>
+<!-- @head -->
+<title>Support · Slimy</title>
+<meta name="description" content="Answers for Slimy: the Dynamic Island, re-signing the beta, widgets, friend codes, reporting and blocking, chat, and deleting your data, and how to reach the Slimy team.">
+<link rel="canonical" href="https://slime.hyprnode.de/support">
+</head>
+<body>
+<!-- @header -->
+<main id="main" class="page wrap wrap-narrow">
+  <header class="page-head">
+    <h1>How can we help?</h1>
+    <p class="lede">Answers to what people ask most. The same help is in the app under <span class="path"><span>Settings</span><span>Help</span></span>.</p>
+  </header>
+
+  <label class="search">
+    <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.75" fill="none" stroke="currentColor" stroke-width="2"/><path d="M13 13l4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    <span class="sr-only">Search help</span>
+    <input type="search" placeholder="Search help" autocomplete="off" spellcheck="false" data-faq-search>
+  </label>
+  <p class="search-note" data-faq-count aria-live="polite"></p>
+
+  <div data-faq>
+    <section data-faq-group aria-labelledby="g-island">
+      <h2 class="group-title" id="g-island">Dynamic Island</h2>
+      <div class="group">
+        <details class="faq" id="island-gone">
+          <summary>My slime disappeared from the Dynamic Island.</summary>
+          <div class="answer">
+            <p>iOS ends every Live Activity after about <b>8 hours</b>. That's a limit of iOS, not of Slimy. Open Slimy and your slime comes right back, or use <b>Summon Slime</b> from Control Center or the Action Button without opening the app.</p>
+            <p>If it still doesn't appear, check that Live Activities are on for Slimy in the Settings app, and that <b>Always bring it back</b> is on in Slimy's Settings under Dynamic Island.</p>
+          </div>
+        </details>
+        <details class="faq" id="summon">
+          <summary>How do I add Summon Slime to Control Center or the Action Button?</summary>
+          <div class="answer">
+            <p><b>Control Center:</b> open it, touch and hold an empty spot, tap Add a Control and choose Summon Slime.</p>
+            <p><b>Action Button</b>, on iPhones that have one: open the Settings app, tap Action Button, swipe to Controls and pick Summon Slime.</p>
+          </div>
+        </details>
+        <details class="faq" id="island-still">
+          <summary>The slime in the island doesn't move.</summary>
+          <div class="answer"><p>Check that <b>Animation</b> is on in Slimy's Settings under Dynamic Island. With Animation off, the island shows a still picture that changes with your slime's mood.</p></div>
+        </details>
+        <details class="faq" id="island-late">
+          <summary>Why does my slime react late to my iPhone?</summary>
+          <div class="answer"><p>While Slimy is open it reacts right away. When it's closed, it notices changes the next time iOS lets it run, for example during background refresh or while charging, so a reaction can come a little later. Make sure Background App Refresh is on for Slimy in the Settings app.</p></div>
+        </details>
+        <details class="faq" id="no-island">
+          <summary>My iPhone has no Dynamic Island.</summary>
+          <div class="answer"><p>Slimy works on every iPhone with iOS 18. Without a Dynamic Island, your slime shows on the Lock Screen as a Live Activity and in widgets, and lives in the app as usual.</p></div>
+        </details>
+      </div>
+    </section>
+
+    <section data-faq-group aria-labelledby="g-install">
+      <h2 class="group-title" id="g-install">Beta, install and widgets</h2>
+      <div class="group">
+        <details class="faq" id="resign">
+          <summary>Slimy won't open anymore.</summary>
+          <div class="answer">
+            <p>With a free Apple ID, sideloaded apps stop opening after <b>7 days</b> until they're signed again. Connect your iPhone to your computer, open Sideloadly and install the newest Slimy.ipa with the same Apple ID.</p>
+            <p>Your slime stays as long as you don't delete the app first. Exporting a save now and then, in Settings under Backup, keeps you on the safe side. Step by step: <a href="/install#resign">re-signing</a>.</p>
+          </div>
+        </details>
+        <details class="faq" id="update">
+          <summary>How do I update Slimy?</summary>
+          <div class="answer"><p>Install the new Slimy.ipa over the current app the same way you installed it, with the same Apple ID, and your slime stays. New builds are on the <a href="/install">install page</a>.</p></div>
+        </details>
+        <details class="faq" id="widgets-empty">
+          <summary>My widgets stay empty.</summary>
+          <div class="answer">
+            <p>Open Slimy once so the widgets get your slime, then give them a moment. iOS decides how often widgets refresh.</p>
+            <p>If you installed <b>Slimy-unsigned.ipa</b>, or your sideloading tool removed the App Group, the widgets can't see your slime. Install <b>Slimy.ipa</b> instead to use widgets.</p>
+          </div>
+        </details>
+        <details class="faq" id="app-store">
+          <summary>When is Slimy on the App Store?</summary>
+          <div class="answer"><p>Slimy: Island Pet is being prepared for App Store review. When it's live, this website will say so and link to it. Until then, the beta is the way to get it.</p></div>
+        </details>
+      </div>
+    </section>
+
+    <section data-faq-group aria-labelledby="g-friends">
+      <h2 class="group-title" id="g-friends">Friends</h2>
+      <div class="group">
+        <details class="faq" id="add-friend">
+          <summary>How do I add a friend?</summary>
+          <div class="answer"><p>Open Friends and go online. Then tap <b>Get My Code</b> and share it, or enter your friend's code and tap <b>Connect</b>. Your friend accepts the request, and your slimes are friends.</p></div>
+        </details>
+        <details class="faq" id="code-expired">
+          <summary>My friend's code doesn't work.</summary>
+          <div class="answer"><p>A code expires after <b>10 minutes</b> and works <b>once</b>. If it's older or already used, ask for a new one. Codes look like <b class="code-inline">K7Q2MD</b>: six letters and numbers, without I, L, O, 0 or 1, so they're easy to read aloud.</p></div>
+        </details>
+        <details class="faq" id="love">
+          <summary>How does love work?</summary>
+          <div class="answer"><p>Every friendship has a love meter from 0 to 100 that you both share. Hugs, visits and gifts fill it, and kisses unlock at 50. Each kind counts a few times a day, so a little every day goes furthest. At 100 your slimes fall in love for good.</p></div>
+        </details>
+        <details class="faq" id="strangers">
+          <summary>Can strangers find me?</summary>
+          <div class="answer"><p>No. There's no search and no public profile. Only people you give a code to can send you a friend request, and you decide whether to accept it. Greetings are a fixed set of phrases, so nobody can send you free text.</p></div>
+        </details>
+        <details class="faq" id="report">
+          <summary>How do I report or block someone?</summary>
+          <div class="answer">
+            <p>In Friends, tap a friend and choose <b>Report</b> or <b>Block</b> at the bottom of their page, or touch and hold them in the list. For a friend request, tap the three dots next to it.</p>
+            <p><b>Blocking</b> ends the friendship right away. Nothing from that device reaches you anymore, and they aren't notified. You can unblock them later under Privacy &amp; blocked in Friends.</p>
+            <p><b>A report</b> goes to the Slimy team. A person reviews every report and can reset a name or ban a device. A report doesn't block anyone by itself, so block them too if you don't want to hear from them again.</p>
+            <p>To report something your slime said in chat, touch and hold the reply and tap <b>Report Reply</b>.</p>
+          </div>
+        </details>
+        <details class="faq" id="banned">
+          <summary>The app says this device can't use online features anymore.</summary>
+          <div class="answer"><p>The device was banned after a report, under our <a href="/terms">Terms of Use</a>. Your slime and everything offline keep working. You can still delete your server data in Settings. If you think this is a mistake, contact us below.</p></div>
+        </details>
+      </div>
+    </section>
+
+    <section data-faq-group aria-labelledby="g-chat">
+      <h2 class="group-title" id="g-chat">Talking with your slime</h2>
+      <div class="group">
+        <details class="faq" id="chat-data">
+          <summary>What happens to my chat messages?</summary>
+          <div class="answer"><p>When Talk with AI is on, your message, the recent chat and a few facts about your slime, like its name, mood and needs, go to <b>Cloudflare Workers AI</b> and <b>Groq</b>, which write the reply. Your name and device ID are never passed on to them, and Slimy's server doesn't keep the messages. You can turn Talk with AI off any time in Settings under Privacy. Details are in the <a href="/privacy#chat">privacy policy</a>.</p></div>
+        </details>
+        <details class="faq" id="chat-sleepy">
+          <summary>My slime is too sleepy to talk.</summary>
+          <div class="answer"><p>Talking uses a limited amount of free AI each day. When it runs out, or the AI services are busy, your slime gets sleepy. Try again later.</p></div>
+        </details>
+        <details class="faq" id="chat-wrong">
+          <summary>My slime said something wrong or strange.</summary>
+          <div class="answer"><p>Replies come from an AI model and can be wrong. Your slime is a pet, not an advisor, so don't rely on it for facts or decisions. Touch and hold the reply and tap <b>Report Reply</b>, and we'll look at it.</p></div>
+        </details>
+      </div>
+    </section>
+
+    <section data-faq-group aria-labelledby="g-data">
+      <h2 class="group-title" id="g-data">Your data</h2>
+      <div class="group">
+        <details class="faq" id="delete-data">
+          <summary>How do I delete my data?</summary>
+          <div class="answer">
+            <p>Your slime, coins and things live only on your iPhone. To delete what Slimy's server stores about you, your online profile, your friends and what they sent you, go to <span class="path"><span>Settings</span><span>Privacy</span><span>Delete Server Data</span></span>. It's removed at once.</p>
+            <p>To remove your slime from the iPhone, use <b>Start over</b> in Settings, or delete the app.</p>
+          </div>
+        </details>
+        <details class="faq" id="move">
+          <summary>How do I move my slime to a new iPhone?</summary>
+          <div class="answer"><p>In Settings under Backup, tap <b>Export Save</b> and keep the file in Files or AirDrop it to the new iPhone. After hatching on the new iPhone, open Settings and tap <b>Import Save</b>; your old slime replaces the new one. Friends aren't part of a save, so add them again after going online.</p></div>
+        </details>
+        <details class="faq" id="cost">
+          <summary>Does Slimy cost anything?</summary>
+          <div class="answer"><p>No. There are no purchases and no ads. Coins are earned in the app, by playing and from daily gifts, and can't be bought.</p></div>
+        </details>
+      </div>
+    </section>
+  </div>
+  <p class="search-note" data-faq-empty hidden>Nothing matches. Try another word, or ask us below.</p>
+
+  <h2 class="section-title" id="contact">Still stuck?</h2>
+  <div class="prose card">
+<!-- @if contact -->
+    <p>Write to us and describe what happened: your iPhone model, the iOS version, the Slimy version (Settings, About Slimy) and what you expected. Screenshots help. A person reads every message.</p>
+    <p class="actions"><a class="btn" href="mailto:{{contact.email}}?subject=Slimy%20support">Email us</a><a class="btn btn-tint" href="https://github.com/ItzSimooon/slimy-ios/issues">GitHub Issues</a></p>
+    <p>Our address is <a href="mailto:{{contact.email}}">{{contact.email}}</a>. Use it for anything personal, like a ban you think is a mistake or a privacy request. GitHub Issues are public, so please don't post your name, friend codes, a save file or anything else personal there.</p>
+<!-- @else -->
+    <p>Open an issue on GitHub and describe what happened: your iPhone model, the iOS version, the Slimy version (Settings, About Slimy) and what you expected. Screenshots help.</p>
+    <p class="actions"><a class="btn" href="https://github.com/ItzSimooon/slimy-ios/issues">Open GitHub Issues</a></p>
+    <p>GitHub Issues are public. Please don't post your name, friend codes, a save file or anything else personal there. For a privacy request, say what you need and we'll arrange a private way to talk.</p>
+<!-- @end -->
+  </div>
+</main>
+<!-- @footer -->
+</body>
+</html>

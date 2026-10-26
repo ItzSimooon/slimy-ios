@@ -46,9 +46,26 @@ struct CatalogItem: Identifiable, Hashable {
     let unlock: Unlock
     var slot: FurnitureSlot? = nil
     var rare = false
+    /// Shared sprite to show for it, when it has none of its own.
+    var art: String? = nil
 
     /// Sprite name in SlimeSprites (accessories and furniture share the id).
-    var sprite: String { id }
+    var sprite: String { art ?? id }
+}
+
+extension Unlock {
+    /// How a locked item is unlocked, for the shop.
+    var hint: String {
+        switch self {
+        case .level(let n): return "From level \(n)"
+        case .achievement(let id): return "Achievement: \(Achievements.achievement(id)?.title ?? id)"
+        case .bond(let n): return "At bond \(n)"
+        case .season(let month): return "\(Self.monthNames[max(1, min(12, month)) - 1]) only"
+        }
+    }
+
+    private static let monthNames = ["January", "February", "March", "April", "May", "June", "July",
+                                     "August", "September", "October", "November", "December"]
 }
 
 enum Catalog {
@@ -81,6 +98,20 @@ enum Catalog {
         .init(id: "furn.lights", kind: .furniture, title: "Fairy lights", price: 60, unlock: .level(5), slot: .ceiling),
         .init(id: "furn.aquarium", kind: .furniture, title: "Aquarium", price: 120, unlock: .level(8), slot: .floorLeft, rare: true),
         .init(id: "furn.trophy", kind: .furniture, title: "Trophy", price: 0, unlock: .achievement("arcadeStar"), slot: .wallRight, rare: true),
+        // Seasonal furniture
+        .init(id: "furn.jackolantern", kind: .furniture, title: "Jack-o'-lantern", price: 45, unlock: .season(month: 10),
+              slot: .floorRight, rare: true, art: "hat.pumpkin"),
+        .init(id: "furn.stars", kind: .furniture, title: "Star garland", price: 60, unlock: .season(month: 12),
+              slot: .ceiling, rare: true, art: "starJelly"),
+        // Gifts: the seventh day of the gift calendar, and the first birthday
+        .init(id: "furn.chest", kind: .furniture, title: "Treasure chest", price: 0, unlock: .achievement("gifts7"),
+              slot: .floorRight, rare: true, art: "chest"),
+        .init(id: "furn.crystal", kind: .furniture, title: "Glow crystal", price: 0, unlock: .achievement("gifts14"),
+              slot: .floorLeft, rare: true, art: "gem"),
+        .init(id: "furn.flag", kind: .furniture, title: "Finish flag", price: 0, unlock: .achievement("gifts21"),
+              slot: .floorLeft, rare: true, art: "flag"),
+        .init(id: "furn.cake", kind: .furniture, title: "Birthday cake", price: 0, unlock: .achievement("birthday"),
+              slot: .floorRight, rare: true, art: "cake"),
     ]
 
     static func item(_ id: String) -> CatalogItem? { items.first { $0.id == id } }

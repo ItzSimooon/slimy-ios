@@ -162,6 +162,27 @@ extension GraphicsContext {
             fill(Path(CGRect(x: rect.minX, y: rect.maxY - h, width: rect.width, height: h)), with: .color(edge))
         }
     }
+
+    /// Draws a small pixel pattern (one character per pixel, "." is empty)
+    /// fitted into `rect` with square pixels, bottom-aligned.
+    func drawPixels(_ rows: [String], palette: [Character: Color], in rect: CGRect, opacity: Double = 1) {
+        let columns = rows.map(\.count).max() ?? 0
+        guard columns > 0, !rows.isEmpty else { return }
+        let px = min(rect.width / CGFloat(columns), rect.height / CGFloat(rows.count))
+        let ox = rect.midX - px * CGFloat(columns) / 2
+        let oy = rect.maxY - px * CGFloat(rows.count)
+        var paths: [Character: Path] = [:]
+        for (y, row) in rows.enumerated() {
+            for (x, ch) in row.enumerated() where ch != "." {
+                paths[ch, default: Path()].addRect(CGRect(x: ox + CGFloat(x) * px, y: oy + CGFloat(y) * px,
+                                                          width: px, height: px).insetBy(dx: -0.25, dy: -0.25))
+            }
+        }
+        for ch in paths.keys.sorted() {
+            guard let path = paths[ch], let color = palette[ch] else { continue }
+            fill(path, with: .color(color.opacity(opacity)))
+        }
+    }
 }
 
 // MARK: - The player's slime inside a game

@@ -63,10 +63,11 @@ export const ENUMS = {
   food: ["apple", "carrot", "berry", "mushroom", "cookie", "soup", "honey", "pudding", "cake", "starJelly"],
   interaction: ["hug", "visit", "gift", "kiss"],
   game: ["snackCatcher", "slimeJump", "bubblePop", "memoryGarden", "slimeRacing", "rhythmBounce", "gardenPuzzle",
-    "treasureDig", "basketball", "colorMatch"],
+    "treasureDig", "basketball", "colorMatch", "slimeStack", "jellyDash"],
   message: ["hello", "missYou", "goodNight", "goodMorning", "letsPlay", "thanks", "congrats", "proud"],
   reaction: ["none", "eat", "play", "love", "bath", "melt", "zap", "confused", "wave", "celebrate", "stretch", "sulk",
     "hide", "curious", "blush"],
+  reportReason: ["name", "harassment", "spam", "chat", "other"],
 };
 
 export function text(value, field, { min = 1, max = 40, fallback } = {}) {
@@ -75,6 +76,14 @@ export function text(value, field, { min = 1, max = 40, fallback } = {}) {
   const trimmed = value.trim().replace(/\s+/g, " ");
   if ([...trimmed].length < min) fail(400, `"${field}" is too short.`);
   return [...trimmed].slice(0, max).join("");
+}
+
+/** Optional free text: null when missing or blank, otherwise trimmed and cut to `max`. */
+export function optionalText(value, field, max) {
+  if (value == null) return null;
+  if (typeof value !== "string") fail(400, `"${field}" must be text.`);
+  const trimmed = value.trim().replace(/\s+/g, " ");
+  return trimmed ? [...trimmed].slice(0, max).join("") : null;
 }
 
 export function int(value, field, min, max) {

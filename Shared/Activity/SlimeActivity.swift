@@ -92,7 +92,6 @@ struct SlimeActivityAttributes: ActivityAttributes {
         var moment: SharedMoment?
         var momentFriend: String?
         var animated: Bool?
-        var probe: Bool?
 
         func value(_ need: Need) -> Int {
             switch need {
@@ -152,7 +151,7 @@ struct SlimeActivityAttributes: ActivityAttributes {
 
 extension SlimeActivityAttributes.ContentState {
     init(_ game: GameState, at now: Date, friends: [FriendSlime] = [], moment: SharedMoment? = nil,
-         momentFriend: String? = nil, animated: Bool = true, probe: Bool = false) {
+         momentFriend: String? = nil, animated: Bool = true) {
         let s = game.slime
         let reaction = s.activeReaction(at: now)
         var momentLine: String?
@@ -185,7 +184,6 @@ extension SlimeActivityAttributes.ContentState {
             friends: friends.isEmpty ? nil : Array(friends.prefix(3)),
             moment: moment,
             momentFriend: momentFriend,
-            animated: animated,
-            probe: probe)
+            animated: animated)
     }
 }

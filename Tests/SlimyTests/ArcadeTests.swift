@@ -296,3 +296,249 @@ final class ArcadeEngineTests: XCTestCase {
         XCTAssertLessThan(hits, 300)
     }
 }
+
+final class GameCatalogTests: XCTestCase {
+    func testEveryGameExplainsItself() {
+        XCTAssertEqual(Set(GameID.allCases.map(\.title)).count, GameID.allCases.count, "titles are unique")
+        XCTAssertFalse(GameID.classics.contains(.daily))
+        XCTAssertTrue(GameID.classics.contains(.slimeStack))
+        XCTAssertTrue(GameID.classics.contains(.jellyDash))
+        for game in GameID.allCases {
+            XCTAssertFalse(game.blurb.isEmpty, game.rawValue)
+            XCTAssertFalse(game.icon.isEmpty, game.rawValue)
+            XCTAssertTrue((1...3).contains(game.tutorial.count), game.rawValue)
+            XCTAssertTrue(game.tutorial.allSatisfy { !$0.isEmpty }, game.rawValue)
+            XCTAssertGreaterThan(game.goodScore, 0, game.rawValue)
+            XCTAssertGreaterThanOrEqual(game.unlockLevel, 1, game.rawValue)
+        }
+    }
+
+    func testNewGameIDsMatchTheServer() {
+        XCTAssertEqual(GameID.slimeStack.rawValue, "slimeStack")
+        XCTAssertEqual(GameID.jellyDash.rawValue, "jellyDash")
+    }
+}
+
+final class SlimeStackEngineTests: XCTestCase {
+    /// Steps until the condition holds, then drops. Returns the drop's result.
+    private func drop(_ e: inout SlimeStackEngine, when condition: (SlimeStackEngine) -> Bool) -> SlimeStackEngine.Drop {
+        for _ in 0..<(120 * 30) {
+            e.step(1 / 120)
+            if condition(e) {
+                let result = e.drop()
+                if result != .ignored { return result }
+            }
+        }
+        XCTFail("the moment to drop never came")
+        return .ignored
+    }
+
+    private func centred(_ e: SlimeStackEngine) -> Bool { abs(e.current.x - e.top.x) <= 1 }
+
+    private func offCentre(_ e: SlimeStackEngine) -> Bool {
+        let o = abs(e.current.x - e.top.x)
+        return o >= 10 && o <= 20
+    }
+
+    func testPerfectDropsKeepTheWidthAndBuildACombo() {
+        var e = SlimeStackEngine(seed: 5)
+        for _ in 0..<30 {
+            XCTAssertEqual(drop(&e, when: centred), .perfect)
+        }
+        XCTAssertFalse(e.isOver)
+        XCTAssertEqual(e.height, 30)
+        XCTAssertEqual(e.perfects, 30)
+        XCTAssertEqual(e.combo, 30)
+        XCTAssertEqual(e.top.width, SlimeStackEngine.baseWidth, accuracy: 1e-9)
+        // 2, 3, 4, then 5 for every further perfect drop, plus gold blocks.
+        let golds = e.tower.filter(\.gold).count
+        XCTAssertEqual(e.score, 2 + 3 + 4 + 27 * 5 + golds * SlimeStackEngine.goldBonus)
+        XCTAssertGreaterThanOrEqual(e.score, GameID.slimeStack.goodScore)
+    }
+
+    func testAnOffCentreDropIsCutAndAMissEndsTheRound() {
+        var e = SlimeStackEngine(seed: 5)
+        XCTAssertEqual(drop(&e, when: offCentre), .cut)
+        // The cut block keeps only the part above the base, centred on it.
+        let offset = abs(e.top.x - 50) * 2
+        XCTAssertGreaterThanOrEqual(offset, 10 - 1e-9)
+        XCTAssertEqual(e.top.width, SlimeStackEngine.baseWidth - offset, accuracy: 1e-9)
+        XCTAssertEqual(e.pieces.count, 1, "the overhang falls off")
+        XCTAssertEqual(e.combo, 0)
+        XCTAssertEqual(e.score, 1)
+
+        let miss = drop(&e) { s in abs(s.current.x - s.top.x) >= s.current.width + 0.5 }
+        XCTAssertEqual(miss, .missed)
+        XCTAssertTrue(e.isOver)
+        XCTAssertTrue(e.drainEvents().contains(.lose))
+        XCTAssertEqual(e.drop(), .missed)
+        XCTAssertEqual(e.score, 1, "nothing counts after the end")
+    }
+
+    func testAPerfectStreakGrowsTheTowerBack() {
+        var e = SlimeStackEngine(seed: 5)
+        XCTAssertEqual(drop(&e, when: offCentre), .cut)
+        let narrow = e.top.width
+        XCTAssertLessThan(narrow, SlimeStackEngine.baseWidth)
+        XCTAssertEqual(drop(&e, when: centred), .perfect)
+        XCTAssertEqual(drop(&e, when: centred), .perfect)
+        XCTAssertEqual(e.top.width, narrow, accuracy: 1e-9)
+        XCTAssertEqual(drop(&e, when: centred), .perfect)
+        XCTAssertEqual(e.top.width, narrow + SlimeStackEngine.regrow, accuracy: 1e-9)
+    }
+
+    func testADoubleTapDropsOnlyOnce() {
+        var e = SlimeStackEngine(seed: 5)
+        XCTAssertEqual(drop(&e, when: centred), .perfect)
+        XCTAssertEqual(e.drop(), .ignored)
+        XCTAssertEqual(e.height, 1)
+    }
+
+    func testSameSeedSameTower() {
+        var a = SlimeStackEngine(seed: 9)
+        var b = SlimeStackEngine(seed: 9)
+        let other = SlimeStackEngine(seed: 10)
+        XCTAssertNotEqual(a.speed, other.speed, "another seed slides differently")
+        for i in 0..<(60 * 40) {
+            a.step(1 / 60)
+            b.step(1 / 60)
+            if i % 61 == 60 {
+                XCTAssertEqual(a.drop(), b.drop())
+            }
+        }
+        XCTAssertEqual(a.score, b.score)
+        XCTAssertEqual(a.tower, b.tower)
+        XCTAssertEqual(a.isOver, b.isOver)
+    }
+}
+
+final class JellyDashEngineTests: XCTestCase {
+    /// Jumps over whatever comes next, holding for tall rocks and pairs.
+    private struct Bot {
+        var planned = Set<Int>()
+        var releaseAt = -1.0
+
+        mutating func drive(_ e: inout JellyDashEngine) {
+            let px = e.distance + JellyDashEngine.playerX
+            let ahead = e.obstacles
+                .filter { !$0.touched && $0.x + $0.kind.width / 2 > px - JellyDashEngine.halfWidth }
+                .sorted { $0.x < $1.x }
+            if let o = ahead.first, e.isOnGround, !planned.contains(o.id) {
+                let group = ahead.filter { $0.x - o.x < 20 }
+                let last = group.last ?? o
+                let span = last.x + last.kind.width / 2 - (o.x - o.kind.width / 2)
+                let tall = group.contains { $0.kind == .boulder } || span > 15
+                let centre = (o.x - o.kind.width / 2 + last.x + last.kind.width / 2) / 2
+                let lead = (tall ? 0.95 : 0.7) / 2 * e.speed
+                if centre - px <= lead {
+                    e.press()
+                    for p in group { planned.insert(p.id) }
+                    releaseAt = e.time + (tall ? 0.3 : 0.02)
+                }
+            }
+            if releaseAt >= 0, e.time >= releaseAt {
+                e.release()
+                releaseAt = -1
+            }
+        }
+    }
+
+    func testStandingStillCostsAllHeartsAndEnds() {
+        var e = JellyDashEngine(seed: 3)
+        var steps = 0
+        while !e.isOver, steps < 60 * 120 {
+            e.step(1 / 60)
+            steps += 1
+        }
+        XCTAssertTrue(e.isOver)
+        XCTAssertEqual(e.lives, 0)
+        XCTAssertEqual(e.hits, JellyDashEngine.lives)
+        XCTAssertGreaterThan(e.score, 0)
+        XCTAssertLessThan(e.score, GameID.jellyDash.goodScore)
+    }
+
+    func testJumpingOverEverythingRunsFarAndFast() {
+        for seed: UInt64 in [1, 3, 7] {
+            var e = JellyDashEngine(seed: seed)
+            var bot = Bot()
+            for _ in 0..<(60 * 60) where !e.isOver {
+                bot.drive(&e)
+                e.step(1 / 60)
+            }
+            XCTAssertFalse(e.isOver, "seed \(seed)")
+            XCTAssertEqual(e.hits, 0, "seed \(seed)")
+            XCTAssertGreaterThan(e.speed, JellyDashEngine.startSpeed + 40, "it speeds up")
+            XCTAssertGreaterThan(e.bonus, 0, "coins and berries count")
+            XCTAssertEqual(e.score, e.meters + e.bonus)
+            XCTAssertGreaterThanOrEqual(e.score, GameID.jellyDash.goodScore, "seed \(seed)")
+        }
+    }
+
+    func testHoldingJumpsHigherAndLonger() {
+        func jump(holdFor hold: Double) -> (height: Double, air: Double) {
+            var e = JellyDashEngine(seed: 1)
+            e.press()
+            var top = e.y
+            var t = 0.0
+            repeat {
+                if t >= hold { e.release() }
+                e.step(1 / 120)
+                t += 1 / 120
+                top = min(top, e.y)
+            } while !e.isOnGround && t < 3
+            return (JellyDashEngine.ground - top, t)
+        }
+        let tap = jump(holdFor: 0)
+        let held = jump(holdFor: 0.3)
+        XCTAssertGreaterThan(tap.height, JellyDashEngine.ObstacleKind.rock.height, "a tap clears a rock")
+        XCTAssertGreaterThan(held.height, JellyDashEngine.ObstacleKind.boulder.height + 10, "a held jump clears a boulder")
+        XCTAssertGreaterThan(held.height, tap.height + 10)
+        XCTAssertGreaterThan(held.air, tap.air + 0.1)
+    }
+
+    func testATapJustBeforeLandingJumpsAgain() {
+        var e = JellyDashEngine(seed: 1)
+        e.press()
+        e.release()
+        _ = e.drainEvents()
+        // Fall until just above the ground, then tap.
+        var steps = 0
+        while !(e.vy > 0 && e.y > JellyDashEngine.ground - 3), steps < 600 {
+            e.step(1 / 120)
+            steps += 1
+        }
+        e.press()
+        e.release()
+        for _ in 0..<30 { e.step(1 / 120) }
+        let events = e.drainEvents()
+        XCTAssertTrue(events.contains(.land))
+        XCTAssertTrue(events.contains(.jump), "the early tap is kept until touchdown")
+        XCTAssertFalse(e.isOnGround)
+    }
+
+    func testSameSeedSameTrack() {
+        var a = JellyDashEngine(seed: 11)
+        var b = JellyDashEngine(seed: 11)
+        var other = JellyDashEngine(seed: 12)
+        for i in 0..<(60 * 8) {
+            if i % 45 == 0 {
+                a.press()
+                b.press()
+                other.press()
+            }
+            if i % 45 == 12 {
+                a.release()
+                b.release()
+                other.release()
+            }
+            a.step(1 / 60)
+            b.step(1 / 60)
+            other.step(1 / 60)
+        }
+        XCTAssertEqual(a.score, b.score)
+        XCTAssertEqual(a.distance, b.distance)
+        XCTAssertEqual(a.obstacles.map(\.x), b.obstacles.map(\.x))
+        XCTAssertEqual(a.pickups.map(\.x), b.pickups.map(\.x))
+        XCTAssertNotEqual(a.obstacles.map(\.x), other.obstacles.map(\.x))
+    }
+}

@@ -1,7 +1,9 @@
+import { DEFAULT_HASH_FILE, createAdmin, nameKey, parseNetworks } from "./admin.js";
 import { schemaVersion, transaction } from "./db.js";
+import { checkName, cleanText } from "./moderation.js";
 import { DAY, HOUR, RateLimiter } from "./ratelimit.js";
 import {
-  ENUMS, HttpError, bool, dayKey, fail, int, iso, newId, newPairCode, newToken, oneOf, pair, sha256,
+  ENUMS, HttpError, bool, dayKey, fail, int, iso, newId, newPairCode, newToken, oneOf, optionalText, pair, sha256,
   startOfUtcDay, text, weekKey,
 } from "./util.js";
 
@@ -20,7 +22,17 @@ export const LIMITS = {
   coopGoal: 1000,
   coopPerCall: 300,
   coopPerDay: 900,
+  reportsPerDay: 10,
+  reportDays: 90,
+  chatUsageDays: 400,
+  recordCap: 1_000_000,
+  leaderboardSize: 21,
+  seenEveryMs: 10 * 60_000,
 };
+
+export const BANNED = "This device can't use online features anymore.";
+export const UNKNOWN_DEVICE = "This device isn't connected to Slimy's server anymore. Go online again in Friends.";
+export const BAD_NAME = "Please choose a different name.";
 
 /** Love per interaction, and how often each counts per friend and day. */
 export const LOVE = {
@@ -37,15 +49,32 @@ const CAPPED = {
   kiss: "That's enough smooches for today.",
 };
 
-export function createApp({ db, clock = () => Date.now(), chat, trustProxy = false, version = "1" }) {
+export function createApp({
+  db, clock = () => Date.now(), chat, trustProxy = false, version = "1",
+  adminHashFile = DEFAULT_HASH_FILE, adminNetworks = null, serverVersion = "1.0.0",
+}) {
   const limiter = new RateLimiter(clock);
   const q = (sql) => db.prepare(sql);
+  const startedAt = clock();
 
   // --- Helpers ---------------------------------------------------------------
 
   function limit(bucket, key, max, windowMs, message = "Too many requests. Wait a moment and try again.") {
     if (!limiter.hit(bucket, key, max, windowMs)) fail(429, message);
   }
+
+  /** A name someone else will see: cleaned, cut to `max` and run through the filter. */
+  function nameField(value, field, max, blocked = [], person = false) {
+    const name = text(typeof value === "string" ? cleanText(value) : value, field, { max });
+    if (checkName(name, { person }) || blocked.includes(nameKey(name))) fail(400, BAD_NAME);
+    return name;
+  }
+
+  /** The owner's name is optional: blank means "Someone". Real first names like "Dick" are fine. */
+  const ownerNameField = (value, blocked) =>
+    (typeof value === "string" && !cleanText(value) ? "Someone" : nameField(value, "ownerName", 24, blocked, true));
+
+  const isBanned = (id) => Boolean(q("SELECT 1 FROM devices WHERE id = ? AND banned_at IS NOT NULL").get(id));
 
   function slimeOf(deviceId, viewer) {
     const s = q("SELECT * FROM slimes WHERE device_id = ?").get(deviceId);
@@ -72,8 +101,14 @@ export function createApp({ db, clock = () => Date.now(), chat, trustProxy = fal
 
   function requireFriend(me, other) {
     const f = friendship(me, other);
-    if (!f) fail(404, "You're not friends (anymore).");
+    if (!f || isBanned(other)) fail(404, "You're not friends (anymore).");
     return f;
+  }
+
+  /** Friendships as the device sees them: banned friends are hidden. */
+  function friendRows(me) {
+    return q(`SELECT f.* FROM friendships f JOIN devices d ON d.id = CASE WHEN f.a = ? THEN f.b ELSE f.a END
+      WHERE (f.a = ? OR f.b = ?) AND d.banned_at IS NULL ORDER BY f.in_love DESC, f.love DESC`).all(me, me, me);
   }
 
   function friendView(me, row) {
@@ -104,7 +139,7 @@ export function createApp({ db, clock = () => Date.now(), chat, trustProxy = fal
   }
 
   function friendCount(id) {
-    return q("SELECT COUNT(*) AS n FROM friendships WHERE a = ? OR b = ?").get(id, id).n;
+    return friendRows(id).length;
   }
 
   function befriend(x, y) {
@@ -117,7 +152,7 @@ export function createApp({ db, clock = () => Date.now(), chat, trustProxy = fal
   function requestView(row, me) {
     const other = row.from_device === me ? row.to_device : row.from_device;
     const slime = slimeOf(other, me);
-    return { id: row.id, deviceId: other, ownerName: slime?.ownerName ?? "Jemand", slime, createdAt: iso(row.created_at) };
+    return { id: row.id, deviceId: other, ownerName: slime?.ownerName ?? "Someone", slime, createdAt: iso(row.created_at) };
   }
 
   function challengeView(row, me) {
@@ -146,14 +181,41 @@ export function createApp({ db, clock = () => Date.now(), chat, trustProxy = fal
     return { week, goal: LIMITS.coopGoal, mine, theirs, total: mine + theirs, done: Boolean(row?.done_at) };
   }
 
+  /** Everything DELETE /me removes. Also used by the admin. */
+  function deleteDevice(id) {
+    transaction(db, () => {
+      q("DELETE FROM memories WHERE a = ? OR b = ?").run(id, id);
+      q("DELETE FROM coop WHERE a = ? OR b = ?").run(id, id);
+      q("DELETE FROM coop_daily WHERE device_id = ?").run(id);
+      q("DELETE FROM idempotency WHERE device_id = ?").run(id);
+      q("DELETE FROM events WHERE from_device = ?").run(id);
+      q("DELETE FROM blocks WHERE blocked = ?").run(id);
+      // Slime, friendships, requests, codes, inbox, challenges, own blocks and records go with
+      // the device (ON DELETE CASCADE); reports lose the device id (ON DELETE SET NULL).
+      q("DELETE FROM devices WHERE id = ?").run(id);
+    });
+  }
+
+  /** Counts one request to a chat provider for the admin. No content. */
+  function recordChatUsage(provider, ok) {
+    q(`INSERT INTO chat_usage (day, provider, requests, failures) VALUES (?, ?, 1, ?)
+       ON CONFLICT(day, provider) DO UPDATE SET requests = requests + 1, failures = failures + excluded.failures`)
+      .run(dayKey(clock()), provider, ok ? 0 : 1);
+  }
+
   function cleanup() {
     const now = clock();
     q("DELETE FROM events WHERE created_at < ?").run(now - LIMITS.eventDays * DAY);
-    q("DELETE FROM pair_codes WHERE expires_at < ? OR used_at IS NOT NULL").run(now - DAY);
+    // Used codes stay a day too: the admin counts the codes of the last 24 hours.
+    q("DELETE FROM pair_codes WHERE expires_at < ? OR used_at < ?").run(now - DAY, now - DAY);
     q("DELETE FROM idempotency WHERE created_at < ?").run(now - 2 * DAY);
     q("DELETE FROM challenges WHERE expires_at < ?").run(now - 14 * DAY);
     q("DELETE FROM coop_daily WHERE day < ?").run(dayKey(now - 3 * DAY));
+    // Open reports stay until someone has looked at them.
+    q("DELETE FROM reports WHERE status = 'resolved' AND resolved_at < ?").run(now - LIMITS.reportDays * DAY);
+    q("DELETE FROM chat_usage WHERE day < ?").run(dayKey(now - LIMITS.chatUsageDays * DAY));
     limiter.sweep();
+    admin.sweep();
   }
 
   // --- Routes ----------------------------------------------------------------
@@ -174,11 +236,11 @@ export function createApp({ db, clock = () => Date.now(), chat, trustProxy = fal
 
   route("POST", "/devices", ({ body, ip }) => {
     limit("register", ip, 10, HOUR, "Too many new devices from here. Try again in an hour.");
-    const ownerName = text(body.ownerName, "ownerName", { max: 24, fallback: "Someone" }) || "Someone";
+    const ownerName = body.ownerName == null ? "Someone" : ownerNameField(body.ownerName);
     const id = newId("dev");
     const token = newToken();
     const now = clock();
-    q("INSERT INTO devices (id, token_hash, owner_name, created_at, last_seen) VALUES (?, ?, ?, ?, ?)")
+    q("INSERT INTO devices (id, token_hash, owner_name, created_at, last_seen_at) VALUES (?, ?, ?, ?, ?)")
       .run(id, sha256(token), ownerName, now, now);
     return { deviceId: id, token };
   }, { auth: false });
@@ -194,21 +256,17 @@ export function createApp({ db, clock = () => Date.now(), chat, trustProxy = fal
   });
 
   route("DELETE", "/me", ({ me }) => {
-    transaction(db, () => {
-      q("DELETE FROM memories WHERE a = ? OR b = ?").run(me, me);
-      q("DELETE FROM coop WHERE a = ? OR b = ?").run(me, me);
-      q("DELETE FROM coop_daily WHERE device_id = ?").run(me);
-      q("DELETE FROM idempotency WHERE device_id = ?").run(me);
-      q("DELETE FROM events WHERE from_device = ?").run(me);
-      q("DELETE FROM blocks WHERE blocked = ?").run(me);
-      q("DELETE FROM devices WHERE id = ?").run(me);
-    });
+    deleteDevice(me);
     return null;
   });
 
   route("PUT", "/me/slime", ({ me, body }) => {
     limit("profile", me, 120, HOUR);
-    const name = text(body.name, "name", { max: 16 });
+    // Names an admin has reset can't simply be uploaded again.
+    const device = q("SELECT blocked_names FROM devices WHERE id = ?").get(me);
+    const blocked = device.blocked_names ? JSON.parse(device.blocked_names) : [];
+    const name = nameField(body.name, "name", 16, blocked);
+    const ownerName = body.ownerName == null ? null : ownerNameField(body.ownerName, blocked);
     const skin = oneOf(body.skin, "skin", ENUMS.skin);
     const level = int(body.level, "level", 1, 999);
     const mood = oneOf(body.mood, "mood", ENUMS.mood);
@@ -228,9 +286,28 @@ export function createApp({ db, clock = () => Date.now(), chat, trustProxy = fal
        ON CONFLICT(device_id) DO UPDATE SET name = excluded.name, skin = excluded.skin, level = excluded.level,
          mood = excluded.mood, happiness = excluded.happiness, equipped = excluded.equipped, updated_at = excluded.updated_at`)
       .run(me, name, skin, level, mood, happiness, equipped, now);
-    if (body.ownerName != null) {
-      q("UPDATE devices SET owner_name = ? WHERE id = ?").run(text(body.ownerName, "ownerName", { max: 24 }), me);
+    if (ownerName != null) q("UPDATE devices SET owner_name = ? WHERE id = ?").run(ownerName, me);
+    return null;
+  });
+
+  // Best scores per game, for the friends leaderboard. They only ever go up.
+  route("PUT", "/me/records", ({ me, body }) => {
+    limit("records", me, 120, HOUR);
+    const records = body.records;
+    if (!records || typeof records !== "object" || Array.isArray(records)) fail(400, '"records" must be an object of game ids and scores.');
+    const known = Object.entries(records).filter(([game]) => ENUMS.game.includes(game));
+    for (const [game, best] of known) {
+      if (!Number.isInteger(best) || best < 0) fail(400, `"records.${game}" must be a whole number of 0 or more.`);
     }
+    const now = clock();
+    transaction(db, () => {
+      for (const [game, best] of known) {
+        if (best === 0) continue;
+        q(`INSERT INTO records (device_id, game, best, updated_at) VALUES (?, ?, ?, ?)
+           ON CONFLICT(device_id, game) DO UPDATE SET best = excluded.best, updated_at = excluded.updated_at
+           WHERE excluded.best > records.best`).run(me, game, Math.min(best, LIMITS.recordCap), now);
+      }
+    });
     return null;
   });
 
@@ -265,7 +342,7 @@ export function createApp({ db, clock = () => Date.now(), chat, trustProxy = fal
     if (limiter.exhausted("badcode-ip", ip, 30)) fail(429, "Too many tries. Try again in an hour.");
     limit("invite", ip, 120, HOUR);
     const row = q("SELECT * FROM pair_codes WHERE code = ?").get(String(params.code).toUpperCase());
-    if (!row || row.used_at || row.expires_at < clock()) {
+    if (!row || row.used_at || row.expires_at < clock() || isBanned(row.device_id)) {
       limiter.hit("badcode-ip", ip, 30, HOUR);
       fail(404, "This code doesn't exist anymore. Ask for a new one.");
     }
@@ -286,7 +363,7 @@ export function createApp({ db, clock = () => Date.now(), chat, trustProxy = fal
       limiter.hit("badcode-ip", ip, 30, HOUR);
       fail(status, message);
     };
-    if (!row || row.used_at) wrong(404, "That code doesn't exist. Check the characters again.");
+    if (!row || row.used_at || isBanned(row.device_id)) wrong(404, "That code doesn't exist. Check the characters again.");
     if (row.device_id === me) fail(400, "That's your own code. Send it to a friend.");
     if (row.expires_at < clock()) wrong(410, "The code has expired. Ask for a new one.");
     const owner = row.device_id;
@@ -318,13 +395,15 @@ export function createApp({ db, clock = () => Date.now(), chat, trustProxy = fal
   });
 
   route("GET", "/friend-requests", ({ me }) => ({
-    incoming: q("SELECT * FROM friend_requests WHERE to_device = ? ORDER BY created_at").all(me).map((r) => requestView(r, me)),
-    outgoing: q("SELECT * FROM friend_requests WHERE from_device = ? ORDER BY created_at").all(me).map((r) => requestView(r, me)),
+    incoming: q("SELECT * FROM friend_requests WHERE to_device = ? ORDER BY created_at").all(me)
+      .filter((r) => !isBanned(r.from_device)).map((r) => requestView(r, me)),
+    outgoing: q("SELECT * FROM friend_requests WHERE from_device = ? ORDER BY created_at").all(me)
+      .filter((r) => !isBanned(r.to_device)).map((r) => requestView(r, me)),
   }));
 
   route("POST", "/friend-requests/:id/accept", ({ me, params }) => {
     const r = q("SELECT * FROM friend_requests WHERE id = ? AND to_device = ?").get(params.id, me);
-    if (!r) fail(404, "This request doesn't exist anymore.");
+    if (!r || isBanned(r.from_device)) fail(404, "This request doesn't exist anymore.");
     if (friendCount(me) >= LIMITS.maxFriends) fail(409, `You already have ${LIMITS.maxFriends} slime friends.`);
     if (friendCount(r.from_device) >= LIMITS.maxFriends) fail(409, "Your friend already has the most slime friends allowed.");
     return transaction(db, () => {
@@ -341,8 +420,32 @@ export function createApp({ db, clock = () => Date.now(), chat, trustProxy = fal
 
   // Friends ------------------------------------------------------------------
 
-  route("GET", "/friends", ({ me }) =>
-    q("SELECT * FROM friendships WHERE a = ? OR b = ? ORDER BY in_love DESC, love DESC").all(me, me).map((r) => friendView(me, r)));
+  route("GET", "/friends", ({ me }) => friendRows(me).map((r) => friendView(me, r)));
+
+  // Me and my friends, per game, best first. Registered before /friends/:id.
+  route("GET", "/friends/leaderboard", ({ me }) => {
+    const ids = [me, ...friendRows(me).map((r) => (r.a === me ? r.b : r.a))];
+    const rows = q(`SELECT device_id, game, best, updated_at FROM records WHERE best > 0 AND device_id IN (${ids.map(() => "?").join(", ")})`)
+      .all(...ids);
+    const people = new Map();
+    const person = (id) => {
+      if (!people.has(id)) people.set(id, slimeOf(id, me));
+      return people.get(id);
+    };
+    const games = [];
+    for (const game of ENUMS.game) {
+      const entries = rows
+        .filter((r) => r.game === game)
+        .sort((x, y) => y.best - x.best || x.updated_at - y.updated_at || (x.device_id < y.device_id ? -1 : 1))
+        .slice(0, LIMITS.leaderboardSize)
+        .map((r) => {
+          const p = person(r.device_id);
+          return { deviceId: r.device_id, ownerName: p.ownerName, slimeName: p.name, skin: p.skin, stage: p.stage, best: r.best, me: r.device_id === me };
+        });
+      if (entries.length) games.push({ game, entries });
+    }
+    return { games };
+  });
 
   route("GET", "/friends/:id", ({ me, params }) => {
     const f = requireFriend(me, params.id);
@@ -433,7 +536,7 @@ export function createApp({ db, clock = () => Date.now(), chat, trustProxy = fal
     const after = Number.parseInt(query.get("after") ?? "0", 10) || 0;
     const rows = q("SELECT * FROM events WHERE to_device = ? AND id > ? ORDER BY id LIMIT 50").all(me, after);
     const events = rows
-      .filter((r) => !r.from_device || !isBlocked(me, r.from_device))
+      .filter((r) => !r.from_device || (!isBlocked(me, r.from_device) && !isBanned(r.from_device)))
       .map((r) => {
         const data = r.data ? JSON.parse(r.data) : {};
         return {
@@ -474,13 +577,15 @@ export function createApp({ db, clock = () => Date.now(), chat, trustProxy = fal
 
   route("GET", "/challenges", ({ me }) =>
     q(`SELECT * FROM challenges WHERE (from_device = ? OR to_device = ?) AND created_at > ? ORDER BY created_at DESC LIMIT 30`)
-      .all(me, me, clock() - 14 * DAY).map((r) => challengeView(r, me)));
+      .all(me, me, clock() - 14 * DAY)
+      .filter((r) => !isBanned(r.from_device === me ? r.to_device : r.from_device))
+      .map((r) => challengeView(r, me)));
 
   route("POST", "/challenges/:id/answer", ({ me, params, body }) => {
     const score = int(body.score, "score", 0, 1_000_000);
     return transaction(db, () => {
       const c = q("SELECT * FROM challenges WHERE id = ? AND to_device = ?").get(params.id, me);
-      if (!c) fail(404, "This challenge doesn't exist.");
+      if (!c || isBanned(c.from_device)) fail(404, "This challenge doesn't exist.");
       if (c.answered_at) return challengeView(c, me);
       if (c.expires_at < clock()) fail(410, "The challenge has expired.");
       q("UPDATE challenges SET to_score = ?, answered_at = ? WHERE id = ?").run(score, clock(), c.id);
@@ -519,6 +624,33 @@ export function createApp({ db, clock = () => Date.now(), chat, trustProxy = fal
     });
   });
 
+  // Reports ---------------------------------------------------------------------
+
+  // A name, someone's behaviour or a slime reply that felt wrong. Reporting
+  // doesn't block anyone; the app offers that separately.
+  route("POST", "/reports", ({ me, body }) => {
+    const reason = oneOf(body.reason, "reason", ENUMS.reportReason);
+    const note = optionalText(body.note, "note", 200);
+    const said = optionalText(body.text, "text", 500);
+    let reported = null;
+    if (reason === "chat") {
+      if (!said) fail(400, '"text" is missing or not text.');
+    } else {
+      reported = text(body.deviceId, "deviceId", { max: 40 });
+      if (reported === me) fail(400, "You can't report yourself.");
+    }
+    const today = q("SELECT COUNT(*) AS n FROM reports WHERE reporter = ? AND created_at > ?").get(me, clock() - DAY).n;
+    if (today >= LIMITS.reportsPerDay) fail(429, "You've sent a lot of reports today. We'll look at them soon.");
+    if (reported) {
+      if (!q("SELECT 1 FROM devices WHERE id = ?").get(reported)) fail(404, "We couldn't find that player.");
+      // The same open report twice adds nothing.
+      if (q("SELECT 1 FROM reports WHERE reporter = ? AND reported = ? AND reason = ? AND status = 'open'").get(me, reported, reason)) return null;
+    }
+    q("INSERT INTO reports (reporter, reported, reason, note, text, created_at) VALUES (?, ?, ?, ?, ?, ?)")
+      .run(me, reported, reason, note, said, clock());
+    return null;
+  });
+
   // Chat ------------------------------------------------------------------------
 
   route("POST", "/chat", async ({ me, body }) => {
@@ -530,18 +662,32 @@ export function createApp({ db, clock = () => Date.now(), chat, trustProxy = fal
     const cleanHistory = history
       .filter((t) => t && (t.role === "user" || t.role === "slime") && typeof t.text === "string" && t.text.trim())
       .map((t) => ({ role: t.role, text: t.text.trim().slice(0, 500) }));
-    const s = body.slime ?? {};
+    const s = typeof body.slime === "object" && body.slime ? body.slime : {};
+    // Names go into the prompt, so they pass the same filter as everywhere else.
+    const safeName = (value) => {
+      const name = typeof value === "string" ? [...cleanText(value)].slice(0, 16).join("") : "";
+      return name && !checkName(name) ? name : null;
+    };
+    const localTime = typeof s.localTime === "string" ? [...cleanText(s.localTime)].slice(0, 16).join("") : "";
     const slime = {
-      name: text(s.name, "slime.name", { max: 16, fallback: "Slime" }),
+      name: safeName(s.name) ?? "Slime",
       ageDays: Number.isInteger(s.ageDays) ? Math.max(0, Math.min(s.ageDays, 100000)) : 0,
       level: Number.isInteger(s.level) ? Math.max(1, Math.min(s.level, 999)) : 1,
       mood: ENUMS.mood.includes(s.mood) ? s.mood : "idle",
       needs: typeof s.needs === "object" && s.needs ? s.needs : {},
       favorite: ENUMS.food.includes(s.favorite) ? s.favorite : "apple",
-      partnerName: typeof s.partnerName === "string" ? s.partnerName.slice(0, 16) : null,
-      localTime: typeof s.localTime === "string" ? s.localTime.slice(0, 16) : "",
+      partnerName: safeName(s.partnerName),
+      localTime: /\d/.test(localTime) ? localTime : "",
     };
-    return chat.reply({ message, history: cleanHistory, slime });
+    return chat.reply({ message, history: cleanHistory, slime, onUsage: recordChatUsage });
+  });
+
+  // Admin (/api/v1/admin/*) ----------------------------------------------------------
+
+  const admin = createAdmin({
+    db, clock, limiter, route, deleteDevice, stageFor, chat, trustProxy, serverVersion, startedAt,
+    hashFile: adminHashFile,
+    networks: typeof adminNetworks === "string" ? parseNetworks(adminNetworks) : adminNetworks,
   });
 
   // --- Dispatch ----------------------------------------------------------------
@@ -558,20 +704,33 @@ export function createApp({ db, clock = () => Date.now(), chat, trustProxy = fal
     }
     const params = {};
     const match = path.match(found.regex);
-    found.keys.forEach((k, i) => { params[k] = decodeURIComponent(match[i + 1]); });
+    found.keys.forEach((k, i) => {
+      try {
+        params[k] = decodeURIComponent(match[i + 1]);
+      } catch {
+        fail(400, "This address isn't valid.");
+      }
+    });
 
     let me = null;
     if (found.auth) {
       const header = req.headers.authorization ?? "";
       const token = header.startsWith("Bearer ") ? header.slice(7).trim() : "";
-      const device = token ? q("SELECT id FROM devices WHERE token_hash = ?").get(sha256(token)) : null;
-      if (!device) fail(401, "This device isn't registered. Open Slimy once with internet.");
+      const device = token ? q("SELECT id, banned_at, last_seen_at FROM devices WHERE token_hash = ?").get(sha256(token)) : null;
+      // The app registers again on its own after a 401, so it must stay a 401.
+      if (!device) fail(401, UNKNOWN_DEVICE);
+      // A banned device can still delete its data, and nothing else.
+      if (device.banned_at != null && !(req.method === "DELETE" && path === "/me")) fail(403, BANNED);
       me = device.id;
-      q("UPDATE devices SET last_seen = ? WHERE id = ?").run(clock(), me);
+      const now = clock();
+      if (now - (device.last_seen_at ?? 0) >= LIMITS.seenEveryMs) q("UPDATE devices SET last_seen_at = ? WHERE id = ?").run(now, me);
       limit("all", me, 1200, HOUR);
     }
 
-    const ctx = { me, params, body: req.body ?? {}, query: url.searchParams, ip: req.ip };
+    const responseHeaders = {};
+    const ctx = {
+      me, params, body: req.body ?? {}, query: url.searchParams, ip: req.ip, headers: req.headers, method: req.method, responseHeaders,
+    };
 
     // Retries of the same write (offline queue, flaky network) get the first answer again.
     const key = req.headers["idempotency-key"];
@@ -591,6 +750,7 @@ export function createApp({ db, clock = () => Date.now(), chat, trustProxy = fal
       result = await found.handler(ctx);
       if (result == null) status = 204;
     } catch (error) {
+      if (error instanceof HttpError) error.headers = responseHeaders;
       if (!(error instanceof HttpError) || !idempotent || error.status >= 500 || error.status === 429) throw error;
       status = error.status;
       result = { error: error.message };
@@ -599,14 +759,15 @@ export function createApp({ db, clock = () => Date.now(), chat, trustProxy = fal
       q("INSERT OR IGNORE INTO idempotency (device_id, key, method, path, status, body, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)")
         .run(me, key, req.method, path, status, result == null ? null : JSON.stringify(result), clock());
     }
-    return { status, body: status === 204 ? null : result };
+    return { status, body: status === 204 ? null : result, headers: responseHeaders };
   }
 
   /** Node http handler. */
   async function listener(req, res) {
-    const send = (status, body) => {
+    const send = (status, body, extra = {}) => {
       const payload = body == null ? "" : JSON.stringify(body);
       res.writeHead(status, {
+        ...extra,
         "Content-Type": "application/json; charset=utf-8",
         "Cache-Control": "no-store",
         "X-Content-Type-Options": "nosniff",
@@ -618,9 +779,9 @@ export function createApp({ db, clock = () => Date.now(), chat, trustProxy = fal
       req.ip = (trustProxy && String(req.headers["x-forwarded-for"] ?? "").split(",")[0].trim()) || req.socket.remoteAddress || "?";
       req.body = await readBody(req);
       const out = await handle(req);
-      send(out.status, out.body);
+      send(out.status, out.body, out.headers);
     } catch (error) {
-      if (error instanceof HttpError) return send(error.status, { error: error.message });
+      if (error instanceof HttpError) return send(error.status, { error: error.message }, error.headers);
       console.error(error);
       send(500, { error: "Something went wrong on the server. Try again later." });
     }

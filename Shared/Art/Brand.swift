@@ -1,8 +1,9 @@
 import SwiftUI
 
-/// Slimy's look: flat moss-black, slime green, hard pixel edges.
-/// No gradients, no glows. The pixel font is for UI chrome and numbers;
-/// running text uses the system font so it stays readable.
+/// Colours shared by app and widgets: the dark palette of the Dynamic Island
+/// (which is always black), the slime's pixel-art colours, and the need tints
+/// for the native chrome around the slime (rings, buttons) in widgets and on
+/// the Lock Screen. No gradients, no glows.
 enum Brand {
     static let bg = Color(hex: 0x101411)
     static let panel = Color(hex: 0x171D19)
@@ -27,10 +28,17 @@ enum Brand {
         .custom(bold ? "PixelifySans-Bold" : "PixelifySans-Regular", fixedSize: size)
     }
 
-    static func body(_ size: CGFloat = 15, _ weight: Font.Weight = .regular) -> Font {
-        .system(size: size, weight: weight)
+    /// The slime speaking: Pixelify Sans that scales with Dynamic Type, like
+    /// the app's `Theme.voice`.
+    static func voice(_ size: CGFloat, relativeTo style: Font.TextStyle) -> Font {
+        .custom("PixelifySans-Bold", size: size, relativeTo: style)
     }
 
+    static func body(_ size: CGFloat = 15, _ weight: Font.Weight = .regular) -> Font {
+        .system(size: size, weight: weight, design: .rounded)
+    }
+
+    /// Pixel-art colour of a need (emotes in the island).
     static func color(for need: Need) -> Color {
         switch need {
         case .hunger: Color(hex: 0xF2A65A)
@@ -38,6 +46,34 @@ enum Brand {
         case .energy: Color(hex: 0xE8D55A)
         case .clean: Color(hex: 0x7FD9B0)
         case .love: Color(hex: 0xF07A9A)
+        }
+    }
+
+    /// Colour of a need in native chrome (rings, bars, button symbols): the
+    /// same system colours as the app's need rings, adapting to light and dark.
+    static func tint(for need: Need) -> Color {
+        switch need {
+        case .hunger: .orange
+        case .fun: .blue
+        case .energy: .indigo
+        case .clean: .teal
+        case .love: .pink
+        }
+    }
+
+    /// Ring or bar colour for a need at `value` (0...100): red when it runs low.
+    static func tint(for need: Need, value: Double) -> Color {
+        value < 25 ? .red : tint(for: need)
+    }
+
+    /// The pixel icon of a need, the same one the app's need rings show.
+    static func icon(for need: Need) -> String {
+        switch need {
+        case .hunger: "apple"
+        case .fun: "ball"
+        case .energy: "starJelly"
+        case .clean: "bubbleItem"
+        case .love: "heart"
         }
     }
 

@@ -6,6 +6,12 @@ options:
   deploymentTarget:
     iOS: "18.0"
   createIntermediateGroups: true
+  # Privacy manifests are bundle resources. Stated here so every target copies
+  # the PrivacyInfo.xcprivacy inside its own source folder (App/, Widget/) and
+  # nothing else; the two folders don't overlap, so each is included once.
+  fileTypes:
+    xcprivacy:
+      buildPhase: resources
 settings:
   base:
     SWIFT_VERSION: "5.0"
@@ -33,14 +39,24 @@ targets:
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         UILaunchScreen:
           UIColorName: LaunchBackground
-        UIUserInterfaceStyle: Dark
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
         NSSupportsLiveActivities: true
+        NSPhotoLibraryAddUsageDescription: Slimy saves pictures of your slime to your photo library when you ask it to.
+        # fetch: background refresh (de.hyprnode.slimy.refresh).
+        # processing: the check while charging (de.hyprnode.slimy.power).
         UIBackgroundModes: [fetch, processing]
         BGTaskSchedulerPermittedIdentifiers: [de.hyprnode.slimy.refresh, de.hyprnode.slimy.power]
         CFBundleURLTypes:
           - CFBundleURLName: de.hyprnode.slimy
             CFBundleURLSchemes: [slimy]
+        # Save files from Settings > Backup (SaveFile.format / .fileExtension),
+        # so the import picker can offer exactly these files.
+        UTExportedTypeDeclarations:
+          - UTTypeIdentifier: de.hyprnode.slimy.save
+            UTTypeDescription: Slimy Save
+            UTTypeConformsTo: [public.json, public.data]
+            UTTypeTagSpecification:
+              public.filename-extension: [slimysave]
         ITSAppUsesNonExemptEncryption: false
     entitlements:
       path: App/Slimy.entitlements

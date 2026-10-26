@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+<!-- @head -->
+<title>Slime friend invite · Slimy</title>
+<meta name="description" content="Someone invited you to be slime friends in Slimy, the pixel slime that lives in the Dynamic Island. Open the invite to see their slime and your code.">
+<meta name="robots" content="noindex">
+<link rel="canonical" href="https://slime.hyprnode.de/f/">
+<script type="module" src="/assets/invite.js"></script>
+</head>
+<body>
+<!-- @header -->
+<main id="main" class="wrap">
+  <section class="invite-page" aria-busy="true" id="invite">
+    <div class="invite-card card">
+
+      <div class="loading" data-view="loading">
+        <span class="spinner" aria-hidden="true"></span>
+        <p>Looking up the invite…</p>
+      </div>
+
+      <div data-view="invite" hidden>
+        <div class="invite-stage" aria-hidden="true">
+          <span class="pill-island"><canvas class="i-slime" id="inv-island-slime" width="24" height="18"></canvas><canvas class="i-emote" id="inv-island-emote" width="9" height="9"></canvas></span>
+          <canvas class="invite-slime" id="inv-slime" width="24" height="20"></canvas>
+        </div>
+        <p class="invite-kicker">Friend invite</p>
+        <h1><span id="inv-owner">Someone</span> wants to be slime friends.</h1>
+        <p class="lede">Meet <b id="inv-slime-name">their slime</b>. Add the code in Slimy and your slimes can hug, visit and send each other food.</p>
+        <div class="code-box">
+          <span class="code-label" id="inv-code-label">Friend code</span>
+          <span class="code" id="inv-code" aria-describedby="inv-code-label"></span>
+          <span class="code-expiry" id="inv-expiry"></span>
+        </div>
+        <div class="invite-actions">
+          <button class="btn" type="button" id="inv-copy"><span data-copy-label>Copy code</span></button>
+          <a class="btn btn-tint" id="inv-open" href="slimy://f/">Open in Slimy</a>
+        </div>
+        <ol class="invite-steps">
+          <li><span>No Slimy yet? <a href="/install">Install the beta</a> first. It's free.</span></li>
+          <li><span>Open Slimy, go to <b>Friends</b> and tap <b>Go Online</b>.</span></li>
+          <li><span>Enter the code <b class="code-inline" data-code></b> and tap <b>Connect</b>.</span></li>
+          <li><span><b id="inv-owner-2">Your friend</b> accepts, and your slimes are friends.</span></li>
+        </ol>
+        <p class="invite-fine">A code works once and expires 10 minutes after it was made. Looking at this page doesn't use it up.</p>
+      </div>
+
+      <div data-view="problem" hidden>
+        <div class="invite-stage" aria-hidden="true">
+          <canvas class="invite-slime" id="err-slime" width="24" height="20"></canvas>
+        </div>
+        <h1 id="err-title">This code doesn't work anymore.</h1>
+        <p class="lede" id="err-text">Codes expire after 10 minutes and work once. Ask your friend for a new one.</p>
+        <div class="code-box" id="err-code-box" hidden>
+          <span class="code-label">Your code</span>
+          <span class="code" id="err-code"></span>
+          <span class="code-expiry">You can still type it in Slimy under Friends.</span>
+        </div>
+        <div class="invite-actions">
+          <button class="btn" type="button" id="err-retry" hidden>Try again</button>
+          <a class="btn btn-tint" href="/install">Install the beta</a>
+        </div>
+        <p class="invite-more"><a class="more" href="/f/">Enter another code</a></p>
+      </div>
+
+      <div data-view="enter" hidden>
+        <div class="invite-stage" aria-hidden="true">
+          <canvas class="invite-slime" id="enter-slime" width="24" height="20"></canvas>
+        </div>
+        <p class="invite-kicker">Friend invite</p>
+        <h1>Got a friend code?</h1>
+        <p class="lede">Type the six characters your friend sent you to see their slime.</p>
+        <form class="code-form" id="code-form" novalidate>
+          <label class="sr-only" for="code-input">Friend code</label>
+          <input id="code-input" name="code" size="8" inputmode="text" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="8" placeholder="ABC234" aria-describedby="code-error">
+          <button class="btn" type="submit">Show</button>
+        </form>
+        <p class="code-form-error" id="code-error" role="alert"></p>
+      </div>
+
+    </div>
+  </section>
+  <p class="sr-only" id="copy-status" aria-live="polite"></p>
+</main>
+<!-- @footer -->
+</body>
+</html>

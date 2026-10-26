@@ -19,7 +19,10 @@ enum Achievements {
         .init(id: "cuddler", title: "Cuddle pro", detail: "Pet it 100 times.", coins: 40) { $0.progress.stats.pets >= 100 },
         .init(id: "sleepyhead", title: "Good night", detail: "Put it to bed 10 times.", coins: 30) { $0.progress.stats.sleeps >= 10 },
         .init(id: "arcadeRookie", title: "First game", detail: "Play a round in the arcade.", coins: 10) { $0.progress.stats.plays >= 1 },
-        .init(id: "allGames", title: "Tried them all", detail: "Play every game once.", coins: 80) { GameID.classics.allSatisfy { game in $0.progress.records[game] != nil } },
+        // A finished round, not just a look at the tutorial (which also creates a record).
+        .init(id: "allGames", title: "Tried them all", detail: "Play every game once.", coins: 80) { state in
+            GameID.classics.allSatisfy { (state.progress.records[$0]?.plays ?? 0) > 0 }
+        },
         .init(id: "arcadeFan", title: "Regular", detail: "Play 50 rounds.", coins: 60) { $0.progress.stats.plays >= 50 },
         .init(id: "arcadeStar", title: "Arcade star", detail: "Play 25 really good rounds.", coins: 100) { $0.progress.stats.goodGames >= 25 },
         .init(id: "level5", title: "Level 5", detail: "Reach level 5.", coins: 30) { $0.slime.level >= 5 },
@@ -36,9 +39,42 @@ enum Achievements {
         .init(id: "eventWatcher", title: "Attentive", detail: "React to 10 things on your iPhone.", coins: 30) { $0.progress.stats.eventsSeen >= 10 },
         .init(id: "week", title: "One week", detail: "Visit on 7 different days.", coins: 50) { $0.player.daysActive.count >= 7 },
         .init(id: "rich", title: "Coin mountain", detail: "Earn 1000 coins in total.", coins: 50) { $0.wallet.earnedTotal >= 1000 },
+        // Daily gifts and streaks
+        .init(id: "streak3", title: "Three in a row", detail: "Open a daily gift three days in a row.", coins: 20) { $0.streak.best >= 3 },
+        .init(id: "streak7", title: "Full week", detail: "Keep a seven-day streak.", coins: 50) { $0.streak.best >= 7 },
+        .init(id: "streak30", title: "Every single day", detail: "Keep a 30-day streak.", coins: 150) { $0.streak.best >= 30 },
+        .init(id: "gifts7", title: "Gift week", detail: "Open 7 daily gifts.", coins: 30) { $0.streak.opened >= 7 },
+        .init(id: "gifts14", title: "Two weeks of gifts", detail: "Open 14 daily gifts.", coins: 40) { $0.streak.opened >= 14 },
+        .init(id: "gifts21", title: "Three weeks of gifts", detail: "Open 21 daily gifts.", coins: 50) { $0.streak.opened >= 21 },
+        // Special days
+        .init(id: "birthday", title: "Happy birthday", detail: "Celebrate your slime's first birthday.", coins: 100) { $0.memory.last(.birthday) != nil },
+        .init(id: "spooky", title: "Spooky season", detail: "Visit your slime in October.", coins: 25) { $0.player.seasonsSeen.contains(Season.halloween.rawValue) },
+        .init(id: "cozy", title: "Cozy season", detail: "Visit your slime in December.", coins: 25) { $0.player.seasonsSeen.contains(Season.christmas.rawValue) },
+        .init(id: "newYear", title: "Happy New Year", detail: "Visit on New Year's Eve or New Year's Day.", coins: 30) { $0.player.seasonsSeen.contains(Season.newYear.rawValue) },
+        .init(id: "oldFriends", title: "Old friends", detail: "Visit on 30 different days.", coins: 100) { $0.player.daysActive.count >= 30 },
+        // Games
+        .init(id: "stackStar", title: "Tower builder", detail: "Play a really good round of Slime Stack.", coins: 50) { $0.isGood(.slimeStack) },
+        .init(id: "dashStar", title: "Jelly sprinter", detail: "Play a really good round of Jelly Dash.", coins: 50) { $0.isGood(.jellyDash) },
+        .init(id: "dailyRegular", title: "Daily player", detail: "Play 10 rounds of today's game.", coins: 40) { ($0.progress.records[.daily]?.plays ?? 0) >= 10 },
+        // Care, style and friends
+        .init(id: "feast", title: "Feast", detail: "Feed your slime 100 times.", coins: 50) { $0.progress.stats.feeds >= 100 },
+        .init(id: "dressedUp", title: "Dressed up", detail: "Wear a hat, glasses and a scarf at once.", coins: 30) {
+            $0.slime.equipped.hat != nil && $0.slime.equipped.glasses != nil && $0.slime.equipped.scarf != nil
+        },
+        .init(id: "shopper", title: "Big spender", detail: "Buy 10 things in the shop.", coins: 40) { $0.progress.stats.purchases >= 10 },
+        .init(id: "level20", title: "Level 20", detail: "Reach level 20.", coins: 120) { $0.slime.level >= 20 },
+        .init(id: "popular", title: "Popular", detail: "Make 5 friends.", coins: 60) { $0.progress.stats.friends >= 5 },
+        .init(id: "squishy", title: "Squishy", detail: "Hug friends 10 times.", coins: 30) { $0.progress.stats.hugs >= 10 },
     ]
 
     static func achievement(_ id: String) -> Achievement? { all.first { $0.id == id } }
+}
+
+extension GameState {
+    /// Whether the best round on record for a game counts as really good.
+    func isGood(_ game: GameID) -> Bool {
+        (progress.records[game]?.best ?? 0) >= game.goodScore
+    }
 }
 
 // MARK: - Challenges
@@ -81,7 +117,18 @@ enum Challenges {
         .init(id: "d.memory", title: "Memory Garden: round 6", goal: .score(.memoryGarden, 6), coins: 20),
         .init(id: "d.color", title: "Color Match: 20 points", goal: .score(.colorMatch, 20), coins: 20),
         .init(id: "d.jump", title: "Slime Jump: height 25", goal: .score(.slimeJump, 25), coins: 20),
+        .init(id: "d.stack", title: "Slime Stack: 25 points", goal: .score(.slimeStack, 25), coins: 20),
+        .init(id: "d.dash", title: "Jelly Dash: 120 points", goal: .score(.jellyDash, 120), coins: 20),
     ]
+
+    /// The daily challenges a slime of this level can take on: score goals
+    /// only for games it can already open in the arcade.
+    static func dailyOptions(forLevel level: Int) -> [ChallengeTemplate] {
+        dailyPool.filter { template in
+            if case .score(let game, _) = template.goal { return level >= game.unlockLevel }
+            return true
+        }
+    }
 
     static let weeklyPool: [ChallengeTemplate] = [
         .init(id: "w.play20", title: "Play 20 rounds", goal: .stat(.plays, 20), coins: 80),
@@ -96,13 +143,15 @@ enum Challenges {
         (dailyPool + weeklyPool).first { $0.id == id }
     }
 
+    /// "yyyy-MM-dd" on the Gregorian calendar in the calendar's time zone, so
+    /// a day has the same key whatever calendar the iPhone is set to.
     static func dayKey(_ date: Date, calendar: Calendar = .current) -> String {
-        let c = calendar.dateComponents([.year, .month, .day], from: date)
+        let c = Calendar.gregorian(like: calendar).dateComponents([.year, .month, .day], from: date)
         return String(format: "%04d-%02d-%02d", c.year ?? 0, c.month ?? 0, c.day ?? 0)
     }
 
     static func weekKey(_ date: Date, calendar: Calendar = .current) -> String {
-        let c = calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: date)
+        let c = Calendar.gregorian(like: calendar).dateComponents([.yearForWeekOfYear, .weekOfYear], from: date)
         return String(format: "%04d-W%02d", c.yearForWeekOfYear ?? 0, c.weekOfYear ?? 0)
     }
 

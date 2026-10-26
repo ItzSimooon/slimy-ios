@@ -1,0 +1,42 @@
+<!-- @needs contact -->
+<!doctype html>
+<html lang="en">
+<head>
+<!-- @head -->
+<title>Imprint · Slimy</title>
+<meta name="description" content="Who runs Slimy and slime.hyprnode.de, and how to reach us. The imprint (Impressum) under section 5 of the German Digital Services Act (DDG).">
+<link rel="canonical" href="https://slime.hyprnode.de/imprint">
+</head>
+<body>
+<!-- @header -->
+<main id="main" class="page wrap wrap-narrow">
+  <header class="page-head">
+    <h1>Imprint</h1>
+    <p class="lede">Who runs Slimy and this website, and how to reach us. In German this page is called Impressum.</p>
+  </header>
+
+  <article class="prose card">
+    <h2 id="provider">Provider</h2>
+    <p>Information under section 5 of the German Digital Services Act (§ 5 DDG):</p>
+    <address>
+      <strong>{{contact.name}}</strong><br>
+      {{contact.address}}
+    </address>
+    <p>Slimy, the iPhone app "Slimy: Island Pet", and slime.hyprnode.de are made and operated under the name <strong>hyprnode</strong>.</p>
+
+    <h2 id="contact">Contact</h2>
+    <p>Email: <a href="mailto:{{contact.email}}">{{contact.email}}</a><!-- @if contact.phone --><br>
+    Phone: {{contact.phone}}<!-- @end --></p>
+    <p>For help with the app, the <a href="/support">support page</a> answers most questions. Data protection requests are covered in the <a href="/privacy">Privacy Policy</a>.</p>
+<!-- @if contact.vatId -->
+    <h2 id="vat">VAT ID</h2>
+    <p>VAT identification number under section 27a of the German VAT Act (§ 27a UStG): {{contact.vatId}}</p>
+<!-- @end -->
+
+    <h2 id="disputes">Consumer dispute resolution</h2>
+    <p>We are not obliged and not willing to take part in dispute resolution proceedings before a consumer arbitration board (§ 36 VSBG).</p>
+  </article>
+</main>
+<!-- @footer -->
+</body>
+</html>

@@ -12,6 +12,8 @@ enum LineCategory: String, CaseIterable {
     case levelUp, stageUp, achievement, bought, equipped
     case gift, giftReceived, friendHug, friendVisit, friendNew, inLove, missFriend
     case idle, idleClose, curious
+    case dailyGift, giftWeek, streak, streakFresh
+    case spooky, cozy, newYear, birthday
 }
 
 struct Line {
@@ -32,6 +34,8 @@ struct LineContext {
     var level = 0
     var days = 0
     var item = ""
+    var streak = 0
+    var years = 0
 }
 
 enum Dialogue {
@@ -80,9 +84,21 @@ enum Dialogue {
             "{level}": "\(context.level)",
             "{days}": "\(context.days)",
             "{item}": context.item,
+            "{streak}": "\(context.streak)",
+            "{years}": context.years == 1 ? "1 year" : "\(context.years) years",
         ]
         for (key, value) in values { out = out.replacingOccurrences(of: key, with: value) }
         return out
+    }
+
+    /// Small talk that fits the hour.
+    static func timeOfDay(hour: Int) -> LineCategory {
+        switch hour {
+        case 5..<11: .morning
+        case 11..<17: .day
+        case 17..<22: .evening
+        default: .night
+        }
     }
 
     static func category(for need: Need) -> LineCategory {
@@ -113,6 +129,10 @@ enum Dialogue {
                 ("morning! what are we doing today?", [.playful, .curious], 0, nil),
                 ("breakfast would be nice", [.foodie], 0, nil),
                 ("morning, {owner}. glad you're here.", [.cuddly], 30, nil),
+                ("the sun is up. so am i. mostly.", [.sleepy], 0, nil),
+                ("i dreamed we went to the beach", [.curious], 0, nil),
+                ("morning stretch. boing.", [.playful], 0, nil),
+                ("breakfast idea: {fav}", [.foodie], 0, nil),
             ]),
             l(.day, [
                 ("hello.", [], 0, nil),
@@ -121,23 +141,37 @@ enum Dialogue {
                 ("i've been thinking. about {fav}.", [.foodie], 0, nil),
                 ("i studied a speck of dust. fascinating.", [.curious], 0, nil),
                 ("wanna play something?", [.playful], 0, nil),
+                ("busy day? i'll keep the wobble warm.", [.cuddly], 0, nil),
+                ("i counted the floorboards. there are a lot.", [.curious], 0, nil),
+                ("midday bounce check: very bouncy", [.playful], 0, nil),
+                ("is it snack o'clock?", [.foodie], 0, nil),
             ]),
             l(.evening, [
                 ("evening. cozy.", [], 0, nil),
                 ("today was good, right?", [.cuddly], 20, nil),
                 ("i'm getting sleepy", [.sleepy], 0, nil),
                 ("one more game before bed?", [.playful], 0, nil),
+                ("the light is all orange. pretty.", [], 0, nil),
+                ("let's take it slow tonight", [.sleepy], 0, nil),
+                ("tell me about your day?", [.curious], 10, nil),
+                ("evening snack? just asking.", [.foodie], 0, nil),
             ]),
             l(.night, [
                 ("psst. it's night.", [], 0, nil),
                 ("you're still up too?", [.curious], 0, nil),
                 ("counting slime sheep", [.sleepy], 0, nil),
+                ("the moon is wobbling too", [], 0, nil),
+                ("shh. the room is sleeping.", [.sleepy], 0, nil),
+                ("night thought: you're nice", [.cuddly], 30, nil),
+                ("i can see one star from here", [.curious], 0, nil),
             ]),
             l(.reunion, [
                 ("you're back", [], 0, nil),
                 ("hi! i waited for you. a little.", [.cuddly], 0, nil),
                 ("finally. i have so much to tell you. not really.", [.curious], 0, nil),
                 ("good to see you", [], 20, nil),
+                ("hi! i kept everything wobbly for you", [], 0, nil),
+                ("oh good, it's you", [.cuddly], 10, nil),
             ]),
             l(.longReunion, [
                 ("{days} days! i missed you. are you okay?", [], 0, nil),
@@ -149,27 +183,32 @@ enum Dialogue {
                 ("my tummy is making noises", [], 0, nil),
                 ("all i can think about is {fav}", [.foodie], 0, nil),
                 ("an apple would be nice right now", [], 0, nil),
+                ("a little snack would be perfect", [], 0, nil),
             ]),
             l(.wishFun, [
                 ("i'm bored", [], 0, nil),
                 ("play? please?", [.playful], 0, nil),
                 ("we haven't played {game} in ages", [.playful], 0, nil),
                 ("i'm staring at the wall. the wall stares back.", [.curious], 0, nil),
+                ("one round of {game}?", [.playful], 0, nil),
             ]),
             l(.wishEnergy, [
                 ("eyes. so. heavy.", [], 0, nil),
                 ("i could sleep standing up. i don't have legs.", [.sleepy], 0, nil),
                 ("bed?", [], 0, nil),
+                ("i might nap right here", [.sleepy], 0, nil),
             ]),
             l(.wishClean, [
                 ("i'm sticking to myself", [], 0, nil),
                 ("something is stuck inside me. i think.", [.curious], 0, nil),
                 ("a bath would be nice", [], 0, nil),
+                ("bubbles? i love bubbles.", [], 0, nil),
             ]),
             l(.wishLove, [
                 ("pet me a little?", [], 0, nil),
                 ("i'm a bit lonely", [.cuddly], 0, nil),
                 ("cuddle break?", [.cuddly], 0, nil),
+                ("a quick pat would make my day", [], 0, nil),
             ]),
             l(.fed, [
                 ("nom. {food}.", [], 0, nil),
@@ -261,6 +300,8 @@ enum Dialogue {
                 "zzz … dreaming of {fav}",
                 "zzz",
                 "*sleeping deeply*",
+                "zzz … wobble … zzz",
+                "*mumbles something about {fav}*",
             ]),
             s(.levelUp, [
                 "level {level}!",
@@ -323,16 +364,89 @@ enum Dialogue {
                 ("i'm here if you need me", [.cuddly], 10, nil),
                 ("the sun is nice today", [], 0, 9...18),
                 ("it's dark outside", [], 0, 19...23),
+                ("i'm practicing being round", [], 0, nil),
+                ("wobble. wobble. pause. wobble.", [.playful], 0, nil),
+                ("do you think clouds are slimes?", [.curious], 0, nil),
+                ("i saved you a warm spot", [.cuddly], 20, nil),
+                ("thinking about {fav}. again.", [.foodie], 0, nil),
+                ("tiny nap later? tiny nap later.", [.sleepy], 0, nil),
             ]),
             l(.idleClose, [
                 ("i'm glad you exist", [], 50, nil),
                 ("you're my favourite human", [.cuddly], 70, nil),
                 ("remember our first day?", [], 50, nil),
+                ("we make a good team", [], 50, nil),
+                ("i like it when you're around", [.cuddly], 60, nil),
             ]),
             s(.curious, [
                 "what's that?",
                 "hm?",
                 "let me have a look",
+            ]),
+            // The daily gift and the streak. Never a word about missed days.
+            s(.dailyGift, [
+                "a gift! for me? for us.",
+                "ooh. it rattles.",
+                "unwrapping. carefully. very carefully.",
+                "coins! we're rich. a little.",
+                "i love surprises",
+                "same time tomorrow?",
+            ]),
+            s(.giftWeek, [
+                "day seven. the big one!",
+                "{item}! for our home?",
+                "a whole week of gifts. look at us.",
+            ]),
+            l(.streak, [
+                ("{streak} days in a row. we're a team.", [], 0, nil),
+                ("day {streak}. i've been counting.", [.curious], 0, nil),
+                ("you keep coming back. i like that a lot.", [.cuddly], 0, nil),
+                ("{streak} days! that's a habit now.", [], 0, nil),
+                ("streak buddies", [.playful], 0, nil),
+                ("every day with you is a good day", [.cuddly], 20, nil),
+                ("{streak} days. my wobble is getting stronger.", [.playful], 0, nil),
+            ]),
+            s(.streakFresh, [
+                "day one. my favourite kind of day.",
+                "fresh start. hi!",
+                "hi again. so good to see you.",
+                "new streak, same slime",
+            ]),
+            // The seasons.
+            l(.spooky, [
+                ("boo. did i scare you?", [.playful], 0, nil),
+                ("i carved a pumpkin. it looks like me.", [], 0, nil),
+                ("the bats are friendly. mostly.", [.curious], 0, nil),
+                ("i'm dressing up as a ghost. a green one.", [.playful], 0, nil),
+                ("spooky season. i'm only a little scared.", [.cuddly], 0, nil),
+                ("something went bump. it was me.", [], 0, nil),
+                ("trick or treat? i pick treat.", [.foodie], 0, nil),
+                ("the pumpkins are smiling at me", [], 0, nil),
+            ]),
+            l(.cozy, [
+                ("snow! i want to be a snowslime.", [.playful], 0, nil),
+                ("it's so cozy in here", [], 0, nil),
+                ("the lights keep blinking at me", [.curious], 0, nil),
+                ("hot cocoa weather", [.foodie], 0, nil),
+                ("i wrapped myself in a blanket. i'm a gift.", [.cuddly], 0, nil),
+                ("the tree smells like a forest", [], 0, nil),
+                ("warm goo, cold window", [.sleepy], 0, nil),
+                ("let's stay in today", [.sleepy], 0, nil),
+            ]),
+            s(.newYear, [
+                "happy new year!",
+                "new year. same goo. better goo.",
+                "the sky is going pop pop pop",
+                "my resolution: more wobbling",
+                "did you see the fireworks?",
+            ]),
+            s(.birthday, [
+                "it's my birthday! {years} old today.",
+                "{years} of wobbling with you",
+                "cake? for me? for me!",
+                "best birthday ever",
+                "make a wish. i made one too.",
+                "thank you for hatching me",
             ]),
         ]
         var out: [LineCategory: [Line]] = [:]

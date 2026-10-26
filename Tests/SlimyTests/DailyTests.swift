@@ -55,7 +55,8 @@ final class DailyPlanTests: XCTestCase {
         XCTAssertFalse(evil.tutorial.isEmpty)
     }
 
-    func testServerShapedPlanDecodes() throws {
+    /// Plans saved by older versions (some made on the server) still load.
+    func testSavedPlanDecodes() throws {
         let json = """
         {"day": "2026-10-26", "source": "ai", "story": "i dreamed of jelly.",
          "quest": {"title": "Score 80", "coins": 25, "goal": {"kind": "dailyScore", "target": 80}},
@@ -65,14 +66,22 @@ final class DailyPlanTests: XCTestCase {
                                {"sprite": "rock", "role": "avoid", "motion": "homing", "speed": 1.2, "rate": 0.6, "points": 3, "size": 1.1},
                                {"sprite": "bubbleItem", "role": "power", "power": "shield", "motion": "wave", "speed": 0.8, "rate": 0.1, "points": 0, "size": 1}]}}
         """
-        let plan = try HyprnodeAPI.decoder.decode(DailyPlan.self, from: Data(json.utf8)).sanitized()
+        let plan = try JSONDecoder().decode(DailyPlan.self, from: Data(json.utf8)).sanitized()
         XCTAssertEqual(plan.game.title, "Moonlight Munch")
         XCTAssertEqual(plan.game.entities.count, 3)
         XCTAssertEqual(plan.quest.goal, .dailyScore(80))
-        let stat = try HyprnodeAPI.decoder.decode(DailyQuest.self, from: Data("""
+        let stat = try JSONDecoder().decode(DailyQuest.self, from: Data("""
         {"title": "Feed 3", "coins": 15, "goal": {"kind": "stat", "stat": "feeds", "target": 3}}
         """.utf8))
         XCTAssertEqual(stat.goal, .stat(.feeds, 3))
+    }
+
+    func testPlanSurvivesASaveRoundTrip() throws {
+        let plan = DailyPlanner.plan(for: "2026-10-26")
+        let data = try JSONEncoder().encode(plan)
+        let loaded = try JSONDecoder().decode(DailyPlan.self, from: data)
+        XCTAssertEqual(loaded, plan)
+        XCTAssertEqual(plan.source, "local")
     }
 
     func testQuestPaysOnceAndTracksDailyScore() {

@@ -1,0 +1,572 @@
+<!doctype html>
+<html lang="en">
+<head>
+<!-- @head -->
+<title>Slimy: a tiny slime that lives in your Dynamic Island</title>
+<meta name="description" content="Slimy is a pixel slime that lives in your iPhone's Dynamic Island. Feed it, play twelve mini games, dress it up and visit friends. Free beta for iOS 18, made by hyprnode.">
+<link rel="canonical" href="https://slime.hyprnode.de/">
+<link rel="stylesheet" href="/assets/home.css">
+<script type="module" src="/assets/home.js"></script>
+</head>
+<body>
+<!-- @header -->
+<main id="main">
+
+  <!-- Hero: a phone you can play with -->
+  <section class="hero wrap" id="play" aria-labelledby="hero-title">
+    <div class="hero-copy">
+      <a class="app-chip" href="#get"><img src="/assets/icon.png" alt="" width="30" height="30"><span>Slimy: Island Pet</span><span class="app-chip-tag">Free beta</span></a>
+      <h1 id="hero-title">A tiny slime that lives in your Dynamic Island.</h1>
+      <p class="lede">Feed it, play with it, dress it up. It sits next to the camera all day, notices when your battery runs low and never guilt-trips you.</p>
+      <div class="ctas">
+        <a class="btn" href="/install">
+          <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v10m0 0-4-4m4 4 4-4M4 16.5h12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Install the beta
+        </a>
+        <span class="status">Coming to the App Store</span>
+      </div>
+      <p class="fine">Free. No ads, nothing to buy. For iOS 18 or later, made for iPhones with a Dynamic Island.</p>
+    </div>
+
+    <div class="hero-phone">
+      <div class="phone" id="phone">
+        <div class="screen" id="screen">
+          <canvas class="scene" id="scene" width="96" height="170" aria-hidden="true"></canvas>
+          <div class="nightfall" aria-hidden="true"></div>
+
+          <div class="statusbar" aria-hidden="true">
+            <span>9:41</span>
+            <span class="statusbar-icons">
+              <svg viewBox="0 0 18 12"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5.5" width="3" height="6.5" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>
+              <svg viewBox="0 0 16 12"><path d="M8 2.2c2.4 0 4.6.9 6.2 2.5l1.2-1.3A10.3 10.3 0 0 0 8 .4 10.3 10.3 0 0 0 .6 3.4l1.2 1.3A8.6 8.6 0 0 1 8 2.2zm0 3.6c1.4 0 2.7.5 3.7 1.4l1.2-1.3A7.2 7.2 0 0 0 8 4a7.2 7.2 0 0 0-4.9 1.9l1.2 1.3c1-.9 2.3-1.4 3.7-1.4zM8 9.3a1.7 1.7 0 0 0-1.3.6L8 11.5l1.3-1.6A1.7 1.7 0 0 0 8 9.3z"/></svg>
+              <svg viewBox="0 0 27 12"><rect x=".5" y=".5" width="23" height="11" rx="3.5" fill="none" stroke="currentColor" opacity=".4"/><rect x="2" y="2" width="17" height="8" rx="2"/><path d="M25 4v4c.8-.3 1.3-1.1 1.3-2S25.8 4.3 25 4z" opacity=".4"/></svg>
+            </span>
+          </div>
+
+          <div class="island live-island" id="island" data-state="compact">
+            <button class="island-toggle" type="button" aria-expanded="false" aria-controls="island-panel"><span class="sr-only">Open the Dynamic Island</span></button>
+            <span class="island-compact" aria-hidden="true">
+              <canvas class="i-slime" width="24" height="18"></canvas>
+              <span class="i-status"><b class="i-label"></b><span class="i-meter"><i></i></span></span>
+              <canvas class="i-emote" width="9" height="9"></canvas>
+            </span>
+            <div class="island-panel" id="island-panel" hidden>
+              <div class="ip-top">
+                <canvas class="ip-slime" width="24" height="18" aria-hidden="true"></canvas>
+                <div class="ip-id"><b class="ip-name">Blob</b><span class="ip-sub">Young slime</span></div>
+                <div class="ip-stats">
+                  <span class="ip-level">Level <span data-level>11</span></span>
+                  <span class="ip-coins" role="img" aria-label="120 coins" data-coins-label><canvas data-item="coin" data-scale="2"></canvas><span data-coins>120</span></span>
+                </div>
+              </div>
+              <p class="ip-line" data-line>just wobbling along</p>
+              <ul class="ip-needs" aria-label="Needs"></ul>
+              <div class="ip-actions"></div>
+            </div>
+          </div>
+
+          <div class="hud">
+            <div class="hud-name">
+              <b>Blob</b>
+              <span>Level <span data-level>11</span> <span class="xp" aria-hidden="true"><i id="xp"></i></span></span>
+            </div>
+            <div class="coins" id="coins" role="img" aria-label="120 coins" data-coins-label><canvas data-item="coin" data-scale="2"></canvas><span data-coins>120</span><span class="coin-pop" id="coin-pop" aria-hidden="true"></span></div>
+          </div>
+
+          <div class="floor-hit" id="floor-hit" aria-hidden="true"></div>
+          <div class="stage" id="stage">
+            <p class="bubble" id="bubble" aria-hidden="true">hi! poke me.</p>
+            <div class="slime" id="slime" role="button" tabindex="0" aria-label="Blob, your slime. Press to poke, press P to pet. Drag across it to pet.">
+              <i class="slime-shadow" aria-hidden="true"></i>
+              <canvas class="slime-canvas" id="slime-canvas" width="24" height="20"></canvas>
+            </div>
+            <div class="fx" id="fx" aria-hidden="true"></div>
+          </div>
+
+          <div class="dock" id="dock">
+            <div class="dock-top">
+              <div class="needs" id="needs"></div>
+              <div class="tray" id="tray" role="group" aria-label="Food. Tap to feed, or drag onto the slime."></div>
+            </div>
+            <div class="keys">
+              <button class="key" type="button" data-act="feed" aria-expanded="false" aria-controls="tray"><canvas data-item="apple" data-scale="2"></canvas><span>Feed</span></button>
+              <button class="key" type="button" data-act="play"><canvas data-item="ball" data-scale="2"></canvas><span>Play</span></button>
+              <button class="key" type="button" data-act="bath"><canvas data-item="bubbleItem" data-scale="2"></canvas><span>Bath</span></button>
+              <button class="key" type="button" data-act="sleep"><canvas data-item="starJelly" data-scale="2"></canvas><span>Sleep</span></button>
+              <button class="key" type="button" data-act="pet"><canvas data-item="heart" data-scale="2"></canvas><span>Pet</span></button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="phone-hints" aria-hidden="true">
+        <span class="hint-pill"><svg viewBox="0 0 24 24"><path d="M9 11.5V5.8a1.8 1.8 0 0 1 3.6 0v5.2m0-1.5a1.8 1.8 0 0 1 3.6 0v1.8m0-.6a1.8 1.8 0 0 1 3.4.8v3.6a6 6 0 0 1-6 6h-1.3a6 6 0 0 1-4.8-2.4l-2.8-3.8a1.7 1.7 0 0 1 2.6-2.2L9 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Tap the floor to drop a snack</span>
+        <span class="hint-pill">Drag across the slime to pet it</span>
+      </p>
+    </div>
+
+    <div class="hero-tools card">
+      <div class="tools-head">
+        <h2 class="tools-title">Make it yours</h2>
+        <div class="seg" role="tablist" aria-label="Customise your slime">
+          <button role="tab" id="tab-skin" aria-controls="panel-skin" aria-selected="true" type="button">Colour</button>
+          <button role="tab" id="tab-wear" aria-controls="panel-wear" aria-selected="false" tabindex="-1" type="button">Wear</button>
+          <button role="tab" id="tab-home" aria-controls="panel-home" aria-selected="false" tabindex="-1" type="button">Home</button>
+        </div>
+      </div>
+      <div class="panel" id="panel-skin" role="tabpanel" aria-labelledby="tab-skin" tabindex="0">
+        <div class="swatches" id="swatches"></div>
+        <p class="panel-note">Eight jelly colours. In the app, new ones unlock as your slime levels up.</p>
+      </div>
+      <div class="panel" id="panel-wear" role="tabpanel" aria-labelledby="tab-wear" tabindex="0" hidden>
+        <div class="wear" id="wear"></div>
+        <p class="panel-note">Hats, glasses and scarves, bought with coins you win in the arcade.</p>
+      </div>
+      <div class="panel" id="panel-home" role="tabpanel" aria-labelledby="tab-home" tabindex="0" hidden>
+        <div class="homes" id="homes"></div>
+        <p class="panel-note">Five homes with furniture from the shop, weather outdoors and a real day and night.</p>
+      </div>
+    </div>
+    <p class="sr-only" aria-live="polite" id="say"></p>
+  </section>
+
+  <!-- Features -->
+  <section class="section wrap" id="features" aria-labelledby="features-title">
+    <header class="section-head">
+      <p class="eyebrow-text">What it does</p>
+      <h2 id="features-title">It lives next to the camera. All day.</h2>
+      <p class="lede">Slimy runs as a Live Activity, so your slime stays in the Dynamic Island and on the Lock Screen while you use your iPhone for everything else.</p>
+    </header>
+
+    <div class="bento">
+      <article class="tile span-2 tile-wide">
+        <div class="island-art">
+          <div class="lockphone" id="lockphone" aria-hidden="true">
+            <canvas class="sky" width="1" height="1"></canvas>
+            <div class="lp-status"><span>9:41</span><span class="lp-icons"><i></i><i></i><i></i></span></div>
+            <div class="island feature-island" id="feature-island">
+              <span class="island-compact">
+                <canvas class="i-slime" width="24" height="18"></canvas>
+                <canvas class="i-emote" width="9" height="9"></canvas>
+              </span>
+            </div>
+            <div class="lp-clock"><p>Monday, 26 October</p><b>9:41</b></div>
+          </div>
+          <div class="chips" role="group" aria-label="Show a mood in the island" id="moods">
+            <button type="button" class="chip" data-reel="happyA" aria-pressed="true">Happy</button>
+            <button type="button" class="chip" data-reel="hunger" aria-pressed="false">Hungry</button>
+            <button type="button" class="chip" data-reel="fun" aria-pressed="false">Bored</button>
+            <button type="button" class="chip" data-reel="sleepy" aria-pressed="false">Sleepy</button>
+            <button type="button" class="chip" data-reel="clean" aria-pressed="false">Wants a bath</button>
+            <button type="button" class="chip" data-reel="love" aria-pressed="false">Wants a cuddle</button>
+          </div>
+        </div>
+        <div class="tile-copy">
+          <h3>On the left, your slime. On the right, how it feels.</h3>
+          <p>A small pixel emote says what it needs. Touch and hold the island for its line and its five needs as buttons: Feed, Play, Sleep, Bath and Pet. They work without opening the app.</p>
+        </div>
+      </article>
+
+      <article class="tile">
+        <div class="tile-art needs-art">
+          <div class="rings" id="feature-rings"></div>
+          <span class="floor-key">Resting floor at 12%</span>
+        </div>
+        <div class="tile-copy">
+          <h3>Five needs. Zero guilt.</h3>
+          <p>Food, fun, energy, clean and love never drop below a resting floor, even after weeks away. It's always happy to see you.</p>
+        </div>
+      </article>
+
+      <article class="tile">
+        <div class="tile-art">
+          <div class="grow" id="grow">
+            <button type="button" class="grow-slot" data-stage="baby"><canvas width="24" height="20"></canvas><span>Baby</span></button>
+            <button type="button" class="grow-slot" data-stage="young"><canvas width="24" height="20"></canvas><span>Level 4</span></button>
+            <button type="button" class="grow-slot" data-stage="grown"><canvas width="24" height="20"></canvas><span>Level 12</span></button>
+          </div>
+        </div>
+        <div class="tile-copy">
+          <h3>It grows up.</h3>
+          <p>From baby to young to big, each with its own sprites and 18 animations. More than 200 lines it doesn't keep repeating, and a journal of memories.</p>
+        </div>
+      </article>
+
+      <article class="tile span-2 tile-wide tile-arcade">
+        <div class="tile-copy">
+          <h3>Twelve games, and a new one every day.</h3>
+          <p>Today's game is built fresh every morning, with a small quest. Every game has a tutorial, pauses when you leave and keeps your records. Coins come from playing and can't be bought; there is no real money in Slimy.</p>
+        </div>
+        <ul class="games" id="games" aria-label="Games"></ul>
+      </article>
+
+      <article class="tile">
+        <div class="tile-art">
+          <div class="reacts" id="reacts" role="group" aria-label="Try an iPhone event"></div>
+        </div>
+        <div class="tile-copy">
+          <h3>It notices your iPhone.</h3>
+          <p>Battery, charger, Low Power Mode, Wi-Fi, no internet, morning and night. No setup. Tap one and watch the island.</p>
+        </div>
+      </article>
+
+      <article class="tile">
+        <div class="tile-art">
+          <div class="chat" role="img" aria-label="Example chat. You: what did you do all day? Blob: i studied a speck of dust. fascinating. You: and now? Blob: now i'm here if you need me.">
+            <p class="msg me">what did you do all day?</p>
+            <div class="msg-row"><canvas data-slime data-skin="mine" data-anim="curious" data-still width="24" height="20"></canvas><p class="msg slime-msg">i studied a speck of dust. fascinating.</p></div>
+            <p class="msg me">and now?</p>
+            <div class="msg-row"><canvas data-slime data-skin="mine" data-still width="24" height="20"></canvas><p class="msg slime-msg">now i'm here if you need me</p></div>
+          </div>
+        </div>
+        <div class="tile-copy">
+          <h3>Talk to it. Free.</h3>
+          <p>It answers in a sentence or two, always in character. Chat starts only after you agree, runs on Cloudflare Workers AI and Groq, and no message is stored.</p>
+        </div>
+      </article>
+
+      <article class="tile">
+        <div class="tile-art trait-art">
+          <p class="trait-say" id="trait-say">i studied a speck of dust. fascinating.</p>
+          <canvas class="trait-slime" id="trait-slime" width="24" height="20" aria-hidden="true"></canvas>
+          <canvas class="grass" data-grass width="1" height="4" aria-hidden="true"></canvas>
+        </div>
+        <div class="tile-copy">
+          <h3>A personality of its own.</h3>
+          <p>It drifts over time. Its favourite food and favourite game are yours to find out.</p>
+        </div>
+        <div class="chips trait-chips" role="group" aria-label="Pick a personality" id="traits">
+          <button type="button" class="chip" data-trait="playful" aria-pressed="false">Playful</button>
+          <button type="button" class="chip" data-trait="cuddly" aria-pressed="false">Cuddly</button>
+          <button type="button" class="chip" data-trait="foodie" aria-pressed="false">Foodie</button>
+          <button type="button" class="chip" data-trait="sleepy" aria-pressed="false">Sleepy</button>
+          <button type="button" class="chip" data-trait="curious" aria-pressed="true">Curious</button>
+        </div>
+      </article>
+
+      <article class="tile span-2">
+        <div class="beyond" id="beyond">
+          <canvas class="sky" width="1" height="1" aria-hidden="true"></canvas>
+          <figure class="ev-lock">
+            <div class="lockcard">
+              <canvas data-slime data-skin="mine" width="24" height="20" aria-hidden="true"></canvas>
+              <div>
+                <p class="lc-name">Blob</p>
+                <p class="lc-line">evening. cozy.</p>
+                <ul class="lc-needs" id="lc-needs" aria-hidden="true"></ul>
+              </div>
+            </div>
+            <figcaption>Lock Screen and StandBy</figcaption>
+          </figure>
+          <figure>
+            <div class="widget">
+              <canvas data-slime data-skin="mine" data-anim="sleep" width="24" height="20" aria-hidden="true"></canvas>
+              <p>Blob is napping</p>
+            </div>
+            <figcaption>Home Screen</figcaption>
+          </figure>
+          <figure>
+            <div class="ccbtn"><canvas data-slime data-skin="mine" data-crop="2" data-still width="24" height="18" aria-hidden="true"></canvas></div>
+            <figcaption>Summon Slime</figcaption>
+          </figure>
+        </div>
+        <div class="tile-copy">
+          <h3>Beyond the island.</h3>
+          <p>A card on the Lock Screen and in StandBy. Home Screen widgets for your slime and its needs, and the medium one feeds and pets it with a tap. Summon Slime, Feed Slime, Pet Slime and Slime Bedtime in Control Center or on the Action Button. No Dynamic Island? Your slime lives on the Lock Screen and in widgets instead.</p>
+        </div>
+      </article>
+
+      <article class="tile">
+        <div class="gifts-art">
+          <div class="gifts" id="gifts" role="group" aria-label="This week's gifts"></div>
+          <div class="gifts-row">
+            <p class="streak" id="streak">11 days in a row<small>streak buddies</small></p>
+            <button class="btn btn-sm" type="button" id="open-gift">Open Gift</button>
+          </div>
+        </div>
+        <div class="tile-copy">
+          <h3>A gift every day.</h3>
+          <p>Coins each day and a bigger gift on day seven. Miss a day and nothing is taken away; only the streak starts over.</p>
+        </div>
+      </article>
+
+      <article class="tile">
+        <div class="season-art">
+          <canvas id="season-scene" width="96" height="64" role="img" aria-label="Your slime's room decorated for the season"></canvas>
+          <div class="chips" role="group" aria-label="Pick a time of year" id="seasons">
+            <button type="button" class="chip" data-season="halloween" aria-pressed="false">October</button>
+            <button type="button" class="chip" data-season="christmas" aria-pressed="false">December</button>
+            <button type="button" class="chip" data-season="newYear" aria-pressed="false">New Year</button>
+            <button type="button" class="chip" data-season="spring" aria-pressed="false">Spring</button>
+          </div>
+        </div>
+        <div class="tile-copy">
+          <h3>The year shows up.</h3>
+          <p>Pumpkins and bats in October, snow and a little tree in December, fireworks at New Year, flowers in spring, and a gift on its hatch day.</p>
+        </div>
+      </article>
+
+      <article class="tile span-2">
+        <div class="booth">
+          <figure class="photo" id="photo">
+            <div class="photo-pic">
+              <canvas id="photo-canvas" width="96" height="64" role="img" aria-label="Photo of Blob waving in the garden"></canvas>
+              <p class="photo-say" id="photo-say">hi from the garden</p>
+            </div>
+            <figcaption class="photo-cap"><span>Blob · Level 11</span><b>slimy</b></figcaption>
+          </figure>
+          <div class="booth-controls">
+            <div class="tile-copy">
+              <h3>Strike a pose.</h3>
+              <p>The photo booth puts your slime in any of its homes, in one of ten poses, with a line of its own. Share it or save it to Photos.</p>
+            </div>
+            <div class="chips" role="group" aria-label="Pose" id="poses">
+              <button type="button" class="chip" data-pose="wave" aria-pressed="true">Wave</button>
+              <button type="button" class="chip" data-pose="idle" aria-pressed="false">Chill</button>
+              <button type="button" class="chip" data-pose="love" aria-pressed="false">Love</button>
+              <button type="button" class="chip" data-pose="celebrate" aria-pressed="false">Party</button>
+              <button type="button" class="chip" data-pose="blush" aria-pressed="false">Shy</button>
+              <button type="button" class="chip" data-pose="sleep" aria-pressed="false">Sleep</button>
+            </div>
+            <div class="booth-actions">
+              <button class="btn btn-tint btn-sm" type="button" id="photo-place">Next place</button>
+              <button class="btn btn-sm" type="button" id="photo-save">Save picture</button>
+            </div>
+          </div>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <!-- How it works -->
+  <section class="section wrap" id="how" aria-labelledby="how-title">
+    <header class="section-head">
+      <p class="eyebrow-text">How it works</p>
+      <h2 id="how-title">From egg to island in a minute.</h2>
+    </header>
+    <ol class="steps">
+      <li class="step">
+        <span class="step-n" aria-hidden="true">1</span>
+        <canvas class="step-art" data-slime data-skin="mine" data-stage="baby" width="24" height="20" aria-hidden="true"></canvas>
+        <h3>Hatch the egg</h3>
+        <p>Open Slimy, pick a colour and give your slime a name.</p>
+      </li>
+      <li class="step">
+        <span class="step-n" aria-hidden="true">2</span>
+        <span class="step-island" aria-hidden="true"><canvas data-slime data-skin="mine" data-crop="2" width="24" height="18"></canvas></span>
+        <h3>Bring it to the island</h3>
+        <p>One tap starts the Live Activity, and it moves in next to the camera.</p>
+      </li>
+      <li class="step">
+        <span class="step-n" aria-hidden="true">3</span>
+        <span class="step-items" aria-hidden="true"><canvas data-item="apple" data-scale="3"></canvas><canvas data-item="ball" data-scale="3"></canvas><canvas data-item="heart" data-scale="3"></canvas></span>
+        <h3>Touch and hold</h3>
+        <p>Feed, play, sleep, bath and pet right from the island. The app can stay closed.</p>
+      </li>
+      <li class="step">
+        <span class="step-n" aria-hidden="true">4</span>
+        <canvas class="step-art" data-slime data-skin="mine" data-anim="sleep" width="24" height="20" aria-hidden="true"></canvas>
+        <h3>Get on with your day</h3>
+        <p>It keeps you company and goes to bed when you do. Summon Slime brings it back after iOS's 8-hour limit.</p>
+      </li>
+    </ol>
+
+    <div class="nerd card">
+      <div class="nerd-art" aria-hidden="true">
+        <div class="timer"><span class="timer-digits">0:0</span><canvas class="timer-slime" width="24" height="20"></canvas></div>
+        <p class="timer-real">The timer really says <b id="timer-real">0:00</b></p>
+      </div>
+      <div class="nerd-copy">
+        <h3>How does a Live Activity move?</h3>
+        <p>It can't run code. But iOS keeps a timer ticking every second on its own. Slimy ships fonts in which every digit is one frame of the slime, and the island shows only the last digit. Six timers stacked, one per colour, make the coloured slime.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Friends -->
+  <section class="section wrap" id="friends" aria-labelledby="friends-title">
+    <header class="section-head">
+      <p class="eyebrow-text">Friends</p>
+      <h2 id="friends-title">Better with a friend.</h2>
+      <p class="lede">Share a code and your slimes can hug, visit and send each other food. Now and then a friend's slime drops by your island and the two share a heart. Love them enough and they fall in love for good.</p>
+    </header>
+
+    <div class="friends">
+      <div class="meet card">
+        <div class="meet-stage">
+          <canvas class="meet-ground" id="meet-ground" width="96" height="52" aria-hidden="true"></canvas>
+          <p class="meet-bubble" id="meet-bubble" aria-hidden="true"></p>
+          <div class="meet-pair" aria-hidden="true">
+            <canvas id="meet-me" width="24" height="20"></canvas>
+            <canvas id="meet-friend" width="24" height="20"></canvas>
+          </div>
+          <div class="fx" id="meet-fx" aria-hidden="true"></div>
+          <span class="meet-name me-name" aria-hidden="true">Blob</span>
+          <span class="meet-name friend-name" aria-hidden="true">Mochi</span>
+        </div>
+        <div class="love">
+          <div class="love-head">
+            <span>Blob and Mochi</span>
+            <b id="love-pct">30%</b>
+          </div>
+          <div class="love-bar" id="love-bar" role="meter" aria-label="Love between Blob and Mochi" aria-valuemin="0" aria-valuemax="100" aria-valuenow="30"></div>
+          <div class="love-scale" aria-hidden="true"><span>Friends</span><span>Kiss at 50%</span><span>In love</span></div>
+          <p class="love-note" id="love-note" aria-live="polite">Kiss unlocks at 50%. At 100% they fall in love.</p>
+        </div>
+        <div class="meet-keys">
+          <button class="btn btn-tint" type="button" data-friend="hug">Hug</button>
+          <button class="btn btn-tint" type="button" data-friend="food">Send food</button>
+          <button class="btn btn-tint" type="button" data-friend="kiss" disabled>Kiss</button>
+        </div>
+      </div>
+
+      <div class="friends-side">
+        <div class="board-card card">
+          <p class="kicker">Best scores · Snack Catcher</p>
+          <ol class="board" aria-label="Friends leaderboard for Snack Catcher">
+            <li><span class="rank">1</span><canvas data-slime data-skin="bubblegum" data-hat="hat.flower" data-still width="24" height="20" aria-hidden="true"></canvas><span class="who">Mochi</span><span class="score">2,140</span></li>
+            <li class="me"><span class="rank">2</span><canvas data-slime data-skin="mine" data-still width="24" height="20" aria-hidden="true"></canvas><span class="who">Blob <small>you</small></span><span class="score">1,980</span></li>
+            <li><span class="rank">3</span><canvas data-slime data-skin="ocean" data-stage="grown" data-still width="24" height="20" aria-hidden="true"></canvas><span class="who">Pickle</span><span class="score">1,415</span></li>
+          </ol>
+        </div>
+        <div class="invite-mini card">
+          <p class="kicker">Invite</p>
+          <p class="invite-text">Be my slime friend in Slimy!</p>
+          <span class="code" aria-label="Code K 7 Q 2 M D">K7Q2MD</span>
+          <span class="invite-link">slime.hyprnode.de/f/K7Q2MD</span>
+        </div>
+        <ul class="list card">
+          <li><canvas data-item="flag" data-scale="2"></canvas><span><b>Challenges and a leaderboard</b>Play the same board as a friend and beat each other's records.</span></li>
+          <li><canvas data-item="flower" data-scale="2"></canvas><span><b>A shared weekly garden</b>Grow it together, one round at a time.</span></li>
+          <li><canvas data-item="gear" data-scale="2"></canvas><span><b>You stay in control</b>No search, no public profile. Block, report, choose what friends see, delete your data any time.</span></li>
+        </ul>
+      </div>
+    </div>
+    <p class="friends-fine">Friends are optional. Your slime goes online only after you tap Go Online and accept the Terms. Names are checked on the server, and every report is reviewed by a person.</p>
+  </section>
+
+  <!-- Skins -->
+  <section class="section wrap" id="colours" aria-labelledby="colours-title">
+    <header class="section-head">
+      <p class="eyebrow-text">Colours</p>
+      <h2 id="colours-title">Eight jelly colours.</h2>
+      <p class="lede">Hatch it in Lime, Bubblegum or Ocean. The others unlock as it levels up, up to Hypr Void at level 15. Pick one and every slime on this site changes with you.</p>
+    </header>
+    <div class="skins card">
+      <div class="skin-row" id="skin-row" role="group" aria-label="Jelly colour"></div>
+      <canvas class="grass" data-grass width="1" height="5" aria-hidden="true"></canvas>
+    </div>
+  </section>
+
+  <!-- Privacy -->
+  <section class="section wrap" id="private" aria-labelledby="private-title">
+    <header class="section-head">
+      <p class="eyebrow-text">Privacy</p>
+      <h2 id="private-title">Private by design.</h2>
+      <p class="lede">Your slime lives on your iPhone. No account, no ads, no tracking, nothing to buy.</p>
+    </header>
+    <div class="privacy-grid">
+      <div class="pcard card">
+        <svg viewBox="0 0 30 30" aria-hidden="true"><rect x="7" y="3" width="16" height="24" rx="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12.5 6.5h5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <p class="copy"><b>Offline first.</b> Until you tap Go Online in Friends or Talk, Slimy sends nothing anywhere.</p>
+      </div>
+      <div class="pcard card">
+        <svg viewBox="0 0 30 30" aria-hidden="true"><circle cx="15" cy="11" r="5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M6 25c1.5-4.5 5-6.5 9-6.5s7.5 2 9 6.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M4 4l22 22" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <p class="copy"><b>No account.</b> Going online gives your iPhone a random ID. No email, no phone number, no sign-in.</p>
+      </div>
+      <div class="pcard card">
+        <svg viewBox="0 0 30 30" aria-hidden="true"><rect x="5" y="9" width="17" height="12" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M22 13h2.5a1.5 1.5 0 0 1 1.5 1.5v1a1.5 1.5 0 0 1-1.5 1.5H22" fill="none" stroke="currentColor" stroke-width="2"/><path d="M9 13v4m4-4v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <p class="copy"><b>Your phone stays yours.</b> Battery, charger and network are read on the iPhone to animate the slime and never sent.</p>
+      </div>
+      <div class="pcard card">
+        <svg viewBox="0 0 30 30" aria-hidden="true"><path d="M6 8.5A3.5 3.5 0 0 1 9.5 5h11A3.5 3.5 0 0 1 24 8.5v7a3.5 3.5 0 0 1-3.5 3.5H13l-5 4.5V19H9.5A3.5 3.5 0 0 1 6 15.5z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+        <p class="copy"><b>Chat isn't kept.</b> Messages pass to the AI to write a reply. No name or device ID goes with them, and nothing is stored.</p>
+      </div>
+      <div class="pcard card">
+        <svg viewBox="0 0 30 30" aria-hidden="true"><path d="M7 9h16M12 9V6.5h6V9M9 9l1 15h10l1-15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <p class="copy"><b>Delete any time.</b> Delete Server Data in Settings removes your online profile at once. Your slime stays on the phone.</p>
+      </div>
+      <div class="pcard card">
+        <svg viewBox="0 0 30 30" aria-hidden="true"><circle cx="15" cy="15" r="10" fill="none" stroke="currentColor" stroke-width="2"/><path d="M10 15.5l3.5 3.5 6.5-7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <p class="copy"><b>No trackers here either.</b> This website sets no cookies, runs no analytics and loads nothing from other servers.</p>
+      </div>
+    </div>
+    <p class="privacy-more"><a class="more" href="/privacy">Read the privacy policy</a></p>
+  </section>
+
+  <!-- FAQ -->
+  <section class="section wrap" id="faq" aria-labelledby="faq-title">
+    <header class="section-head">
+      <p class="eyebrow-text">Questions</p>
+      <h2 id="faq-title">Good to know.</h2>
+    </header>
+    <div class="group faq-home" data-faq>
+      <details class="faq">
+        <summary>Is Slimy free?</summary>
+        <div class="answer"><p>Yes. There are no purchases and no ads. Coins are earned in the app and can't be bought, and the AI chat is free too.</p></div>
+      </details>
+      <details class="faq">
+        <summary>Why isn't it on the App Store yet?</summary>
+        <div class="answer"><p>Slimy: Island Pet is being prepared for App Store review. Until it's there, you can <a href="/install">install the beta</a> from GitHub with Sideloadly. With a free Apple ID you re-sign it every 7 days.</p></div>
+      </details>
+      <details class="faq">
+        <summary>My slime left the Dynamic Island. Is it gone?</summary>
+        <div class="answer"><p>No. iOS ends every Live Activity after about 8 hours. Open Slimy, or use Summon Slime from Control Center or the Action Button, and it's back.</p></div>
+      </details>
+      <details class="faq">
+        <summary>Which iPhones does it work on?</summary>
+        <div class="answer"><p>Any iPhone with iOS 18 or later. The island needs an iPhone that has a Dynamic Island: iPhone 14 Pro and most models since. Other iPhones get the slime on the Lock Screen and in widgets.</p></div>
+      </details>
+      <details class="faq">
+        <summary>Does it need the internet?</summary>
+        <div class="answer"><p>No. The slime, its games and its home work offline. Only Friends and Talk go online, and only after you say so.</p></div>
+      </details>
+    </div>
+    <p class="privacy-more"><a class="more" href="/support">All questions and answers</a></p>
+  </section>
+
+  <!-- Get -->
+  <section class="get wrap" id="get" aria-labelledby="get-title">
+    <div class="get-perch" aria-hidden="true">
+      <p class="get-bubble">i saved you a spot.</p>
+      <canvas class="get-slime" id="get-slime" width="24" height="20"></canvas>
+    </div>
+    <div class="get-card card">
+      <div class="listing">
+        <img class="get-icon" src="/assets/icon.png" alt="Slimy app icon" width="84" height="84">
+        <div class="listing-name">
+          <h2 id="get-title">Slimy: Island Pet</h2>
+          <p>Pixel slime for Dynamic Island</p>
+        </div>
+      </div>
+      <dl class="facts">
+        <div><dt>Price</dt><dd class="big">Free</dd><dd>No ads, nothing to buy</dd></div>
+        <div><dt>Requires</dt><dd class="big">iOS 18</dd><dd>Best with Dynamic Island</dd></div>
+        <div><dt>Games</dt><dd class="big">12 + 1</dd><dd>Plus one new every day</dd></div>
+        <div><dt>Made by</dt><dd class="big hypr">hyprnode</dd><dd>No tracking, no cookies</dd></div>
+      </dl>
+      <div class="options">
+        <div class="option">
+          <span class="tag tag-live">Beta, available now</span>
+          <h3>Install the beta now.</h3>
+          <p>Download the IPA from GitHub and install it with Sideloadly and your Apple ID. With a free Apple ID you re-sign it every 7 days; your slime stays.</p>
+          <div class="option-actions">
+            <a class="btn" href="/install">Install the beta</a>
+            <a class="more" href="https://github.com/ItzSimooon/slimy-ios/releases" data-download>Download from GitHub</a>
+          </div>
+        </div>
+        <div class="option">
+          <span class="tag">Next</span>
+          <h3>Coming to the App Store.</h3>
+          <p>Slimy: Island Pet is being prepared for App Store review. The same slime, installed in one tap, without re-signing.</p>
+          <div class="option-actions">
+            <a class="more" href="https://github.com/ItzSimooon/slimy-ios">Follow along on GitHub</a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="req">Needs iOS 18 or later. The island needs an iPhone that has a Dynamic Island, iPhone 14 Pro and most models since; other iPhones get the Lock Screen and widgets.</p>
+  </section>
+</main>
+<!-- @footer -->
+</body>
+</html>
