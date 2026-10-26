@@ -27,28 +27,31 @@ Select exactly these five. Everything else stays unselected.
 Notes on single choices:
 
 - **Name vs. User ID.** The owner name is free text the person picks, so it is declared as Name even though most people use a nickname.
-- **Chat.** The message, the recent chat and a few facts about the slime (its name, age, level, mood, needs, favourite food, local time, and how it feels right now in plain words such as "very happy, a little sleepy") are sent to Cloudflare Workers AI or Groq to write a reply. The reply names the feeling it expresses, which goes back to the app. Our server keeps no message content, no feelings and no logs of either; it only counts requests per provider and day. Because the providers process the text on our behalf, it is covered under Other User Content.
+- **Chat.** The message, the recent chat and a few facts about the slime (its name, age, level, mood, needs, favourite food, local time, and how it feels right now in plain words such as "very happy, a little sleepy") are sent to Cloudflare Workers AI or Groq to write a reply. The reply names the feeling it expresses, which goes back to the app. Our server keeps no message content, no feelings and no logs of either; it only counts requests per provider and day. Because the providers process the text on our behalf, it is covered under Other User Content. Cloudflare keeps Workers AI inputs and outputs only while answering and never trains on them; Groq keeps none by default but may log requests for up to 30 days while investigating abuse or a fault (turn on Zero Data Retention in Groq's Data Controls to rule that out, then update the policy). Both are processors under their data processing agreements, which is what the policy's "same or equal protection" sentence (Guideline 5.1.1(i)) rests on.
 - **Care Together.** Only the two people in a pair can read its data. Each sees the other's owner name next to the care actions. When either stops sharing or deletes their server data, the snapshot and all care actions are deleted at once. Coins, items, records and settings are not part of the pair and are never shared with the partner.
 - **Crates** are opened on the device. Nothing about them is sent.
 - **Reports** stay after the reporting person deletes their server data, but the link to their device is removed at that moment.
-- **Not collected:** location (IP addresses are held in memory for rate limiting for at most 24 hours and never written to disk), contacts, photos, health, financial info, purchases, browsing or search history, diagnostics (no crash or analytics SDK), sensitive info, device identifiers, and anything about phone events: battery, charger, network and Low Power Mode are read on the device to animate the slime and never sent.
+- **Not collected:** location (IP addresses are held in memory for rate limiting for about an hour and never written to disk), contacts, photos, health, financial info, purchases, browsing or search history, diagnostics (no crash or analytics SDK), sensitive info, device identifiers, and anything about phone events: battery, charger, network and Low Power Mode are read on the device to animate the slime and never sent.
 - **Before going online** the app sends nothing at all. The slime, its feelings, coins, crates, items, records and chat history live only on the iPhone (and in the App Group shared with the widgets).
 
 ## Retention on the server
 
 | Data | Kept |
 |---|---|
-| Device, owner name, slime profile, friendships, records | Until the person deletes their server data in the app, or we delete a device in the admin area |
+| Device, owner name, slime profile, friendships, memories, weekly shared-garden points, records, moderation status (ban, reset names), created and last-seen times | Until the person deletes their server data in the app, or we delete a device in the admin area |
 | Inbox events (hugs, gifts, greetings …) | 30 days |
 | Challenges | 14 days after they expire (a challenge is open for 3 days) |
+| Daily shared-garden points | 3 days |
 | Used or expired pair codes and care codes | 1 day |
 | Care Together: the pairing and the shared snapshot | Until either person stops sharing or deletes their data; then deleted at once |
 | Care actions | 30 days, and deleted at once when the pairing ends |
 | Idempotency receipts (retry protection) | 2 days |
 | Reports | Open reports until an admin resolves them, resolved reports 90 days after that; the device ids are removed when a reporting or reported device is deleted |
 | Chat messages | Not stored |
+| Chat text at Groq, only while it investigates abuse or a fault | Up to 30 days (none with Zero Data Retention on) |
 | Chat usage counters (requests and failures per provider and day, no content) | 400 days |
-| Rate-limit counters (device ids, IP addresses) | At most 24 hours, in memory only |
+| Rate-limit counters with IP addresses | About an hour, in memory only |
+| Rate-limit counters with device ids | At most 24 hours, in memory only |
 | Database backups | 14 days, on the same server |
 
 ## Keep in sync
@@ -59,4 +62,6 @@ The same facts appear in three more places. Change all of them together:
 2. The privacy policy at `https://slime.hyprnode.de/privacy` (`site/privacy.html`).
 3. The in-app texts: "Go Online" (Terms), the chat consent sheet (`App/UI/Screens/ChatConsentView.swift`) and the Privacy footer in Settings (`App/UI/Screens/SettingsView.swift`), which both name Cloudflare Workers AI and Groq.
 
-If a new AI provider is added through `CHAT_BASE_URL` and it is run by a third party, add it to the chat consent text and the privacy policy before turning it on. A model on your own hardware is not a third party.
+If a new AI provider is added through `CHAT_BASE_URL` and it is run by a third party, add it to the chat consent text and the privacy policy before turning it on. A model on your own hardware is not a third party. The policy promises to ask again before a change that needs consent applies, so also change `ChatStore.consentKey` (for example to `slimy.chat.aiConsent.v2`) in the same release: everyone then sees the consent sheet with the new provider before their next message. Add the provider, its country and its transfer safeguard to the "Service providers" and "Where data is processed" sections too.
+
+The policy names a controller only when `site/contact.json` exists at build time (see `site/build.mjs`). Without it the live page has no name, address or email and `/imprint` is a 404, which the GDPR (Art. 13(1)(a)) and the German DDG don't allow. Build and deploy the site with it.

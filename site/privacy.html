@@ -3,7 +3,7 @@
 <head>
 <!-- @head -->
 <title>Privacy Policy · Slimy</title>
-<meta name="description" content="What Slimy stores, what it never collects, how caring for a slime together and the free AI chat work, how long data is kept and how to delete it. No account, no ads, no tracking.">
+<meta name="description" content="What Slimy stores, what it never collects, who else processes data and how they protect it, how long data is kept and how to delete it. No account, no ads, no tracking.">
 <link rel="canonical" href="https://slime.hyprnode.de/privacy">
 </head>
 <body>
@@ -12,13 +12,13 @@
   <header class="page-head">
     <h1>Privacy Policy</h1>
     <p class="lede">Slimy is built to need as little of your data as possible. This page says exactly what that is.</p>
-    <p class="page-meta">Last updated <time datetime="2026-10-26">26 October 2026</time></p>
+    <p class="page-meta">Last updated <time datetime="2026-10-27">27 October 2026</time></p>
   </header>
 
   <ul class="summary" aria-label="In short">
     <li><b>Offline first.</b>Until you tap Go Online for Friends, Talk or Care Together and accept the Terms, the app sends nothing anywhere.</li>
-    <li><b>No account, no tracking.</b>No sign-in, no email, no ads, no third-party analytics, no advertising identifiers.</li>
-    <li><b>Chat isn't stored.</b>Messages and how your slime feels go to an AI service to write the reply. No name or device ID goes with them.</li>
+    <li><b>No account, no tracking.</b>No sign-in, no email, no ads, no third-party analytics, no advertising identifiers. We never sell your data.</li>
+    <li><b>Chat isn't stored by us.</b>Only with your consent do messages go to an AI service to write the reply. No name or device ID goes with them.</li>
     <li><b>Delete any time.</b>Delete My Data on the Server, in the app's Settings, removes your online data at once.</li>
   </ul>
 
@@ -27,10 +27,13 @@
       <p>On this page</p>
       <a href="#who">Who is responsible</a>
       <a href="#offline">The app without going online</a>
+      <a href="#permissions">Permissions on your iPhone</a>
       <a href="#online">When you go online</a>
       <a href="#care">Caring for a slime together</a>
       <a href="#chat">Talk: the AI chat</a>
       <a href="#reports">Reports and moderation</a>
+      <a href="#providers">Service providers</a>
+      <a href="#apple">Apple and the App Store</a>
       <a href="#never">What we never collect</a>
       <a href="#retention">How long we keep data</a>
       <a href="#where">Where data is processed</a>
@@ -45,7 +48,7 @@
       <h2 id="who">Who is responsible</h2>
       <p>Slimy, the iPhone app "Slimy: Island Pet" and this website, is made and operated by <strong>hyprnode</strong> ("we"). We are responsible for the data processed on our server at slime.hyprnode.de.</p>
 <!-- @if contact -->
-      <p>The controller under the GDPR is:</p>
+      <p>The controller under the General Data Protection Regulation (GDPR) is:</p>
       <address>
         <strong>{{contact.name}}</strong> (hyprnode)<br>
         {{contact.address}}<br>
@@ -55,11 +58,23 @@
 <!-- @else -->
       <p>To reach us, see <a href="#changes">Changes and contact</a>.</p>
 <!-- @end -->
+      <p>We haven't appointed a data protection officer, because the law doesn't require one for us.</p>
 
       <h2 id="offline">The app without going online</h2>
       <p>Your slime lives on your iPhone. Its name, colour, needs, feelings, coins, crates, items, homes, records, journal and your chat history are saved only on the device, in Slimy's app container and in the App Group it shares with its widgets. We can't see any of it. Crates are opened on the iPhone; nothing about them is sent anywhere.</p>
       <p>To animate your slime, the app reads on the device whether the battery is low or charging, whether Low Power Mode is on, the kind of network connection and the time of day. This information never leaves your iPhone.</p>
-      <p>A save file you export with Export Save stays wherever you put it. We never receive it.</p>
+      <p>A save file you export with Export Save stays wherever you put it. We never receive it. If you back up your iPhone to iCloud or a computer, the backup includes Slimy's data like any other app's; we have no access to it.</p>
+
+      <h2 id="permissions">Permissions on your iPhone</h2>
+      <p>Slimy asks for a permission only when a feature needs it, and works without any of them.</p>
+      <ul>
+        <li><strong>Notifications.</strong> Your slime's notifications are scheduled on the iPhone itself. Slimy uses no push service, so we never receive a push token.</li>
+        <li><strong>Photos, add only.</strong> When you save a picture from the Photo Booth, Slimy asks to add it to your photo library. It can't see, read or upload any of your photos.</li>
+        <li><strong>Widgets, Live Activities and the Dynamic Island.</strong> They show your slime from data on the iPhone. Nothing is sent for them.</li>
+        <li><strong>Background App Refresh.</strong> About every 30 minutes, when iOS allows it, Slimy updates your slime on the iPhone. If you're online, it also checks for news from friends and your care partner, with the same data as when the app is open.</li>
+        <li><strong>Siri and Shortcuts.</strong> Slimy's shortcuts run on the iPhone. If you use them by voice, Apple processes what you say under its own privacy policy.</li>
+      </ul>
+      <p>Slimy never asks for your location, contacts, camera, microphone, health data or permission to track you.</p>
 
       <h2 id="online">When you go online</h2>
       <p>Friends, Talk and Care Together are optional. They start only after you tap <strong>Go Online</strong> and accept the <a href="/terms">Terms of Use</a>. Your iPhone then registers with our server and gets a random device ID. It isn't derived from your hardware or any Apple identifier. Our server stores:</p>
@@ -67,8 +82,8 @@
         <table class="table">
           <thead><tr><th scope="col">What</th><th scope="col">Why</th></tr></thead>
           <tbody>
-            <tr><td>Random device ID and a hash of its access token</td><td>To recognise your iPhone. Only a SHA-256 hash of the token is stored, never the token.</td></tr>
-            <tr><td>The owner name you type</td><td>Shown to your friends next to your slime. A nickname is fine.</td></tr>
+            <tr><td>Random device ID and a hash of its access token</td><td>To recognise your iPhone. Only a SHA-256 hash of the token is stored, never the token. The token itself stays in your iPhone's keychain, on this device only.</td></tr>
+            <tr><td>The owner name you type</td><td>Shown to your friends next to your slime. A nickname is fine; please don't use your full name.</td></tr>
             <tr><td>Your slime's profile: name, colour, level, stage, mood, happiness, worn items</td><td>So friends see your slime. Turn off Share mood and mood and happiness are hidden.</td></tr>
             <tr><td>Privacy settings</td><td>Whether you accept friend requests and share your mood.</td></tr>
             <tr><td>Friendships, shared memories, friend requests and blocks</td><td>The friends features.</td></tr>
@@ -78,12 +93,14 @@
             <tr><td>Friend codes and care codes</td><td>Valid for 10 minutes and for one use.</td></tr>
             <tr><td>While you care for a slime together: who you share it with, a copy of the shared slime and what each of you did for it</td><td>So both iPhones show the same slime. See <a href="#care">Caring for a slime together</a>.</td></tr>
             <tr><td>Retry receipts (Idempotency-Key)</td><td>So an action sent twice after a lost connection counts once.</td></tr>
-            <tr><td>Time of your last online request, to the nearest 10 minutes</td><td>To count active devices and keep the service healthy.</td></tr>
-            <tr><td>Whether the device is banned</td><td>To enforce the Terms of Use.</td></tr>
+            <tr><td>When your device first went online and when it last used an online feature</td><td>To count active devices and keep the service healthy. The second time is updated at most every 10 minutes.</td></tr>
+            <tr><td>Moderation status: whether the device is banned, and any owner name a moderator has reset</td><td>To enforce the Terms of Use, and so a reset name can't simply be set again.</td></tr>
           </tbody>
         </table>
       </div>
       <p>Names are checked by an automatic filter. A name with swear words, slurs, links, email addresses, phone numbers or handles is refused.</p>
+      <p>While you're online, the app talks to our server when you open it, when you use an online feature and, with Background App Refresh, now and then in the background.</p>
+      <p>Only hyprnode's operator can open the admin area, and only from our own network. It shows devices with their owner names and slime profiles, reports and the chat counters, so that we can moderate and keep the service running.</p>
       <p><strong>Go Offline</strong> in Settings stops syncing and keeps your data on the server. <strong>Delete My Data on the Server</strong> removes it; see <a href="#rights">Your rights</a>.</p>
 
       <h2 id="care">Caring for a slime together</h2>
@@ -97,28 +114,48 @@
       <p>When either of you taps <strong>Stop Sharing</strong>, deletes their server data, blocks the other, or a device is banned, caring together ends for both of you, and the copy of the slime and every care action are deleted at once.</p>
 
       <h2 id="chat">Talk: the AI chat</h2>
-      <p>Talk is free and optional. Before your first message, the app asks for your consent and names the services involved. With your consent, our server forwards each message to an AI service to write your slime's reply:</p>
+      <p>Talk is free and optional, and works only while you're online. Before your first message, the app asks for your consent and names the services involved; nothing is sent until you tap <strong>Agree</strong>. With your consent, our server forwards each message to an AI service to write your slime's reply:</p>
       <ul>
-        <li><strong>Cloudflare Workers AI</strong> (Cloudflare, Inc.) first,</li>
-        <li><strong>Groq</strong> (Groq, Inc.) when Cloudflare is busy or its free quota for the day is used up.</li>
+        <li><strong>Cloudflare Workers AI</strong> (Cloudflare, Inc., USA) first,</li>
+        <li><strong>Groq</strong> (Groq, Inc., USA) when Cloudflare is busy or its free quota for the day is used up.</li>
       </ul>
-      <p>What is sent: your message, the recent chat (up to 12 turns) and a few facts about your slime: its name, age, level, mood, needs, favourite food, your local time, and how it feels right now (the app sends its current feeling levels, and our server turns them into a few plain words such as “very happy, a little sleepy”). (Slimy 1.0 also sent the name of one friend's slime.) <strong>Your owner name and your device ID are never sent</strong> to them.</p>
+      <p>What is sent: your message, the recent chat (up to 12 turns) and a few facts about your slime: its name, age, level, mood, needs, favourite food, your local time, and how it feels right now (the app sends its current feeling levels, and our server turns them into a few plain words such as “very happy, a little sleepy”). (Slimy 1.0 also sent the name of one friend's slime.) <strong>Your owner name and your device ID are never sent</strong> to them. The request comes from our server, so they don't see your IP address either.</p>
       <p>The AI service answers in your slime's mood and names the feeling its reply expresses. That feeling goes back to your iPhone, where it changes how your slime feels. Our server doesn't keep it.</p>
-      <p>Our server doesn't store or log any message, reply or feeling. It only counts, per day and per service, how many requests were made and how many failed, without any content. Messages that contain swear words, email addresses or phone numbers aren't sent to an AI service at all; your slime answers them itself. Replies are checked the same way before they reach you.</p>
-      <p>The AI services process the text to produce the reply, under their own terms and privacy policies: <a href="https://www.cloudflare.com/privacypolicy/">Cloudflare</a> and <a href="https://groq.com/privacy-policy/">Groq</a>. You can withdraw your consent any time by turning off <strong>Talk with AI</strong> in Settings under Privacy.</p>
+      <p>Our server doesn't store or log any message, reply or feeling. It only counts, per day and per service, how many requests were made and how many failed, without any content. Messages that contain swear words, email addresses or phone numbers aren't sent to an AI service at all; your slime answers them itself. Replies are checked the same way before they reach you. Please don't share personal details in the chat anyway.</p>
+      <p>What the AI services do with the text: Cloudflare keeps the input and output of a Workers AI request only as long as it needs to answer it, and doesn't use them to train AI models. Groq doesn't keep the text of requests by default; only while it investigates abuse or a technical fault may it keep requests for up to 30 days. Both may use the text only to write the reply for us, never for their own purposes; see <a href="#providers">Service providers</a>.</p>
+      <p>You can withdraw your consent any time by turning off <strong>Talk with AI</strong> in Settings under Privacy, or under About AI Chat in the chat menu. From then on nothing more is sent. Withdrawing doesn't affect messages sent before.</p>
 
       <h2 id="reports">Reports and moderation</h2>
-      <p>If you report someone, we store your device ID, the reported device ID, the reason, your optional note and, for a reported chat reply, the text of that reply. A person reviews every report and can reset a name or ban a device. The reported person isn't told who reported them.</p>
+      <p>If you report something, we store your device ID, the reason and your optional note; for a person, also their device ID; for a chat reply, the text of that reply. A person reviews every report and can reset a name or ban a device. The reported person isn't told who reported them.</p>
       <p>Reports stay after either device deletes its data, but without the device IDs from that moment on.</p>
+      <p>Automatic filters only refuse a name, or let your slime answer a message itself instead of sending it to an AI service. Resetting a name or banning a device is always decided by a person. We make no decisions based solely on automated processing that have legal or similarly significant effects on you (Article 22 GDPR).</p>
+
+      <h2 id="providers">Service providers</h2>
+      <p>We share data with no one but these two companies, and only for the purposes below. No advertiser, data broker, analytics company or related company gets any of it, and we never sell your data.</p>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th scope="col">Who</th><th scope="col">What for</th><th scope="col">What they process</th></tr></thead>
+          <tbody>
+            <tr><td>Cloudflare, Inc., USA</td><td>Delivers every connection to slime.hyprnode.de, from the app and from this website, to our server, and protects it against attacks. Runs Cloudflare Workers AI for Talk.</td><td>Connection data such as IP addresses, and the content of requests while passing them on. For Talk, the chat text described above.</td></tr>
+            <tr><td>Groq, Inc., USA</td><td>Writes your slime's reply when Cloudflare Workers AI can't.</td><td>The chat text described above, without your name, device ID or IP address.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Both work for us as processors under data processing agreements (Article 28 GDPR). These agreements oblige them to process your data only on our instructions and only to provide their service to us, to keep it confidential and secure, and to delete it when it is no longer needed. Your data therefore gets the same or equal protection with them as this policy describes. Their own privacy information: <a href="https://www.cloudflare.com/privacypolicy/">Cloudflare</a>, <a href="https://groq.com/privacy-policy/">Groq</a>.</p>
+
+      <h2 id="apple">Apple and the App Store</h2>
+      <p>Apple runs the App Store. Downloads, updates and the prompt that asks you to rate Slimy are handled by Apple under <a href="https://www.apple.com/legal/privacy/">Apple's privacy policy</a>; we don't learn who you are from them.</p>
+      <p>If you've turned on <strong>Share With App Developers</strong> in your iPhone's settings (Privacy &amp; Security › Analytics &amp; Improvements), Apple gives us crash reports and usage statistics for Slimy. Apple prepares them so they don't identify you, and we can't link them to your slime or device ID. App Store Connect also shows us totals such as downloads.</p>
 
       <h2 id="never">What we never collect</h2>
       <ul>
-        <li>Your location, contacts, photos or health data.</li>
+        <li>Your location, contacts, photos, camera, microphone or health data.</li>
         <li>Your Apple ID, email address, phone number or real name, unless you choose to type it as your owner name.</li>
-        <li>Advertising identifiers or device identifiers. There is no tracking and no App Tracking Transparency prompt.</li>
+        <li>Advertising identifiers or hardware identifiers. There is no tracking and no App Tracking Transparency prompt.</li>
         <li>Battery, charger, network or Low Power Mode information.</li>
-        <li>Third-party analytics or crash reports. Slimy contains no third-party SDKs. The only usage figure we keep is when a device was last online, to the nearest 10 minutes, to count active devices.</li>
-        <li>Request logs. Neither our API nor the web server keeps a log of the requests it answers.</li>
+        <li>Payment data. Slimy has no in-app purchases and no ads.</li>
+        <li>Third-party analytics or crash reports. Slimy contains no third-party SDKs. The only usage figure we keep ourselves is when a device was last online, to count active devices.</li>
+        <li>Request logs. Neither our API nor the web server keeps a log of the requests it answers. The API writes only its start-up line and technical error messages to the server's system log, never the content of a request, a name or an IP address.</li>
         <li>IP addresses on disk. They are held in memory for rate limiting only, for about an hour; see below.</li>
       </ul>
 
@@ -127,29 +164,36 @@
         <table class="table">
           <thead><tr><th scope="col">Data</th><th scope="col">Kept</th></tr></thead>
           <tbody>
-            <tr><td>Device, owner name, slime profile, friendships, records</td><td>Until you delete your server data, or we delete a device</td></tr>
+            <tr><td>Device, owner name, slime profile, friendships, shared memories, weekly shared-garden points, records, moderation status, when the device first went online and was last active</td><td>Until you delete your server data, or we delete the device</td></tr>
             <tr><td>Events between friends (hugs, gifts, greetings and so on)</td><td>30 days</td></tr>
             <tr><td>Challenges</td><td>14 days after they expire (a challenge is open for 3 days)</td></tr>
+            <tr><td>Daily shared-garden points</td><td>3 days</td></tr>
             <tr><td>Used or expired friend codes and care codes</td><td>1 day</td></tr>
             <tr><td>The shared slime while you care for it together</td><td>Until caring together ends; then deleted at once</td></tr>
             <tr><td>Care actions (feed, play, bath, pet, sleep, wake, gift)</td><td>30 days, and deleted at once when caring together ends</td></tr>
             <tr><td>Retry receipts</td><td>2 days</td></tr>
             <tr><td>Open reports</td><td>Until a person has reviewed them</td></tr>
             <tr><td>Resolved reports</td><td>90 days after they were resolved</td></tr>
-            <tr><td>Chat messages</td><td>Not stored</td></tr>
+            <tr><td>Chat messages</td><td>Not stored by us</td></tr>
+            <tr><td>Chat text at Groq, only while it investigates abuse or a technical fault</td><td>Up to 30 days</td></tr>
             <tr><td>Chat counters (requests and failures per service and day, no content)</td><td>400 days</td></tr>
-            <tr><td>Time of your last online request</td><td>Rounded to the nearest 10 minutes, deleted with your device</td></tr>
             <tr><td>Rate-limit counters with IP addresses</td><td>About an hour, in memory only</td></tr>
             <tr><td>Rate-limit counters with device IDs</td><td>At most 24 hours, in memory only</td></tr>
             <tr><td>Database backups</td><td>14 days</td></tr>
+            <tr><td>Your slime and chat history on the iPhone</td><td>Until you clear the chat, start over or delete the app</td></tr>
           </tbody>
         </table>
       </div>
       <p>Expired data is deleted automatically every 15 minutes. The database is backed up once a day and each backup is deleted after 14 days, so anything removed from the server is also gone from every backup within 14 days.</p>
 
       <h2 id="where">Where data is processed</h2>
-      <p>Our server runs in <strong>Germany</strong>, operated by hyprnode. Connections to slime.hyprnode.de, from the app and from this website, are encrypted and pass through <strong>Cloudflare</strong>'s network, which delivers them to our server. Cloudflare processes connection data such as IP addresses for that purpose and to protect against attacks.</p>
-      <p>Chat text goes to Cloudflare Workers AI and, as a fallback, to Groq. Both companies are based in the United States and may process the text outside the European Union.</p>
+      <p>Our server runs in <strong>Germany</strong>, on hardware hyprnode operates itself; its daily backups stay on the same server. Connections to slime.hyprnode.de, from the app and from this website, are encrypted and pass through <strong>Cloudflare</strong>'s network: Cloudflare decrypts them, protects them against attacks and passes them to our server through an encrypted tunnel. It handles them in its data centres, usually one near you, which can be outside the European Union.</p>
+      <p>Chat text goes to Cloudflare Workers AI and, as a fallback, to Groq. Both companies are based in the United States and may process data there. These transfers are protected as follows:</p>
+      <ul>
+        <li><strong>Cloudflare</strong> is certified under the EU-U.S. Data Privacy Framework, for which the European Commission has decided that it ensures an adequate level of protection (Article 45 GDPR). Its data processing agreement also contains the EU Standard Contractual Clauses (Article 46(2)(c) GDPR) in case the certification stops applying.</li>
+        <li><strong>Groq</strong>: the EU Standard Contractual Clauses (Article 46(2)(c) GDPR), which are part of its data processing agreement.</li>
+      </ul>
+      <p>For a copy of these safeguards, write to us.</p>
 
       <h2 id="website">This website</h2>
       <ul>
@@ -157,26 +201,41 @@
         <li>The web server keeps <strong>no access log</strong>. Cloudflare delivers the site as described above.</li>
         <li>If you pick a theme or a slime colour on this site, your browser remembers it in its local storage. It never leaves your browser, and clearing site data removes it.</li>
         <li>An invite page such as <code>/f/K7Q2MD</code> asks our server who made that code: the owner name, the slime's name, colour and stage, and when the code expires. Looking doesn't use the code up. Lookups are rate-limited per IP address, in memory.</li>
-        <li>The download buttons read the newest version from a file on this server, so your browser doesn't contact GitHub until you click a link to it.</li>
+        <li>The download buttons read the newest version from a file on this server, so your browser doesn't contact GitHub until you click a link to it. Beta builds and the source code are then delivered by GitHub (GitHub, Inc., USA) under GitHub's own privacy statement.</li>
       </ul>
 
       <h2 id="bases">Legal bases</h2>
       <p>Where the GDPR applies, we rely on:</p>
       <ul>
-        <li><strong>Art. 6(1)(b)</strong>, providing the online features you ask for when you go online and accept the Terms.</li>
-        <li><strong>Art. 6(1)(a)</strong>, your consent, for Talk. You can withdraw it at any time in Settings.</li>
-        <li><strong>Art. 6(1)(f)</strong>, our legitimate interest in a safe and working service: rate limits, name filters, reports and moderation, backups and counting active devices.</li>
+        <li><strong>Art. 6(1)(b)</strong>, providing the online features you ask for when you go online and accept the Terms, including Cloudflare passing your connections on.</li>
+        <li><strong>Art. 6(1)(a)</strong>, your consent, for Talk. You can withdraw it at any time in Settings; that doesn't affect messages sent before.</li>
+        <li><strong>Art. 6(1)(f)</strong>, our legitimate interest in a safe and working service: rate limits, name filters, reports and moderation, backups, counting active devices, and delivering this website through Cloudflare.</li>
       </ul>
+      <p>Saving data on your iPhone or in your browser, such as your slime, the access token in the keychain or the website's theme, is strictly necessary for what you ask for, so it needs no consent under § 25(2) no. 2 of the German TDDDG.</p>
+      <p>You don't have to give us any data. Slimy works fully without going online; you just can't use Friends, Talk and Care Together then.</p>
 
       <h2 id="rights">Your rights and deleting data</h2>
       <p>To delete everything our server stores about your device, open Slimy and go to <strong>Settings › Privacy › Delete My Data on the Server</strong>. It takes effect at once: your device, profile, friendships, requests, events, challenges, shared-garden points, memories, records and care codes are removed. If you care for a slime together, that ends for both of you and the shared copy and care actions are deleted. Your slime on the iPhone stays.</p>
-      <p>You also have the right to access your data, to have it corrected, to restrict or object to its processing, to receive it in a portable format, and to withdraw consent. You can complain to a data protection supervisory authority, for example the one where you live.</p>
+      <p><strong>Deleting the app doesn't delete your data on our server.</strong> Use Delete My Data on the Server before you delete the app. If you no longer have the iPhone, write to us with your owner name, your slime's name and roughly when you went online; if that matches exactly one device, we delete it.</p>
+      <p>Under the GDPR you have the right to:</p>
+      <ul>
+        <li>access the data we hold about you and get a copy (Art. 15),</li>
+        <li>have it corrected (Art. 16); you can change your owner name and your slime in the app yourself,</li>
+        <li>have it deleted (Art. 17),</li>
+        <li>restrict its processing (Art. 18),</li>
+        <li>receive it in a portable, machine-readable format (Art. 20),</li>
+        <li>withdraw your consent at any time, with effect for the future (Art. 7(3)),</li>
+        <li>complain to a data protection supervisory authority (Art. 77), for example the one where you live or the one responsible for us.</li>
+      </ul>
+      <p class="note"><canvas data-item="flag" data-scale="3"></canvas><span><b>Your right to object (Art. 21 GDPR).</b> Where we rely on our legitimate interest (Art. 6(1)(f)), you can object at any time, on grounds relating to your particular situation. We then stop, unless we have compelling legitimate grounds that override your interests, rights and freedoms, or need the data to establish, exercise or defend legal claims.</span></p>
+      <p>To use any of these rights, write to us; see <a href="#changes">Changes and contact</a>. We may ask for details to make sure the data is yours.</p>
+      <p>If you live in the United States: we don't sell your personal information, don't share it for targeted advertising and don't use it for profiling. You can ask what we hold about you, and have it deleted, in the same ways.</p>
 
       <h2 id="children">Children</h2>
-      <p>Slimy is meant for people aged 13 and over. You must be at least 13 to go online. If you are under 16, please ask a parent or guardian before you use Talk. We don't knowingly collect data from children under 13; if you believe a child has gone online, contact us and we'll delete the device.</p>
+      <p>Slimy is meant for people aged 13 and over, and you must be at least 13 to go online. If you are under 16, you may use Talk only if a parent or guardian agrees, because your consent then has to be given or approved by them (Article 8 GDPR). We don't knowingly collect data from children under 13; if you believe a child under 13 has gone online, contact us and we'll delete the device.</p>
 
       <h2 id="changes">Changes and contact</h2>
-      <p>If what Slimy does with data changes, we update this page before the change takes effect and change the date at the top.</p>
+      <p>If what Slimy does with data changes, we update this page before the change takes effect and change the date at the top. If a change needs your consent, for example a new AI service for Talk, we ask for it in the app before it applies to you.</p>
 <!-- @if contact -->
       <p>Questions about your data, or a request to use any of your rights: email <a href="mailto:{{contact.email}}">{{contact.email}}</a>. We answer within one month.</p>
       <p>For general questions you can also open an issue at <a href="https://github.com/ItzSimooon/slimy-ios/issues">github.com/ItzSimooon/slimy-ios/issues</a>. Issues are public, so don't post personal data there.</p>
