@@ -234,7 +234,7 @@ struct SpeechBox: View {
 
     var body: some View {
         Text(text)
-            .font(Theme.voice(16))
+            .font(Theme.voice(16)).fontDesign(nil)
             .foregroundStyle(Theme.ink)
             .multilineTextAlignment(.center)
             .lineLimit(3)

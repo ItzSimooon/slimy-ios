@@ -292,7 +292,7 @@ struct GameHost: View {
                     reward("starJelly", "+\(summary.result.xp) XP", label: "\(summary.result.xp) experience")
                 }
                 Text(summary.line)
-                    .font(Theme.voice(16))
+                    .font(Theme.voice(16)).fontDesign(nil)
                     .foregroundStyle(Theme.ink)
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)

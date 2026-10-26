@@ -177,7 +177,7 @@ struct BlockGameView: View {
             Spacer()
             ForEach(Array(engine.powers.keys).sorted { $0.rawValue < $1.rawValue }, id: \.self) { p in
                 VStack(spacing: 2) {
-                    Text(p.title).font(Brand.pixel(10)).foregroundStyle(.white)
+                    Text(p.title).font(Brand.pixel(10)).fontDesign(nil).foregroundStyle(.white)
                     Meter(value: (engine.powers[p] ?? 0) / max(1, p.seconds), color: Theme.gold, height: 4)
                         .frame(width: 44)
                 }
@@ -186,7 +186,7 @@ struct BlockGameView: View {
             }
             if engine.combo >= 3 {
                 Text(String(format: "x%.1f", engine.multiplier))
-                    .font(Brand.pixel(16)).foregroundStyle(.white)
+                    .font(Brand.pixel(16)).fontDesign(nil).foregroundStyle(.white)
                     .padding(.horizontal, 6).padding(.vertical, 3)
                     .background(Theme.love)
             }

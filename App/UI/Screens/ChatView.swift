@@ -137,7 +137,7 @@ struct ChatView: View {
                 VStack(spacing: 18) {
                     LiveSlimeView(height: 96, interactive: false)
                     Text("hi! it's me, \(slime.name).\nlet's talk.")
-                        .font(Theme.voice(22))
+                        .font(Theme.voice(22)).fontDesign(nil)
                         .foregroundStyle(Theme.ink)
                         .multilineTextAlignment(.center)
                         .fixedSize(horizontal: false, vertical: true)

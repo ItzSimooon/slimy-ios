@@ -323,7 +323,7 @@ struct Juice {
         for p in popups {
             let alpha = max(0, 1 - p.age / 0.9)
             let text = Text(p.text)
-                .font(Brand.pixel(p.big ? 22 : 15))
+                .font(Brand.pixel(p.big ? 22 : 15)).fontDesign(nil)
                 .foregroundStyle(p.color.opacity(alpha))
             ctx.draw(text, at: space.point(p.x, p.y))
         }

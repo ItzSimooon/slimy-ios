@@ -283,7 +283,7 @@ struct JellyDashView: View {
             Spacer()
             if engine.streak >= 3 {
                 Text("\(engine.streak) in a row")
-                    .font(Brand.pixel(14))
+                    .font(Brand.pixel(14)).fontDesign(nil)
                     .foregroundStyle(.white)
                     .padding(.horizontal, 7)
                     .padding(.vertical, 4)

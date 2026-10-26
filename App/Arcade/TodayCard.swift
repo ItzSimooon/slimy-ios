@@ -120,7 +120,7 @@ struct TodayCard: View {
                 .font(.footnote.weight(.bold))
                 .foregroundStyle(Theme.accent)
             Text(story)
-                .font(Theme.voice(15))
+                .font(Theme.voice(15)).fontDesign(nil)
                 .foregroundStyle(Theme.ink)
                 .fixedSize(horizontal: false, vertical: true)
         }

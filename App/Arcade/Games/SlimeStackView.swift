@@ -187,7 +187,7 @@ struct SlimeStackView: View {
             let y = screenY(SlimeStackEngine.y(level: level - 1))
             if y > -4, y < Board.height {
                 ctx.fill(Path(space.rect(0, y, 5, 0.8)), with: .color(.white.opacity(0.6)))
-                ctx.draw(Text("\(level)").font(Brand.pixel(11)).foregroundStyle(Color.white.opacity(0.75)),
+                ctx.draw(Text("\(level)").font(Brand.pixel(11)).fontDesign(nil).foregroundStyle(Color.white.opacity(0.75)),
                          at: space.point(4, y - 3.5), anchor: .leading)
             }
             level += 10
@@ -222,7 +222,7 @@ struct SlimeStackView: View {
             Spacer()
             if engine.combo >= 2 {
                 Text("Perfect x\(engine.combo)")
-                    .font(Brand.pixel(15))
+                    .font(Brand.pixel(15)).fontDesign(nil)
                     .foregroundStyle(.white)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
