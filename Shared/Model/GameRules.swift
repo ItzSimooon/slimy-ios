@@ -259,8 +259,9 @@ extension GameState {
         slime.personality.drift(.playful)
         progress.stats.plays += 1
         if result.score >= result.goodScore { progress.stats.goodGames += 1 }
-        if game == .daily, let day = result.day, progress.quest?.day == day {
-            progress.quest?.best = max(progress.quest?.best ?? 0, result.score)
+        if game == .daily, let day = result.day, var quest = progress.quest, quest.day == day {
+            quest.best = max(quest.best, result.score)
+            progress.quest = quest
         }
 
         var record = progress.records[game] ?? GameRecord()
