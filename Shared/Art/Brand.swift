@@ -1,4 +1,6 @@
+import CoreText
 import SwiftUI
+import UIKit
 
 /// Colours shared by app and widgets: the dark palette of the Dynamic Island
 /// (which is always black), the slime's pixel-art colours, and the need tints
@@ -20,18 +22,46 @@ enum Brand {
 
     /// Pixel font (Pixelify Sans, OFL). Bundled in app and widget.
     static func pixel(_ size: CGFloat, bold: Bool = true) -> Font {
-        .custom(bold ? "PixelifySans-Bold" : "PixelifySans-Regular", size: size)
+        pixelFont(size, bold: bold, scaledLike: .body)
     }
 
     /// Fixed-size pixel font for the island, where Dynamic Type must not grow it.
     static func pixelFixed(_ size: CGFloat, bold: Bool = true) -> Font {
-        .custom(bold ? "PixelifySans-Bold" : "PixelifySans-Regular", fixedSize: size)
+        pixelFont(size, bold: bold, scaledLike: nil)
     }
 
     /// The slime speaking: Pixelify Sans that scales with Dynamic Type, like
     /// the app's `Theme.voice`.
     static func voice(_ size: CGFloat, relativeTo style: Font.TextStyle) -> Font {
-        .custom("PixelifySans-Bold", size: size, relativeTo: style)
+        pixelFont(size, bold: true, scaledLike: uiStyle(style))
+    }
+
+    /// Pixelify Sans as a concrete CoreText font. A `Font.custom` gets drawn
+    /// as SF Rounded under the app's `.fontDesign(.rounded)`; a font built from
+    /// the CTFont itself stays what it is. Scaled once for the current text size.
+    static func pixelFont(_ size: CGFloat, bold: Bool, scaledLike style: UIFont.TextStyle?) -> Font {
+        let name = bold ? "PixelifySans-Bold" : "PixelifySans-Regular"
+        let points = style.map { UIFontMetrics(forTextStyle: $0).scaledValue(for: size) } ?? size
+        if let font = UIFont(name: name, size: points) {
+            return Font(font as CTFont)
+        }
+        return .custom(name, fixedSize: points)
+    }
+
+    private static func uiStyle(_ style: Font.TextStyle) -> UIFont.TextStyle {
+        switch style {
+        case .largeTitle: .largeTitle
+        case .title: .title1
+        case .title2: .title2
+        case .title3: .title3
+        case .headline: .headline
+        case .subheadline: .subheadline
+        case .callout: .callout
+        case .footnote: .footnote
+        case .caption: .caption1
+        case .caption2: .caption2
+        default: .body
+        }
     }
 
     static func body(_ size: CGFloat = 15, _ weight: Font.Weight = .regular) -> Font {

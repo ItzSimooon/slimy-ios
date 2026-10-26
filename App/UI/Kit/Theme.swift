@@ -59,7 +59,7 @@ enum Theme {
 
     /// The slime speaking: Pixelify Sans, scaled with Dynamic Type.
     static func voice(_ size: CGFloat = 16) -> Font {
-        .custom("PixelifySans-Bold", size: size, relativeTo: .body)
+        Brand.pixelFont(size, bold: true, scaledLike: .body)
     }
 
     private static func style(_ size: CGFloat) -> Font.TextStyle {
