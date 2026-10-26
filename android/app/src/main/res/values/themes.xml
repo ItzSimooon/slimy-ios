@@ -1,0 +1,12 @@
+<resources>
+    <style name="Theme.Slimy" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowBackground">@color/backdrop</item>
+    </style>
+    <style name="Theme.Slimy.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/backdrop</item>
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
+        <item name="postSplashScreenTheme">@style/Theme.Slimy</item>
+    </style>
+</resources>
