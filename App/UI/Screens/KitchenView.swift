@@ -35,7 +35,7 @@ struct KitchenView: View {
             .sheetTitle("Kitchen")
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    CoinCounter(coins: s.wallet.coins)
+                    CoinCounter(coins: s.wallet.coins, inToolbar: true)
                 }
             }
         }

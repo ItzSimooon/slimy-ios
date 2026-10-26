@@ -189,6 +189,9 @@ struct CoinCounter: View {
     let coins: Int
     /// Floating over the slime's home rather than sitting in a card.
     var floating = false
+    /// In a navigation bar. From iOS 26 the bar draws glass around its items,
+    /// so the counter brings no background of its own there.
+    var inToolbar = false
 
     var body: some View {
         let content = HStack(spacing: 6) {
@@ -201,11 +204,23 @@ struct CoinCounter: View {
         }
         .padding(.horizontal, 12)
         .frame(minHeight: floating ? 44 : 32)
+        .fixedSize()
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("\(coins) coins")
 
         if floating {
             content.background(.regularMaterial, in: Capsule())
+        } else if inToolbar {
+            toolbarStyle(content)
+        } else {
+            content.background(Theme.well, in: Capsule())
+        }
+    }
+
+    @ViewBuilder
+    private func toolbarStyle(_ content: some View) -> some View {
+        if #available(iOS 26.0, *) {
+            content
         } else {
             content.background(Theme.well, in: Capsule())
         }

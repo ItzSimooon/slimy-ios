@@ -420,7 +420,7 @@ struct FriendsGiftSheet: View {
                     Button("Cancel") { dismiss() }
                 }
                 ToolbarItem(placement: .topBarTrailing) {
-                    CoinCounter(coins: store.state.wallet.coins)
+                    CoinCounter(coins: store.state.wallet.coins, inToolbar: true)
                 }
             }
         }

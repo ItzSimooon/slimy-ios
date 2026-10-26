@@ -96,7 +96,7 @@ struct ArcadeView: View {
         .navigationBarTitleDisplayMode(.large)
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
-                CoinCounter(coins: s.wallet.coins)
+                CoinCounter(coins: s.wallet.coins, inToolbar: true)
             }
             ToolbarItem(placement: .topBarTrailing) {
                 Button {

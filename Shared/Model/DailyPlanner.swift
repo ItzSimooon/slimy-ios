@@ -124,7 +124,7 @@ enum DailyPlanner {
 
     private static func blurb(for game: GameSpec, pack: Pack) -> String {
         switch game.control {
-        case .drag: "\(pack.flavor.capitalizedFirst) rain down. Catch the good stuff."
+        case .drag: "It's raining \(pack.flavor). Catch the good stuff."
         case .lanes: "Three lanes, lots of \(pack.flavor). Switch fast."
         case .steer: "Float around, grab \(pack.flavor), dodge the rest."
         case .jump: "Run, jump and collect \(pack.flavor) on the way."

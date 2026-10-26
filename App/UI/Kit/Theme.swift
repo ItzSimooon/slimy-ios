@@ -1,3 +1,4 @@
+import CoreText
 import SwiftUI
 import UIKit
 
@@ -24,8 +25,10 @@ enum Theme {
 
     // MARK: Colour
 
-    /// Slime green (AccentColor asset: deep green in light, bright in dark).
-    static let accent = Color.accentColor
+    /// Slime green: deep in light mode, bright in dark mode. Same values as
+    /// the AccentColor asset, spelled out because `.tint(Color.accentColor)`
+    /// at the root would refer to itself and fall back to system blue.
+    static let accent = Color.dynamic(light: 0x1E7F37, dark: 0x4CC764)
     /// Text and symbols on an accent fill. White on the deep green, near-black
     /// on the bright green, so both pass 4.5:1.
     static let onAccent = Color.dynamic(light: 0xFFFFFF, dark: 0x0B2912)
@@ -93,6 +96,19 @@ enum Theme {
         case .energy: "starJelly"
         case .clean: "bubbleItem"
         case .love: "heart"
+        }
+    }
+}
+
+/// The bundled Pixelify Sans files. Info.plist's UIAppFonts should register
+/// them; this makes sure, because a missing font silently falls back to SF.
+enum AppFonts {
+    static let names = ["PixelifySans-Regular", "PixelifySans-Bold"]
+
+    static func register() {
+        for name in names where UIFont(name: name, size: 12) == nil {
+            guard let url = Bundle.main.url(forResource: name, withExtension: "ttf") else { continue }
+            _ = CTFontManagerRegisterFontsForURL(url as CFURL, .process, nil)
         }
     }
 }

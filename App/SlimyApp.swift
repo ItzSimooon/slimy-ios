@@ -15,6 +15,7 @@ struct SlimyApp: App {
         // Background tasks must be registered before launch finishes.
         PhoneMonitor.registerPowerTask()
         IslandFonts.registerInBackground()
+        AppFonts.register()
     }
 
     var body: some Scene {

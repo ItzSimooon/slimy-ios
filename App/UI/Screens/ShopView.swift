@@ -62,7 +62,7 @@ struct ShopView: View {
             .sheetTitle("Shop", inline: true)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    CoinCounter(coins: s.wallet.coins)
+                    CoinCounter(coins: s.wallet.coins, inToolbar: true)
                 }
             }
         }
