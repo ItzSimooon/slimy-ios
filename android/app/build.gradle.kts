@@ -19,7 +19,8 @@ android {
         applicationId = "de.hyprnode.slimy"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
+        // CI builds count up with the run number, so every release installs as an update.
+        versionCode = System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 1
         versionName = "1.1.0"
     }
 

@@ -15,8 +15,9 @@ import kotlinx.coroutines.launch
 /**
  * The invisible trampoline behind the launcher shortcuts that don't open the
  * app: Feed and Summon Slime (App Shortcuts on iOS). Does the job, says what
- * happened in a toast, and is gone before it is seen. Without a slime yet,
- * or with notifications off for Summon, it opens the app instead.
+ * happened in a toast, and is gone before it is seen. Summon brings the
+ * island back when it is on and allowed, else the notification. Without a
+ * slime yet, or with notifications off and no island, it opens the app.
  */
 class ShortcutActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -33,7 +34,14 @@ class ShortcutActivity : Activity() {
                     app.island.settle()
                 }
                 IslandActionReceiver.ACTION_SUMMON -> {
-                    if (!Notifier.authorized() || !Notifier.isChannelOn(Notifier.slimeChannel)) {
+                    if (app.island.wantsOverlay) {
+                        // Started here, while this activity is in front: Android allows the island's service now.
+                        app.island.startOverlayNow()
+                        scope.launch {
+                            IslandActionReceiver.perform(app, action)
+                            Toast.makeText(app, "${app.store.slime.name} is in the island.", Toast.LENGTH_SHORT).show()
+                        }
+                    } else if (!Notifier.authorized() || !Notifier.isChannelOn(Notifier.slimeChannel)) {
                         Toast.makeText(app, "Notifications are off for Slimy.", Toast.LENGTH_SHORT).show()
                         open("settings")
                     } else {

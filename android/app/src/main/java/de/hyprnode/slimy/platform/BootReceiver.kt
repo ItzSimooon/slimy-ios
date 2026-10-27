@@ -11,8 +11,10 @@ import kotlinx.coroutines.launch
 
 /**
  * After a restart (or an app update) the slime notification is gone and
- * reminders need planning again: brings the notification back if "Always
- * bring it back" is on, reschedules, and keeps the background runs going.
+ * reminders need planning again: brings the slime back if "Always bring it
+ * back" is on (the island when it is on and Slimy is still allowed over
+ * other apps; Android allows starting its service from this broadcast),
+ * reschedules, and keeps the background runs going.
  */
 class BootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {

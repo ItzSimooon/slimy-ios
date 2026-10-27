@@ -6,6 +6,11 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- The island: the slime in a black pill around the front camera, over other apps.
+         The person allows it on the system page "Display over other apps". -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
 
     <application
         android:name=".SlimyApplication"
@@ -53,6 +58,16 @@
             android:noHistory="true"
             android:taskAffinity=""
             android:theme="@android:style/Theme.NoDisplay" />
+
+        <!-- Keeps the island on screen while Slimy is closed. Its notification is the slime notification. -->
+        <service
+            android:name=".platform.island.IslandService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Shows the user's virtual pet in a small island around the front camera, drawn over other apps (SYSTEM_ALERT_WINDOW). The user turns the island on in the app, can tap it to care for the pet and can hide it at any time from the island or the app's settings. The service only keeps that overlay window alive and updates it; it does no other background work." />
+        </service>
 
         <!-- The slime notification's buttons. -->
         <receiver

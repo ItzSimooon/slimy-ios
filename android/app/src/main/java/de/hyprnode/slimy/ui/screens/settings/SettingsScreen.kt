@@ -50,6 +50,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -99,7 +100,7 @@ import java.util.Locale
 
 /**
  * Settings: the slime's chatter and Care Together, sound, notifications,
- * bedtime, the slime notification, phone reactions, online and privacy,
+ * bedtime, the island and the slime notification, phone reactions, online and privacy,
  * backups, help and starting over (App/UI/Screens/SettingsView.swift).
  */
 @Composable
@@ -117,6 +118,7 @@ fun SettingsScreen(
     val resumed = rememberIsResumed()
     var authorized by remember { mutableStateOf<Boolean?>(null) }
     var backgroundRestricted by remember { mutableStateOf(false) }
+    var positioning by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(state.settings) { Notifier.reschedule(store.state.value) }
     // Also runs when coming back from the system settings.
@@ -133,8 +135,9 @@ fun SettingsScreen(
             SoundSection()
             NotificationSection(authorized) { authorized = it }
             BedtimeSection()
+            IslandSection(onPosition = { positioning = true })
             // Read here, so coming back from the system settings shows the new answer.
-            IslandSection(island.presence)
+            SlimeNotificationSection(island.notificationPresence, animationHere = !island.overlaySupported)
             PhoneSection(backgroundRestricted)
             OnlineSection(onGoOnline)
             PrivacySection()
@@ -147,6 +150,8 @@ fun SettingsScreen(
             StartOverSection(onClose)
         }
     }
+
+    if (positioning) IslandPositionSheet(onDismiss = { positioning = false })
 }
 
 // MARK: - Your slime
@@ -270,8 +275,9 @@ private fun BedtimeSection() {
 
 // MARK: - Slime notification
 
+/** The notification part; [animationHere] when the phone has no island section to hold the Animation switch. */
 @Composable
-private fun IslandSection(presence: IslandController.Presence) {
+private fun SlimeNotificationSection(presence: IslandController.Presence, animationHere: Boolean) {
     val island = LocalIsland.current
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -302,12 +308,14 @@ private fun IslandSection(presence: IslandController.Presence) {
                 island.keepAlive.value = on
                 if (on) scope.launch { island.ensureRunning() }
             }
-            GroupedDivider()
-            SwitchRow(
-                "Animation",
-                detail = "When it's off, your slime shows as a still picture.",
-                checked = animated,
-            ) { on -> island.animated.value = on }
+            if (animationHere) {
+                GroupedDivider()
+                SwitchRow(
+                    "Animation",
+                    detail = "When it's off, your slime shows as a still picture.",
+                    checked = animated,
+                ) { on -> island.animated.value = on }
+            }
             GroupedDivider()
             BusyRow(
                 if (isLive) "Restart" else "Start",
@@ -663,13 +671,13 @@ internal fun SwitchRow(
 
 /** A tappable row in the accent colour (or [color]), like a button in a list. */
 @Composable
-private fun ActionRow(title: String, color: Color? = null, enabled: Boolean = true, onClick: () -> Unit) {
+internal fun ActionRow(title: String, color: Color? = null, enabled: Boolean = true, onClick: () -> Unit) {
     GroupedRow(title = title, titleColor = color ?: Theme.accent, enabled = enabled, onClick = onClick)
 }
 
 /** A row with an icon that opens something; [external] adds the arrow for links that leave the app. */
 @Composable
-private fun LinkRow(title: String, icon: ImageVector, enabled: Boolean = true, external: Boolean = false, onClick: () -> Unit) {
+internal fun LinkRow(title: String, icon: ImageVector, enabled: Boolean = true, external: Boolean = false, onClick: () -> Unit) {
     GroupedRow(
         title = title,
         titleColor = Theme.accent,
@@ -687,7 +695,7 @@ private fun LinkRow(title: String, icon: ImageVector, enabled: Boolean = true, e
 
 /** A button row that shows a spinner while its work runs. */
 @Composable
-private fun BusyRow(title: String, icon: ImageVector, busy: Boolean, enabled: Boolean, color: Color? = null, onClick: () -> Unit) {
+internal fun BusyRow(title: String, icon: ImageVector, busy: Boolean, enabled: Boolean, color: Color? = null, onClick: () -> Unit) {
     val tint = color ?: Theme.accent
     GroupedRow(
         title = title,
@@ -704,7 +712,7 @@ private fun BusyRow(title: String, icon: ImageVector, busy: Boolean, enabled: Bo
 }
 
 @Composable
-private fun ValueRow(title: String, value: String) {
+internal fun ValueRow(title: String, value: String) {
     GroupedRow(
         title = title,
         modifier = Modifier.semantics(mergeDescendants = true) { },
@@ -714,7 +722,7 @@ private fun ValueRow(title: String, value: String) {
 
 /** Something Android keeps Slimy from doing, and why it matters. */
 @Composable
-private fun Notice(text: String) {
+internal fun Notice(text: String) {
     GroupedRow(
         title = text,
         icon = { Icon(Icons.Filled.Warning, contentDescription = null, tint = Color(0xFFFF9500)) },

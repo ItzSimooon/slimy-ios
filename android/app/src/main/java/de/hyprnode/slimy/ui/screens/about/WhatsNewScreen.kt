@@ -20,6 +20,7 @@ import androidx.compose.material.icons.filled.Forum
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.Mood
 import androidx.compose.material.icons.filled.People
+import androidx.compose.material.icons.filled.Smartphone
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -50,6 +51,8 @@ object WhatsNew {
     const val version = "1.1"
 
     val items: List<Item> = listOf(
+        Item(Icons.Filled.Smartphone, "Your slime in an island",
+            "Allow Slimy over other apps and your slime moves into a little black island around your front camera. Tap it from any app to feed, play and cuddle."),
         Item(Icons.Filled.Inventory2, "Crates with a secret",
             "Earn crates or buy them with coins, then tap them open. The drop rates are listed in the app, and one legendary reward is a secret."),
         Item(Icons.Filled.People, "Care Together",

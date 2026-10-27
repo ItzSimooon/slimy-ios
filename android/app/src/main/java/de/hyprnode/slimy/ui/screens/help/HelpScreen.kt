@@ -174,7 +174,32 @@ data class HelpTopic(val id: String, val title: String, val items: List<HelpItem
             }
         }
 
-        private val island = HelpTopic("island", "Slime notification", listOf(
+        private val island = HelpTopic("island", "Island and notification", listOf(
+            HelpItem(
+                "island.what",
+                "What is the island?",
+                "A little black island around your front camera where your slime lives, on top of every app. Tap it to see how your slime is doing and to feed it, put it to bed, bathe it or pet it; Play opens the arcade. Touch and hold it to open Slimy or hide the island. To turn it on, open Settings in Slimy, tap Allow over other apps under Island, switch Slimy on in the list Android shows, and come back.",
+            ),
+            HelpItem(
+                "island.hidden",
+                "Why does the island disappear sometimes?",
+                "It steps aside on the lock screen, while the screen is off, in landscape, in full-screen videos and games, and while Slimy itself is open, where your slime is right in front of you. It comes back on its own. If it doesn't, check that Show island is on in Slimy's Settings and that Slimy is still allowed over other apps.",
+            ),
+            HelpItem(
+                "island.position",
+                "The island isn't exactly around my camera.",
+                "Some phones report their camera a little off. In Slimy's Settings, tap Position under Island and move the island left, right, up or down, or make it bigger or smaller. While you adjust it, the island shows over Slimy so you can line it up with your camera.",
+            ),
+            HelpItem(
+                "island.tap",
+                "Tapping the island pulls down my notifications.",
+                "Android keeps the status bar above other apps, so a tap high up on the island can reach the status bar instead. Tap the lower edge of the island, or a little below it, and it opens.",
+            ),
+            HelpItem(
+                "island.notification",
+                "Why is there a notification while the island is on?",
+                "Android asks every app that keeps something on screen while it's closed to show a notification. Slimy uses the slime notification for that, with the same buttons, so there's only ever one.",
+            ),
             HelpItem(
                 "island.gone",
                 "My slime disappeared from my notifications.",
@@ -188,7 +213,7 @@ data class HelpTopic(val id: String, val title: String, val items: List<HelpItem
             HelpItem(
                 "island.still",
                 "The slime in the notification doesn't move.",
-                "Check that Animation is on in Slimy's Settings. With Animation off, the notification shows a still picture that changes with your slime's mood.",
+                "Check that Animation is on in Slimy's Settings. With Animation off, the island and the notification show a still picture that changes with your slime's mood.",
             ),
             HelpItem(
                 "island.late",

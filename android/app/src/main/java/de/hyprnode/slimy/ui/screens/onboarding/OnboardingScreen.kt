@@ -97,7 +97,11 @@ import de.hyprnode.slimy.platform.Notifier
 import de.hyprnode.slimy.ui.kit.AppButton
 import de.hyprnode.slimy.ui.kit.AppButtonKind
 import de.hyprnode.slimy.ui.kit.Theme
+import de.hyprnode.slimy.platform.island.IslandSystem
 import de.hyprnode.slimy.ui.screens.common.findActivity
+import de.hyprnode.slimy.ui.screens.common.rememberIsResumed
+import de.hyprnode.slimy.ui.screens.settings.IslandPreview
+import de.hyprnode.slimy.ui.screens.settings.rememberIslandScreen
 import de.hyprnode.slimy.ui.screens.common.swiftSpring
 import kotlinx.coroutines.launch
 import java.time.Instant
@@ -109,12 +113,14 @@ private const val tapsToHatch = 5
 
 /**
  * First launch: an egg, a name, a hatching, meeting the slime, a first meal,
- * and its place outside the app (the slime notification). Notifications are
- * asked for last, after a screen that says what they are for
- * (App/UI/Screens/OnboardingView.swift).
+ * and its place outside the app. Notifications are asked for last, after a
+ * screen that says what they are for (App/UI/Screens/OnboardingView.swift).
  *
- * On Android the slime notification needs the notification permission, so
- * "Keep It in Notifications" asks for it first.
+ * On Android the place outside the app is the island around the camera when
+ * the phone can show it: "Put It in the Island" opens the system's "over
+ * other apps" page, and coming back with permission starts it. The slime
+ * notification is the fallback; it needs the notification permission, so
+ * "Use Notifications Instead" asks for that first.
  */
 @Composable
 fun OnboardingScreen() {
@@ -132,6 +138,10 @@ fun OnboardingScreen() {
     var name by rememberSaveable { mutableStateOf("") }
     var skin by rememberSaveable { mutableStateOf(Skin.lime) }
     var naming by remember { mutableStateOf(false) }
+    val offerIsland = remember { island.overlaySupported }
+    // Set while the system's "over other apps" page is open.
+    var askedForIsland by rememberSaveable { mutableStateOf(false) }
+    val resumed = rememberIsResumed()
 
     LaunchedEffect(Unit) {
         if (store.state.value.hatched && step == OnboardingStep.egg) step = OnboardingStep.meet
@@ -149,6 +159,16 @@ fun OnboardingScreen() {
         } else {
             store.update { it.settings.notifications.asked = true }
             finish()
+        }
+    }
+
+    // Back from the system page: with permission the slime moves into the island and the steps go on.
+    LaunchedEffect(resumed) {
+        if (!resumed || !askedForIsland || step != OnboardingStep.island) return@LaunchedEffect
+        if (island.overlayPermitted) {
+            askedForIsland = false
+            island.setShowIsland(true)
+            afterIsland()
         }
     }
 
@@ -274,7 +294,7 @@ fun OnboardingScreen() {
                                         )
                                         AppButton(title = "Give an Apple", icon = "apple") {
                                             store.feed(Food.apple)
-                                            if (OnboardingRules.skipIsland(island.presence, store.state.value.settings.notifications.asked)) {
+                                            if (OnboardingRules.skipIsland(island.presence, store.state.value.settings.notifications.asked, offerIsland)) {
                                                 // Notifications are off for Slimy: nothing to set up.
                                                 scope.launch { afterIsland() }
                                             } else {
@@ -287,13 +307,47 @@ fun OnboardingScreen() {
                                     LiveSlimeView(height = 130.dp)
                                     Panel {
                                         Heading("Always with you")
-                                        Text(OnboardingRules.islandText(s.slime.name), style = MaterialTheme.typography.bodyLarge, color = Theme.inkSoft)
-                                        AppButton(title = "Keep It in Notifications", icon = "starJelly") {
-                                            scope.launch {
-                                                // The slime notification needs the notification permission on Android.
-                                                Notifier.requestPermission(context.findActivity())
-                                                island.ensureRunning(restart = true)
-                                                afterIsland()
+                                        if (offerIsland) {
+                                            // The island first: Slimy asks to show it over other apps,
+                                            // and the notification is the fallback.
+                                            Text(
+                                                OnboardingRules.islandOverlayText(s.slime.name),
+                                                style = MaterialTheme.typography.bodyLarge,
+                                                color = Theme.inkSoft,
+                                            )
+                                            IslandPreview(screen = rememberIslandScreen(), tuning = island.tuning.value)
+                                            if (askedForIsland) {
+                                                Text(
+                                                    OnboardingRules.islandWaiting,
+                                                    style = MaterialTheme.typography.bodyMedium,
+                                                    color = Theme.ink,
+                                                )
+                                            }
+                                            AppButton(title = "Put It in the Island", icon = "starJelly") {
+                                                if (island.overlayPermitted) {
+                                                    island.setShowIsland(true)
+                                                    scope.launch { afterIsland() }
+                                                } else {
+                                                    askedForIsland = true
+                                                    IslandSystem.openPermissionPage(context)
+                                                }
+                                            }
+                                            AppButton(title = "Use Notifications Instead", kind = AppButtonKind.secondary) {
+                                                scope.launch {
+                                                    Notifier.requestPermission(context.findActivity())
+                                                    island.ensureRunning(restart = true)
+                                                    afterIsland()
+                                                }
+                                            }
+                                        } else {
+                                            Text(OnboardingRules.islandText(s.slime.name), style = MaterialTheme.typography.bodyLarge, color = Theme.inkSoft)
+                                            AppButton(title = "Keep It in Notifications", icon = "starJelly") {
+                                                scope.launch {
+                                                    // The slime notification needs the notification permission on Android.
+                                                    Notifier.requestPermission(context.findActivity())
+                                                    island.ensureRunning(restart = true)
+                                                    afterIsland()
+                                                }
                                             }
                                         }
                                         AppButton(title = "Later", kind = AppButtonKind.quiet) {
@@ -454,12 +508,20 @@ object OnboardingRules {
     fun islandText(name: String): String =
         "$name can live in your notifications. It wobbles there, shows what it needs, and you can feed it without opening the app."
 
+    /** The island step on phones that can show it: Slimy over other apps, around the camera. */
+    fun islandOverlayText(name: String): String =
+        "$name can live in a little black island around your front camera, on top of every app. Tap it to feed, play and cuddle without opening Slimy. Android asks you to allow Slimy over other apps first."
+
+    /** Shown after the system page was opened and Slimy isn't allowed yet. */
+    const val islandWaiting = "Find Slimy in the list, switch it on, then come back here."
+
     /**
-     * Skip the slime notification step only when notifications are off for
-     * Slimy and Android won't ask again here (the player already answered).
+     * Skip the step only when there's nothing to set up: no island on this
+     * phone, notifications are off for Slimy and Android won't ask again
+     * here (the player already answered).
      */
-    fun skipIsland(presence: IslandController.Presence, asked: Boolean): Boolean =
-        presence == IslandController.Presence.unavailable && asked
+    fun skipIsland(presence: IslandController.Presence, asked: Boolean, overlaySupported: Boolean = false): Boolean =
+        !overlaySupported && presence == IslandController.Presence.unavailable && asked
 
     /** Whether the system hasn't been asked about notifications yet (Android 13 and later ask; older ones allow). */
     fun notificationsUndecided(authorized: Boolean, asked: Boolean, sdk: Int): Boolean =
