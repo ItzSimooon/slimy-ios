@@ -228,15 +228,20 @@ jobs:
           SLIMY_KEY_PASSWORD: ${{ secrets.SLIMY_KEY_PASSWORD }}
         # recordRoborazziDebug runs the unit tests once, with recording on:
         # every screen in light and dark goes to app/build/outputs/roborazzi.
-        run: gradle :model:test :app:testDebugUnitTest :app:recordRoborazziDebug :app:assembleRelease --console=plain
-      - name: Package Slimy.apk
+        # bundleRelease makes the Android App Bundle for Google Play, signed
+        # with the same key (Play uses it as the upload key).
+        run: gradle :model:test :app:testDebugUnitTest :app:recordRoborazziDebug :app:assembleRelease :app:bundleRelease --console=plain
+      - name: Package Slimy.apk and Slimy.aab
         run: |
           cp android/app/build/outputs/apk/release/app-release.apk Slimy.apk
-          ls -lh Slimy.apk
+          cp android/app/build/outputs/bundle/release/app-release.aab Slimy.aab
+          ls -lh Slimy.apk Slimy.aab
           apksigner="$(ls -d "$ANDROID_HOME"/build-tools/*/apksigner 2>/dev/null | sort -V | tail -n 1)"
           if [ -n "$apksigner" ]; then
             "$apksigner" verify --print-certs Slimy.apk | grep -E "Signer #1 certificate (DN|SHA-256)" || true
           fi
+          # An App Bundle is signed like a JAR; show its signer too.
+          keytool -printcert -jarfile Slimy.aab | grep -E "Owner:|SHA256:" | head -n 2 || true
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
@@ -248,7 +253,9 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: Slimy-apk
-          path: Slimy.apk
+          path: |
+            Slimy.apk
+            Slimy.aab
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -291,11 +298,13 @@ jobs:
             Slimy.ipa
             Slimy-unsigned.ipa
             Slimy.apk
+            Slimy.aab
           body: |
             Build of ${{ github.sha }}.
             Slimy.ipa: ad-hoc signed with the App Group entitlement (needed for the Home Screen widgets). Install it with Sideloadly and your Apple ID.
             Slimy-unsigned.ipa: the same app without entitlements. Use it if your sideloading tool rejects the App Group; the app then keeps its save inside the app and the Home Screen widgets show a placeholder.
             Slimy.apk: the Android beta, for Android 8 or later. Open it on the phone and allow installing from that source when Android asks. A newer APK installs over the old one and keeps the save.
+            Slimy.aab: the same Android build as an App Bundle, for uploading to Google Play.
 
   screenshots:
     name: Screenshots (simulator)

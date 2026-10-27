@@ -13,12 +13,12 @@ val releaseKeystore = System.getenv("SLIMY_KEYSTORE")?.let { file(it) }?.takeIf 
 
 android {
     namespace = "de.hyprnode.slimy"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "de.hyprnode.slimy"
         minSdk = 26
-        targetSdk = 35
+        targetSdk = 36
         // CI builds count up with the run number, so every release installs as an update.
         versionCode = System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 1
         versionName = "1.1.0"
