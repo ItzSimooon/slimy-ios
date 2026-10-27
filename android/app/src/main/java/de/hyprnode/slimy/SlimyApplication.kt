@@ -83,6 +83,9 @@ class SlimyApplication : Application() {
         Notifier.install(this)
         // The slime notification, reminders and widgets follow every change.
         store.addHooks(PlatformHooks(this))
+        // Created now, not on first use: its constructor sets store.onCare, so
+        // care from a notification button or widget reaches a care partner too.
+        friends
         BackgroundRefresh.schedule(this)
         ProcessLifecycleOwner.get().lifecycle.addObserver(object : DefaultLifecycleObserver {
             override fun onStart(owner: LifecycleOwner) = becameActive()
@@ -108,12 +111,12 @@ class SlimyApplication : Application() {
         main.removeCallbacks(ticker)
         main.postDelayed(ticker, tickInterval)
         phoneMonitor.start()
-        // While Slimy is on screen, a slime cared for together syncs with the partner's phone.
-        friends.startCarePolling()
+        // Friends catch up, and a slime cared for together syncs with the partner's phone every 20 s.
+        friends.onForeground()
+        chat.onForeground()
         SlimeWidgets.reloadAll(this)
         scope.launch {
             if (store.state.value.hatched) island.ensureRunning()
-            runCatching { friends.refresh() }.onFailure { Log.w("Slimy", "Friends refresh failed", it) }
             dailyStore.refresh()
             island.maybeMeetup()
         }
@@ -124,8 +127,8 @@ class SlimyApplication : Application() {
         main.removeCallbacks(ticker)
         Feedback.shared.updateMusic(active = false)
         // Stops syncing the shared slime and sends what changed.
-        friends.stopCarePolling()
-        friends.enterBackground()
+        friends.onBackground()
+        chat.onBackground()
         phoneMonitor.stop()
         PhoneMonitor.schedulePowerCheck(this)
         BackgroundRefresh.schedule(this)
