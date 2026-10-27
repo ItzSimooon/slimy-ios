@@ -197,6 +197,7 @@ fun ShopScreen(onClose: () -> Unit, onOpenCrate: (CrateKind) -> Unit, onDropRate
                     pick = null
                 },
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                bleed = 16.dp,
             )
             HorizontalDivider(color = Theme.separator)
             Column(

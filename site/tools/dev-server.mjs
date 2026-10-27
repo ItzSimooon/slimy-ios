@@ -107,6 +107,7 @@ function release(res) {
     url: "https://github.com/ItzSimooon/slimy-ios/releases/tag/build-141",
     ipa: "https://github.com/ItzSimooon/slimy-ios/releases/download/build-141/Slimy.ipa",
     unsigned: "https://github.com/ItzSimooon/slimy-ios/releases/download/build-141/Slimy-unsigned.ipa",
+    apk: "https://github.com/ItzSimooon/slimy-ios/releases/download/build-141/Slimy.apk",
     published: "2026-10-26T17:05:00Z",
   });
 }

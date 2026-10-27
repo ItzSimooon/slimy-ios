@@ -87,7 +87,21 @@ import kotlin.math.min
  * from any coroutine. The app calls [onForeground] and [onBackground] from
  * its lifecycle.
  */
-class FriendsStore(context: Context, private val store: GameStore) {
+class FriendsStore internal constructor(
+    context: Context,
+    private val store: GameStore,
+    /** Where the device token is kept (the Android Keystore in the app). */
+    private val vault: TokenVault,
+    /** A client for slime.hyprnode.de with this token. Tests and screenshots pass a fake server. */
+    private val makeAPI: (token: String?) -> HyprnodeAPI,
+) {
+    constructor(context: Context, store: GameStore) : this(
+        context,
+        store,
+        TokenVault.forContext(context.applicationContext),
+        { token -> HyprnodeAPI(token = token) },
+    )
+
     private val context: Context = context.applicationContext
 
     sealed class Status {
@@ -100,7 +114,6 @@ class FriendsStore(context: Context, private val store: GameStore) {
     data class Visitor(val friend: FriendSlime, val until: Instant)
 
     private val prefs: SharedPreferences = this.context.getSharedPreferences(prefsName, Context.MODE_PRIVATE)
-    private val vault = TokenVault.forContext(this.context)
     /**
      * Where the store's own work runs, on the main thread. Screens launch
      * actions here too, so a request that is on its way finishes even when
@@ -360,7 +373,7 @@ class FriendsStore(context: Context, private val store: GameStore) {
         }
     }
 
-    private val api: HyprnodeAPI get() = HyprnodeAPI(token = token)
+    private val api: HyprnodeAPI get() = makeAPI(token)
 
     /** The slime notification, created on first use by the app. */
     private val island: IslandController? get() = (context as? SlimyApplication)?.island
@@ -571,11 +584,11 @@ class FriendsStore(context: Context, private val store: GameStore) {
      * its way, the new device is deleted again instead of kept.
      */
     private suspend fun register(whileOnline: Boolean = false) {
-        val registration = HyprnodeAPI().register(displayName)
+        val registration = makeAPI(null).register(displayName)
         if ((whileOnline && !_isOnline.value) || deletingAccount || token != null) {
             // Gone offline meanwhile, or another call registered first.
             try {
-                HyprnodeAPI(registration.token).deleteAccount()
+                makeAPI(registration.token).deleteAccount()
             } catch (e: Exception) {
                 if (e is CancellationException) throw e
             }
@@ -1125,7 +1138,7 @@ class FriendsStore(context: Context, private val store: GameStore) {
             _isOnline.value = false
             if (token != null) {
                 try {
-                    HyprnodeAPI(token).deleteAccount()
+                    makeAPI(token).deleteAccount()
                 } catch (e: Exception) {
                     if (e is CancellationException) throw e
                     when {

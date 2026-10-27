@@ -529,7 +529,7 @@ internal fun FriendChallengeRow(challenge: Challenge, play: () -> Unit) {
                 style = MaterialTheme.typography.bodyMedium,
                 color = Theme.inkSoft,
             )
-            Text("Ends ${relativeTime(challenge.expiresAt)}", style = MaterialTheme.typography.bodySmall, color = Theme.inkSoft)
+            Text("Ends ${relativeTimeInSentence(challenge.expiresAt)}", style = MaterialTheme.typography.bodySmall, color = Theme.inkSoft)
         }
         AppButton(
             "Play",
@@ -568,7 +568,7 @@ internal fun FriendChallengeResultRow(challenge: Challenge) {
     val detail = if (mine != null && theirs != null) {
         "You $mine, $friend $theirs"
     } else {
-        "$game · your score ${mine ?: 0} · ends ${relativeTime(challenge.expiresAt)}"
+        "$game · your score ${mine ?: 0} · ends ${relativeTimeInSentence(challenge.expiresAt)}"
     }
     Row(
         Modifier

@@ -3,7 +3,7 @@
 <head>
 <!-- @head -->
 <title>Support · Slimy</title>
-<meta name="description" content="Answers for Slimy: the Dynamic Island, crates, caring for one slime together, your slime's feelings, re-signing the beta, friend codes, reporting and blocking, chat, deleting your data, and how to reach the Slimy team.">
+<meta name="description" content="Answers for Slimy: the Dynamic Island, crates, caring for one slime together, your slime's feelings, re-signing the beta, the Android beta, friend codes, reporting and blocking, chat, deleting your data, and how to reach the Slimy team.">
 <link rel="canonical" href="https://slime.hyprnode.de/support">
 </head>
 <body>
@@ -137,7 +137,14 @@
         </details>
         <details class="faq" id="update">
           <summary>How do I update Slimy?</summary>
-          <div class="answer"><p>Install the new Slimy.ipa over the current app the same way you installed it, with the same Apple ID, and your slime stays. New builds are on the <a href="/install">install page</a>.</p></div>
+          <div class="answer"><p>On iPhone, install the new Slimy.ipa over the current app the same way you installed it, with the same Apple ID, and your slime stays. On Android, download the new Slimy.apk and open it; it installs over the old version. New builds are on the <a href="/install">install page</a>.</p></div>
+        </details>
+        <details class="faq" id="android">
+          <summary>Is there an Android version?</summary>
+          <div class="answer">
+            <p>Yes, as a beta: <b>Slimy.apk</b>, for Android 8 or later. It's the same slime with the same games, crates, friends and chat. Android has no Dynamic Island, so your slime lives in a notification, on the lock screen and in widgets instead.</p>
+            <p>It isn't on Google Play yet. You download the APK from GitHub and allow your browser to install it once. Friends and caring together work between Android and iPhone. Step by step: <a href="/install#android">install on Android</a>.</p>
+          </div>
         </details>
         <details class="faq" id="widgets-empty">
           <summary>My widgets stay empty.</summary>
@@ -216,13 +223,13 @@
         <details class="faq" id="delete-data">
           <summary>How do I delete my data?</summary>
           <div class="answer">
-            <p>Your slime, coins and things live only on your iPhone. To delete what Slimy's server stores about you (your online profile, your friends and what they sent you, and while you care for a slime together, the shared slime and what you both did for it), go to <span class="path"><span>Settings</span><span>Privacy</span><span>Delete My Data on the Server</span></span>. It's removed at once, and caring together stops for both of you.</p>
-            <p>To remove your slime from the iPhone, use <b>Start over</b> in Settings, or delete the app.</p>
+            <p>Your slime, coins and things live only on your phone. To delete what Slimy's server stores about you (your online profile, your friends and what they sent you, and while you care for a slime together, the shared slime and what you both did for it), go to <span class="path"><span>Settings</span><span>Privacy</span><span>Delete My Data on the Server</span></span>. It's removed at once, and caring together stops for both of you.</p>
+            <p>To remove your slime from the phone, use <b>Start over</b> in Settings, or delete the app.</p>
           </div>
         </details>
         <details class="faq" id="move">
-          <summary>How do I move my slime to a new iPhone?</summary>
-          <div class="answer"><p>In Settings under Backup, tap <b>Export Save</b> and keep the file in Files or AirDrop it to the new iPhone. After hatching on the new iPhone, open Settings and tap <b>Import Save</b>; your old slime replaces the new one. Friends aren't part of a save, so add them again after going online.</p></div>
+          <summary>How do I move my slime to a new phone?</summary>
+          <div class="answer"><p>In Settings under Backup, tap <b>Export Save</b> and keep the file in Files, or send it to the new phone. After hatching on the new phone, open Settings and tap <b>Import Save</b>; your old slime replaces the new one. Saves work across iPhone and Android in both directions. Friends aren't part of a save, so add them again after going online.</p></div>
         </details>
         <details class="faq" id="cost">
           <summary>Does Slimy cost anything?</summary>
@@ -236,11 +243,11 @@
   <h2 class="section-title" id="contact">Still stuck?</h2>
   <div class="prose card">
 <!-- @if contact -->
-    <p>Write to us and describe what happened: your iPhone model, the iOS version, the Slimy version (Settings, About Slimy) and what you expected. Screenshots help. A person reads every message.</p>
+    <p>Write to us and describe what happened: your phone model, the iOS or Android version, the Slimy version (Settings, About Slimy) and what you expected. Screenshots help. A person reads every message.</p>
     <p class="actions"><a class="btn" href="mailto:{{contact.email}}?subject=Slimy%20support">Email us</a><a class="btn btn-tint" href="https://github.com/ItzSimooon/slimy-ios/issues">GitHub Issues</a></p>
     <p>Our address is <a href="mailto:{{contact.email}}">{{contact.email}}</a>. Use it for anything personal, like a ban you think is a mistake or a privacy request. GitHub Issues are public, so please don't post your name, friend codes, a save file or anything else personal there.</p>
 <!-- @else -->
-    <p>Open an issue on GitHub and describe what happened: your iPhone model, the iOS version, the Slimy version (Settings, About Slimy) and what you expected. Screenshots help.</p>
+    <p>Open an issue on GitHub and describe what happened: your phone model, the iOS or Android version, the Slimy version (Settings, About Slimy) and what you expected. Screenshots help.</p>
     <p class="actions"><a class="btn" href="https://github.com/ItzSimooon/slimy-ios/issues">Open GitHub Issues</a></p>
     <p>GitHub Issues are public. Please don't post your name, friend codes, a save file or anything else personal there. For a privacy request, say what you need and we'll arrange a private way to talk.</p>
 <!-- @end -->

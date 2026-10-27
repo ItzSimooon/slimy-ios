@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
 <!-- @head -->
-<title>Install the Slimy beta on your iPhone · Slimy</title>
-<meta name="description" content="Install the Slimy beta with Sideloadly on Windows or a Mac: download the IPA, sign it with your Apple ID, trust it on your iPhone, and keep your slime in the Dynamic Island all day.">
+<title>Install the Slimy beta on iPhone or Android · Slimy</title>
+<meta name="description" content="Install the Slimy beta: on iPhone with Sideloadly on Windows or a Mac (download the IPA, sign it with your Apple ID, trust it), or on Android 8 or later straight from the APK. Then keep your slime with you all day.">
 <link rel="canonical" href="https://slime.hyprnode.de/install">
 </head>
 <body>
@@ -13,6 +13,7 @@
     <span class="tag tag-live">Beta, available now</span>
     <h1>Install the beta.</h1>
     <p class="lede">Slimy is on its way to the App Store. Until it's there, you can install the beta on your iPhone with Sideloadly, your Apple ID and a cable. It takes about ten minutes.</p>
+    <a class="more" href="#android">On Android? Install the APK</a>
   </header>
 
   <div class="install-top">
@@ -128,6 +129,66 @@
     </section>
   </div>
 
+  <h2 class="section-title" id="android">On Android: install the APK</h2>
+  <div class="install-top">
+    <section class="dl-card card" aria-labelledby="apk-title">
+      <span class="tag tag-live">Android beta</span>
+      <h2 id="apk-title">Slimy.apk</h2>
+      <p class="copy">The same slime on Android, with no computer and no account. Android has no Dynamic Island, so your slime lives in a notification, on the lock screen and in widgets.</p>
+      <p class="release-line" data-release-ready hidden>Newest beta: <b data-release-name>Slimy</b>, published <time data-release-date></time>.</p>
+      <div class="dl-actions">
+        <a class="btn" href="https://github.com/ItzSimooon/slimy-ios/releases" data-apk>
+          <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v10m0 0-4-4m4 4 4-4M4 16.5h12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Download Slimy.apk
+        </a>
+        <a class="btn btn-tint" href="https://github.com/ItzSimooon/slimy-ios/releases" data-download>All files on GitHub</a>
+      </div>
+      <p class="note"><canvas data-item="gear" data-scale="3"></canvas><span>The APK comes from GitHub, not from Google Play, so Android asks once before it installs apps from your browser. It's the same build that's tested and published with every release.</span></p>
+    </section>
+
+    <section class="req-card card" aria-labelledby="apk-req-title">
+      <h2 id="apk-req-title">You need</h2>
+      <ul class="req-list">
+        <li>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="2.5" width="11" height="19" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="9.5" y="5" width="5" height="1.6" rx=".8" fill="currentColor"/></svg>
+          <span><b>An Android phone with Android 8 or later</b>You'll find the version in the Settings app under About phone. Tablets work too.</span>
+        </li>
+        <li>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.8 5 5.6v5.6c0 4.4 3 8.3 7 9.6 4-1.3 7-5.2 7-9.6V5.6z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="m8.8 12 2.2 2.2 4.2-4.4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span><b>Permission to install this app</b>Android asks for it the first time you open the APK. You can turn it off again once Slimy is installed.</span>
+        </li>
+      </ul>
+    </section>
+  </div>
+
+  <ol class="howto" aria-label="Install the APK on Android">
+    <li>
+      <h3>Download the APK</h3>
+      <p>Open this page on your Android phone and tap <b>Download Slimy.apk</b>. If the browser warns that the file might be harmful, tap <b>Download anyway</b>.</p>
+    </li>
+    <li>
+      <h3>Allow installing from this source</h3>
+      <p>Open the download. Android first asks whether your browser may install apps: tap <b>Settings</b>, turn on <b>Allow from this source</b>, then go back.</p>
+    </li>
+    <li>
+      <h3>Install Slimy</h3>
+      <p>Tap <b>Install</b>. If Google Play Protect says it doesn't know the app, that's because Slimy isn't on Google Play: tap <b>More details</b> and <b>Install anyway</b>.</p>
+    </li>
+    <li>
+      <h3>Hatch your slime</h3>
+      <p>Open Slimy, tap the egg, give your slime a name and a colour, and tap <b>Hatch</b>. Then tap <b>Keep It in Notifications</b> and allow notifications, and your slime stays with you outside the app.</p>
+    </li>
+  </ol>
+
+  <h2 class="section-title" id="android-updates">Updates on Android</h2>
+  <div class="prose card">
+    <p>A new build installs over the old one: download the newest <code>Slimy.apk</code> and open it. Your slime stays, and there's nothing to re-sign and no 7-day limit.</p>
+    <ul>
+      <li>Don't uninstall Slimy to update it. Uninstalling deletes the slime.</li>
+      <li>To be safe, export a save now and then: <span class="path"><span>Settings</span><span>Backup</span><span>Export Save</span></span> in Slimy. Saves move between Android and iPhone in both directions.</li>
+    </ul>
+  </div>
+
   <h2 class="section-title" id="trouble">If something doesn't work</h2>
   <div class="group" data-faq>
     <details class="faq" id="unable">
@@ -141,6 +202,10 @@
     <details class="faq" id="three-apps">
       <summary>Sideloadly says I've reached the app limit.</summary>
       <div class="answer"><p>A free Apple ID can have three sideloaded apps installed at a time. Remove one you don't need, or use another Apple ID.</p></div>
+    </details>
+    <details class="faq" id="apk-blocked">
+      <summary>Android won't install Slimy.apk.</summary>
+      <div class="answer"><p>Make sure the phone runs Android 8 or later and the download finished. If Android says an app with the same name is already installed, the old Slimy was signed differently: export a save, uninstall it, install the new APK and import the save. On a work phone, your company may not allow apps from outside Google Play.</p></div>
     </details>
     <details class="faq" id="widgets">
       <summary>The widgets stay empty.</summary>

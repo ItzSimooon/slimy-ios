@@ -221,7 +221,7 @@ private fun Header(friend: Friend) {
                 },
             )
         }
-        SectionFooter("Updated ${relativeTime(friend.slime.updatedAt)}.")
+        SectionFooter("Updated ${relativeTimeInSentence(friend.slime.updatedAt)}.")
     }
 }
 

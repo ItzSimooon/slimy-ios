@@ -161,7 +161,7 @@ fun PhotoBoothScreen(onClose: () -> Unit) {
     fun saved() {
         saving = SaveState.saved
         Feedback.shared.play(Sound.success)
-        announce("Saved to Photos")
+        announce("Saved to Pictures")
         scope.launch {
             delay(2_000)
             if (saving == SaveState.saved) saving = SaveState.idle
@@ -238,6 +238,8 @@ fun PhotoBoothScreen(onClose: () -> Unit) {
                                 selected = format == option,
                                 onClick = { format = option },
                                 shape = SegmentedButtonDefaults.itemShape(index, BoothFormat.entries.size),
+                                // Unselected segments show the card, not the black or grey page behind it.
+                                colors = SegmentedButtonDefaults.colors(inactiveContainerColor = Color.Transparent),
                             ) { Text(option.title, maxLines = 1) }
                         }
                     }
@@ -257,6 +259,7 @@ fun PhotoBoothScreen(onClose: () -> Unit) {
                         selection = habitat,
                         onSelect = { place = it },
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                        bleed = 12.dp,
                     )
                 }
 
@@ -267,6 +270,8 @@ fun PhotoBoothScreen(onClose: () -> Unit) {
                                 selected = light == option,
                                 onClick = { light = option },
                                 shape = SegmentedButtonDefaults.itemShape(index, BoothLight.entries.size),
+                                // Unselected segments show the card, not the black or grey page behind it.
+                                colors = SegmentedButtonDefaults.colors(inactiveContainerColor = Color.Transparent),
                             ) { Text(option.title, maxLines = 1) }
                         }
                     }
@@ -432,7 +437,7 @@ private fun ShareBar(ready: Boolean, saving: SaveState, onSave: () -> Unit, onSh
             ) {
                 val saved = saving == SaveState.saved
                 AppButton(
-                    title = if (saved) "Saved" else "Save to Photos",
+                    title = if (saved) "Saved" else "Save Image",
                     systemIcon = if (saved) Icons.Filled.CheckCircle else Icons.Filled.Download,
                     kind = AppButtonKind.secondary,
                     enabled = ready && saving != SaveState.saving,

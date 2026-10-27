@@ -535,7 +535,7 @@ private fun WaitingSection(actions: FriendActionCenter) {
                         fontWeight = FontWeight.SemiBold,
                         color = Theme.ink,
                     )
-                    Text("Sent ${relativeTime(request.createdAt)}", style = MaterialTheme.typography.bodySmall, color = Theme.inkSoft)
+                    Text("Sent ${relativeTimeInSentence(request.createdAt)}", style = MaterialTheme.typography.bodySmall, color = Theme.inkSoft)
                 }
                 TextButton(
                     onClick = { actions.perform(success = "Request withdrawn.") { friends.decline(request) } },

@@ -1,9 +1,11 @@
 name: Build
 
 # Every branch and pull request is built and tested. Only a push to main
-# publishes a release with the IPAs, and only when the unit tests, the server
-# tests and the IPA build all passed. Screenshots are taken on every run and,
-# for pushes, replace the contents of the "ci-screenshots" branch.
+# publishes a release with the IPAs and the Android APK, and only when the
+# unit tests, the server tests, the IPA build and the Android build all
+# passed. Screenshots are taken on every run and, for pushes, replace the
+# iPhone set (top level) or the Android set (android/) of the
+# "ci-screenshots" branch.
 on:
   push:
     branches-ignore: [ci-screenshots]
@@ -169,11 +171,103 @@ jobs:
             Slimy.ipa
             Slimy-unsigned.ipa
 
+  android:
+    name: Android (tests, APK, screenshots)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      # The repo has no Gradle wrapper: this installs Gradle 8.9 and caches
+      # the Gradle home (dependencies, build cache) between runs.
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.9"
+      # Robolectric fetches its Android runtime from Maven Central into ~/.m2.
+      - uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository/org/robolectric
+          key: robolectric-${{ runner.os }}-${{ hashFiles('android/gradle/libs.versions.toml') }}
+      - name: Android SDK
+        run: |
+          # Preinstalled on GitHub's Ubuntu runners; Gradle adds missing packages itself.
+          sdk="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+          if [ ! -d "$sdk" ]; then
+            echo "::error::No Android SDK at $sdk"
+            exit 1
+          fi
+          echo "ANDROID_HOME=$sdk" >> "$GITHUB_ENV"
+          echo "sdk.dir=$sdk" > android/local.properties
+      - name: Release signing key
+        env:
+          KEYSTORE_BASE64: ${{ secrets.SLIMY_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.SLIMY_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.SLIMY_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.SLIMY_KEY_PASSWORD }}
+        run: |
+          # android/app/build.gradle.kts signs with SLIMY_KEYSTORE when that
+          # file exists; the passwords reach only the build step below.
+          if [ -n "$KEYSTORE_BASE64" ] && [ -n "$KEYSTORE_PASSWORD" ] && [ -n "$KEY_ALIAS" ] && [ -n "$KEY_PASSWORD" ]; then
+            keystore="$RUNNER_TEMP/slimy-release.keystore"
+            printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$keystore"
+            echo "SLIMY_KEYSTORE=$keystore" >> "$GITHUB_ENV"
+            echo "Release signing: the Slimy key from the repository secrets."
+          else
+            echo "::warning title=Slimy.apk is signed with a debug key::Set the repository secrets SLIMY_KEYSTORE_BASE64, SLIMY_KEYSTORE_PASSWORD, SLIMY_KEY_ALIAS and SLIMY_KEY_PASSWORD to sign it with the release key. Every run makes a new debug key, and Android only installs an update over an APK signed with the same key."
+          fi
+      - name: Test, record screenshots and build the APK
+        working-directory: android
+        env:
+          SLIMY_KEYSTORE_PASSWORD: ${{ secrets.SLIMY_KEYSTORE_PASSWORD }}
+          SLIMY_KEY_ALIAS: ${{ secrets.SLIMY_KEY_ALIAS }}
+          SLIMY_KEY_PASSWORD: ${{ secrets.SLIMY_KEY_PASSWORD }}
+        # recordRoborazziDebug runs the unit tests once, with recording on:
+        # every screen in light and dark goes to app/build/outputs/roborazzi.
+        run: gradle :model:test :app:testDebugUnitTest :app:recordRoborazziDebug :app:assembleRelease --console=plain
+      - name: Package Slimy.apk
+        run: |
+          cp android/app/build/outputs/apk/release/app-release.apk Slimy.apk
+          ls -lh Slimy.apk
+          apksigner="$(ls -d "$ANDROID_HOME"/build-tools/*/apksigner 2>/dev/null | sort -V | tail -n 1)"
+          if [ -n "$apksigner" ]; then
+            "$apksigner" verify --print-certs Slimy.apk | grep -E "Signer #1 certificate (DN|SHA-256)" || true
+          fi
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: android-test-reports
+          path: |
+            android/model/build/reports/tests/
+            android/app/build/reports/tests/
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Slimy-apk
+          path: Slimy.apk
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: android-screenshots
+          path: android/app/build/outputs/roborazzi/*.png
+          if-no-files-found: ignore
+      - name: Publish to the ci-screenshots branch
+        if: github.event_name == 'push'
+        # Nice to have: a failed push never fails the build or holds up the release.
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bash tools/ci_publish_screenshots.sh android/app/build/outputs/roborazzi android
+
   release:
     name: Publish release
-    # The website's Download button serves the newest release, so a build
+    # The website's Download buttons serve the newest release, so a build
     # whose tests failed must never become one.
-    needs: [ipa, tests, server]
+    needs: [ipa, tests, server, android]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
@@ -182,6 +276,9 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: Slimy-ipa
+      - uses: actions/download-artifact@v4
+        with:
+          name: Slimy-apk
       - name: Publish download
         uses: softprops/action-gh-release@v2
         with:
@@ -193,10 +290,12 @@ jobs:
           files: |
             Slimy.ipa
             Slimy-unsigned.ipa
+            Slimy.apk
           body: |
             Build of ${{ github.sha }}.
             Slimy.ipa: ad-hoc signed with the App Group entitlement (needed for the Home Screen widgets). Install it with Sideloadly and your Apple ID.
             Slimy-unsigned.ipa: the same app without entitlements. Use it if your sideloading tool rejects the App Group; the app then keeps its save inside the app and the Home Screen widgets show a placeholder.
+            Slimy.apk: the Android beta, for Android 8 or later. Open it on the phone and allow installing from that source when Android asks. A newer APK installs over the old one and keeps the save.
 
   screenshots:
     name: Screenshots (simulator)
@@ -246,4 +345,4 @@ jobs:
         if: github.event_name == 'push'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: bash tools/ci_publish_screenshots.sh screenshots
+        run: bash tools/ci_publish_screenshots.sh screenshots ios

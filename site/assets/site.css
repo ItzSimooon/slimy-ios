@@ -307,6 +307,7 @@ h3 { font-size: 21px; line-height: 1.24; font-weight: 700; letter-spacing: -.012
 .page-head h1 { font-size: clamp(38px, 5vw, 60px); }
 .page-head .lede { margin-top: 16px; }
 .page-head .tag { margin-bottom: 18px; }
+.page-head .more { margin-top: 10px; }
 .page-meta { margin-top: 14px; font-size: 15px; color: var(--label-body); }
 
 .section-title { font-size: clamp(26px, 3vw, 34px); line-height: 1.12; letter-spacing: -.022em; margin: 56px 0 18px; }

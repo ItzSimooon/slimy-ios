@@ -192,6 +192,9 @@ class GameStore internal constructor(
 
     val slime: Slime get() = _state.value.slime
 
+    /** Where crate rolls get their luck. Screenshot tests pin it, so the same reward shows on every run. */
+    internal var crateSeed: () -> ULong = { randomSeed() }
+
     // MARK: Hooks
 
     fun addHooks(hooks: Hooks) {
@@ -402,7 +405,7 @@ class GameStore internal constructor(
     /** Opens a crate and hands out what was in it. Null if there is none of that kind. No toast. */
     fun openCrate(kind: CrateKind): CrateReward? {
         var reward: CrateReward? = null
-        val seed = randomSeed()
+        val seed = crateSeed()
         apply(toast = false) { s ->
             val opened = s.openCrate(kind, Instant.now(), seed) ?: return@apply Outcome(ok = false, line = "")
             reward = opened.reward

@@ -136,7 +136,7 @@ fun JournalScreen(onClose: () -> Unit, onPhotoBooth: () -> Unit) {
                     },
                 )
             }
-            ChipTabs(options = JournalTab.entries.map { it to it.title }, selection = tab, onSelect = { tab = it })
+            ChipTabs(options = JournalTab.entries.map { it to it.title }, selection = tab, onSelect = { tab = it }, bleed = 16.dp)
             when (tab) {
                 JournalTab.challenges -> ChallengesContent(s)
                 JournalTab.achievements -> AchievementsContent(s)

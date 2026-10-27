@@ -3,6 +3,8 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
+    // Screenshot tests: recordRoborazziDebug writes PNGs to build/outputs/roborazzi.
+    alias(libs.plugins.roborazzi)
 }
 
 // Release signing comes from the environment (CI secrets or a local shell),
@@ -52,6 +54,19 @@ android {
     buildFeatures {
         compose = true
     }
+    testOptions {
+        unitTests {
+            // Robolectric needs the merged manifest, resources and assets
+            // (sprites.json, the Pixelify font) for the screenshot tests.
+            isIncludeAndroidResources = true
+            all {
+                it.maxHeapSize = "3g"
+                // Compose renders for real (Skia), not as empty Robolectric shadows.
+                it.systemProperty("robolectric.graphicsMode", "NATIVE")
+                it.systemProperty("robolectric.pixelCopyRenderMode", "hardware")
+            }
+        }
+    }
 
     // The same pixel art and font as the iPhone app, straight from Shared/.
     sourceSets["main"].assets.srcDirs("src/main/assets", "../../Shared/Sprites", "../../Shared/Fonts", "../../Resources/Sounds")
@@ -88,4 +103,13 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
 
     testImplementation(libs.junit)
+    // Screenshot tests on the JVM (src/test/.../screenshots): no emulator needed.
+    testImplementation(platform(libs.androidx.compose.bom))
+    testImplementation(libs.androidx.ui.test.junit4)
+    testImplementation(libs.androidx.ui.test.manifest)
+    testImplementation(libs.androidx.test.ext.junit)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.roborazzi)
+    testImplementation(libs.roborazzi.compose)
+    testImplementation(libs.roborazzi.junit.rule)
 }

@@ -70,6 +70,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.semantics.Role
@@ -420,18 +421,35 @@ private val BubbleTail = GenericShape { size, _ ->
     close()
 }
 
-/** A row of filter chips that scrolls sideways. 48 dp to tap, 36 dp to see. */
+/**
+ * A row of filter chips that scrolls sideways. 48 dp to tap, 36 dp to see.
+ * [bleed] is the margin around the row: the chips start in line with the
+ * content but scroll on through that margin to the edge, instead of being
+ * cut off at an invisible line.
+ */
 @Composable
 fun <T> ChipTabs(
     options: List<Pair<T, String>>,
     selection: T,
     onSelect: (T) -> Unit,
     modifier: Modifier = Modifier,
+    bleed: Dp = 0.dp,
 ) {
     Row(
         modifier
+            .layout { measurable, constraints ->
+                val extra = bleed.roundToPx() * 2
+                val wide = if (constraints.hasBoundedWidth) {
+                    constraints.copy(minWidth = constraints.minWidth + extra, maxWidth = constraints.maxWidth + extra)
+                } else {
+                    constraints
+                }
+                val placeable = measurable.measure(wide)
+                val width = (placeable.width - extra).coerceAtLeast(constraints.minWidth)
+                layout(width, placeable.height) { placeable.place(-extra / 2, 0) }
+            }
             .horizontalScroll(rememberScrollState())
-            .padding(vertical = 2.dp),
+            .padding(horizontal = bleed, vertical = 2.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         for ((value, title) in options) {

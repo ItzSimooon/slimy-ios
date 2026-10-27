@@ -645,7 +645,7 @@ private fun EmptyBoard(icon: ImageVector, title: String, detail: String, action:
 private fun Board(games: List<LeaderboardGame>, selection: GameID?, select: (GameID) -> Unit) {
     val current = games.firstOrNull { it.game == selection } ?: games[0]
     if (games.size > 1) {
-        ChipTabs(options = games.map { it.game to it.game.title }, selection = current.game, onSelect = select)
+        ChipTabs(options = games.map { it.game to it.game.title }, selection = current.game, onSelect = select, bleed = 16.dp)
     }
     GroupedSection(header = current.game.title, footer = leaderboardSummary(current)) {
         for ((i, entry) in current.entries.withIndex()) {

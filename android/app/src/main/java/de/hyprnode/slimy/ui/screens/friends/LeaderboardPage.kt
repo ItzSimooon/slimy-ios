@@ -151,6 +151,7 @@ internal fun LeaderboardPage(onBack: (() -> Unit)?, onClose: () -> Unit, game: G
                                     options = games.map { it.game to it.game.title },
                                     selection = current.game,
                                     onSelect = { selection = it },
+                                    bleed = 16.dp,
                                 )
                             }
                         }

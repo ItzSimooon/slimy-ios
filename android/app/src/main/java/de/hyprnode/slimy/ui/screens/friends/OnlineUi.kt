@@ -137,6 +137,18 @@ internal fun shareText(context: Context, text: String) {
 internal fun relativeTime(date: Instant, now: Instant = Instant.now()): String =
     DateUtils.getRelativeTimeSpanString(date.toEpochMilli(), now.toEpochMilli(), DateUtils.MINUTE_IN_MILLIS).toString()
 
+/**
+ * [relativeTime] inside a sentence ("Ends in 2 days", "Sent yesterday"):
+ * Android capitalises "In", "Yesterday" and "Tomorrow" for a label of their
+ * own. Dates ("Oct 25") keep their capitals.
+ */
+internal fun relativeTimeInSentence(date: Instant, now: Instant = Instant.now()): String {
+    val text = relativeTime(date, now)
+    return if (text.substringBefore(' ') in sentenceStarts) text.replaceFirstChar { it.lowercaseChar() } else text
+}
+
+private val sentenceStarts = setOf("In", "Yesterday", "Tomorrow", "Today", "Now")
+
 /** The time of day in the phone's 12 or 24 hour style (`.formatted(date: .omitted, time: .shortened)`). */
 internal fun shortTime(context: Context, date: Instant): String = DateFormat.getTimeFormat(context).format(Date.from(date))
 

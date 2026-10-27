@@ -189,16 +189,19 @@ object PixelCache {
 
 /**
  * Draws a pixel bitmap fitted into the draw area: a whole number of device
- * pixels per art pixel (fractional only when the area is smaller than the
- * art), centred horizontally and aligned to the bottom (slimes) or centred
- * (items), never smoothed.
+ * pixels per art pixel, centred horizontally and aligned to the bottom
+ * (slimes) or centred (items), never smoothed. Only where whole pixels would
+ * shrink the art by more than a fifth (small portraits such as the chat
+ * avatar, where 2.9 would become 2) it takes the exact fit instead, so it
+ * keeps the size the iPhone app gives it.
  */
 fun DrawScope.drawPixels(image: ImageBitmap, bottom: Boolean = false, alpha: Float = 1f) {
     val cols = image.width
     val rows = image.height
     if (cols <= 0 || rows <= 0 || size.width <= 0f || size.height <= 0f) return
     val fit = min(size.width / cols, size.height / rows)
-    val px = if (fit >= 1f) floor(fit) else fit
+    val whole = floor(fit)
+    val px = if (whole >= 1f && whole >= fit * 0.8f) whole else fit
     val w = cols * px
     val h = rows * px
     val x = (size.width - w) / 2
