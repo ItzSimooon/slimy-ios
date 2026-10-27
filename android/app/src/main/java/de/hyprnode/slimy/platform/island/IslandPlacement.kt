@@ -182,12 +182,14 @@ data class IslandPlacement(
         const val artAspect = 24f / 20f
 
         // Sizes in dp, close to the Dynamic Island's proportions.
-        private const val ringAroundLens = 11f
-        private const val minHeight = 30f
-        private const val maxHeight = 38f
-        private const val floorHeight = 26f
+        private const val ringAroundLens = 7f
+        private const val minHeight = 24f
+        private const val maxHeight = 30f
+        private const val floorHeight = 22f
+        /** How far the island stays inside the status bar's height (dp). */
+        private const val statusBarInset = 4f
         private const val topGap = 2f
-        private const val freeHeight = 34f
+        private const val freeHeight = 28f
         private const val belowStatusBar = 6f
         private const val edgeMargin = 6f
         private const val contentGap = 7f
@@ -242,6 +244,9 @@ data class IslandPlacement(
                     val y = cy + dy
                     hole = PxRect(cx - diameter / 2, y - diameter / 2, cx + diameter / 2, y + diameter / 2)
                     height = (diameter + dp(2 * ringAroundLens)).coerceIn(dp(minHeight), dp(maxHeight))
+                    // Like the Dynamic Island, it stays within the status bar's
+                    // height instead of hanging below it.
+                    if (screen.statusBar > 0) height = min(height, screen.statusBar - dp(statusBarInset))
                     // Centred on the lens, but not glued to the top edge.
                     height = min(height, 2 * (y - dp(topGap)))
                     height = max(height, max(dp(floorHeight), diameter + dp(8f)))

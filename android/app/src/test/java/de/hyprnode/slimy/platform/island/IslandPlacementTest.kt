@@ -41,8 +41,9 @@ class IslandPlacementTest {
         assertNear(hole.centerX, p.pill.centerX)
         assertNear(hole.centerY, p.pill.centerY)
         assertTrue(p.pill.contains(hole))
-        // About the Dynamic Island's height, a perfect capsule.
-        assertTrue(p.pill.height in dp(30f)..dp(38f))
+        // Slim like the Dynamic Island, a perfect capsule within the status bar.
+        assertTrue(p.pill.height in dp(24f)..dp(30f))
+        assertTrue(p.pill.height <= statusBar - dp(4f) + 0.5f)
         assertEquals(p.pill.height / 2, p.pillRadius, 0.01f)
         assertFalse(p.flushTop)
         // Slime left of the camera, badge right of it, both clear of the lens.
@@ -132,7 +133,20 @@ class IslandPlacementTest {
     fun lensCloseToTheTopKeepsTheIslandOnScreen() {
         val p = IslandPlacement.of(punchHole(206f, cy = 12f, diameter = 10f))
         assertTrue(p.pill.top >= 0f)
-        assertTrue(p.pill.height >= dp(26f) - 0.5f)
+        assertTrue(p.pill.height >= dp(22f) - 0.5f)
+        assertTrue(p.pill.contains(p.hole!!))
+    }
+
+    @Test
+    fun staysWithinAShortStatusBar() {
+        // A typical phone: a 28 dp status bar and a small lens. The island must
+        // not hang below the status bar (it looked bulky when it did).
+        val bar = (28 * d).toInt()
+        val r = dp(6f)
+        val lens = PxRect(dp(206f) - r, dp(14f) - r, dp(206f) + r, dp(14f) + r)
+        val p = IslandPlacement.of(IslandScreen(width, height, d, bar, listOf(lens)))
+        assertTrue(p.pill.height <= bar - dp(4f) + 0.5f)
+        assertTrue(p.pill.bottom <= bar + 0.5f)
         assertTrue(p.pill.contains(p.hole!!))
     }
 
