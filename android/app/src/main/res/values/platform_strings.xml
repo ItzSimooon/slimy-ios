@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Widgets -->
+    <string name="widget_small_label">Slime</string>
+    <string name="widget_small_description">Your slime and how it\'s doing.</string>
+    <string name="widget_medium_label">Slime and needs</string>
+    <string name="widget_medium_description">Your slime, its needs, and buttons to feed and pet it.</string>
+    <string name="widget_preview_name">Blob</string>
+    <string name="widget_preview_status">Happy</string>
+    <string name="widget_preview_detail">All needs looked after.</string>
+    <string name="widget_preview_feed">Feed</string>
+    <string name="widget_preview_pet">Pet</string>
+
+    <!-- Launcher shortcuts -->
+    <string name="shortcut_feed_short">Feed</string>
+    <string name="shortcut_feed_long">Feed your slime</string>
+    <string name="shortcut_play_short">Play</string>
+    <string name="shortcut_play_long">Play with your slime</string>
+    <string name="shortcut_talk_short">Talk</string>
+    <string name="shortcut_talk_long">Talk to your slime</string>
+    <string name="shortcut_summon_short">Summon Slime</string>
+    <string name="shortcut_summon_long">Bring your slime to your notifications</string>
+</resources>

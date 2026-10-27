@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A need button in the expanded slime notification. -->
+<ripple xmlns:android="http://schemas.android.com/apk/res/android"
+    android:color="@color/slime_tile_pressed">
+    <item>
+        <shape android:shape="rectangle">
+            <corners android:radius="14dp" />
+            <solid android:color="@color/slime_tile" />
+        </shape>
+    </item>
+</ripple>

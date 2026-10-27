@@ -39,7 +39,60 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="https" android:host="slime.hyprnode.de" android:pathPrefix="/f/" />
             </intent-filter>
+            <!-- Launcher shortcuts: Feed, Play, Talk, Summon Slime. -->
+            <meta-data
+                android:name="android.app.shortcuts"
+                android:resource="@xml/shortcuts" />
         </activity>
+
+        <!-- Feed and Summon Slime from the launcher, without opening the app. -->
+        <activity
+            android:name=".platform.ShortcutActivity"
+            android:excludeFromRecents="true"
+            android:exported="true"
+            android:noHistory="true"
+            android:taskAffinity=""
+            android:theme="@android:style/Theme.NoDisplay" />
+
+        <!-- The slime notification's buttons. -->
+        <receiver
+            android:name=".platform.IslandActionReceiver"
+            android:exported="false" />
+
+        <!-- Brings the slime notification back and replans reminders after a restart or an update. -->
+        <receiver
+            android:name=".platform.BootReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Home-screen widgets (Glance). -->
+        <receiver
+            android:name=".platform.SlimeSmallWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_small_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/slime_small_widget_info" />
+        </receiver>
+
+        <receiver
+            android:name=".platform.SlimeMediumWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_medium_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/slime_medium_widget_info" />
+        </receiver>
 
         <!-- Shares exported saves (cache/exports) with other apps. -->
         <provider

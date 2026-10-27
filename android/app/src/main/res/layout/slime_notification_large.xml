@@ -1,0 +1,215 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The slime notification, expanded: the slime with its name, level or
+     friend and what it says, friends beside it, and the five needs as
+     buttons that look after it without opening the app (Play opens the arcade). -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <ImageView
+            android:id="@+id/big_slime"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/big_name"
+                    style="@style/TextAppearance.Compat.Notification.Title"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:singleLine="true" />
+
+                <ImageView
+                    android:id="@+id/big_badge"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:importantForAccessibility="no" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/big_detail"
+                style="@style/TextAppearance.Compat.Notification.Info"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:singleLine="true" />
+
+            <TextView
+                android:id="@+id/big_line"
+                style="@style/TextAppearance.Compat.Notification"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:ellipsize="end"
+                android:maxLines="2" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/big_friends"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:gravity="bottom"
+            android:orientation="horizontal"
+            android:visibility="gone">
+
+            <ImageView
+                android:id="@+id/friend_1"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:visibility="gone" />
+
+            <ImageView
+                android:id="@+id/friend_2"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="2dp"
+                android:visibility="gone" />
+
+            <ImageView
+                android:id="@+id/friend_3"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="2dp"
+                android:visibility="gone" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:baselineAligned="false"
+        android:orientation="horizontal">
+
+        <LinearLayout
+            android:id="@+id/tile_hunger"
+            style="@style/SlimeNotificationTile"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1">
+
+            <ImageView
+                android:id="@+id/icon_hunger"
+                style="@style/SlimeNotificationTileIcon" />
+
+            <ProgressBar
+                android:id="@+id/bar_hunger"
+                style="@style/SlimeNotificationTileBar"
+                android:progressDrawable="@drawable/need_bar_hunger" />
+
+            <TextView
+                android:id="@+id/label_hunger"
+                style="@style/SlimeNotificationTileLabel" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/tile_fun"
+            style="@style/SlimeNotificationTile"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="6dp"
+            android:layout_weight="1">
+
+            <ImageView
+                android:id="@+id/icon_fun"
+                style="@style/SlimeNotificationTileIcon" />
+
+            <ProgressBar
+                android:id="@+id/bar_fun"
+                style="@style/SlimeNotificationTileBar"
+                android:progressDrawable="@drawable/need_bar_fun" />
+
+            <TextView
+                android:id="@+id/label_fun"
+                style="@style/SlimeNotificationTileLabel" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/tile_energy"
+            style="@style/SlimeNotificationTile"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="6dp"
+            android:layout_weight="1">
+
+            <ImageView
+                android:id="@+id/icon_energy"
+                style="@style/SlimeNotificationTileIcon" />
+
+            <ProgressBar
+                android:id="@+id/bar_energy"
+                style="@style/SlimeNotificationTileBar"
+                android:progressDrawable="@drawable/need_bar_energy" />
+
+            <TextView
+                android:id="@+id/label_energy"
+                style="@style/SlimeNotificationTileLabel" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/tile_clean"
+            style="@style/SlimeNotificationTile"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="6dp"
+            android:layout_weight="1">
+
+            <ImageView
+                android:id="@+id/icon_clean"
+                style="@style/SlimeNotificationTileIcon" />
+
+            <ProgressBar
+                android:id="@+id/bar_clean"
+                style="@style/SlimeNotificationTileBar"
+                android:progressDrawable="@drawable/need_bar_clean" />
+
+            <TextView
+                android:id="@+id/label_clean"
+                style="@style/SlimeNotificationTileLabel" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/tile_love"
+            style="@style/SlimeNotificationTile"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="6dp"
+            android:layout_weight="1">
+
+            <ImageView
+                android:id="@+id/icon_love"
+                style="@style/SlimeNotificationTileIcon" />
+
+            <ProgressBar
+                android:id="@+id/bar_love"
+                style="@style/SlimeNotificationTileBar"
+                android:progressDrawable="@drawable/need_bar_love" />
+
+            <TextView
+                android:id="@+id/label_love"
+                style="@style/SlimeNotificationTileLabel" />
+        </LinearLayout>
+    </LinearLayout>
+</LinearLayout>

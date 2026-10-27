@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Launcher shortcuts, the counterpart of the iPhone app's App Shortcuts.
+     Feed and Summon Slime run without opening the app (ShortcutActivity, an
+     invisible trampoline); Play opens the arcade, Talk the chat. -->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_feed"
+        android:shortcutId="feed"
+        android:shortcutLongLabel="@string/shortcut_feed_long"
+        android:shortcutShortLabel="@string/shortcut_feed_short">
+        <intent
+            android:action="de.hyprnode.slimy.action.FEED"
+            android:targetClass="de.hyprnode.slimy.platform.ShortcutActivity"
+            android:targetPackage="de.hyprnode.slimy" />
+    </shortcut>
+
+    <shortcut
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_play"
+        android:shortcutId="play"
+        android:shortcutLongLabel="@string/shortcut_play_long"
+        android:shortcutShortLabel="@string/shortcut_play_short">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetClass="de.hyprnode.slimy.MainActivity"
+            android:targetPackage="de.hyprnode.slimy">
+            <extra
+                android:name="slimy.open"
+                android:value="arcade" />
+        </intent>
+    </shortcut>
+
+    <shortcut
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_talk"
+        android:shortcutId="talk"
+        android:shortcutLongLabel="@string/shortcut_talk_long"
+        android:shortcutShortLabel="@string/shortcut_talk_short">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetClass="de.hyprnode.slimy.MainActivity"
+            android:targetPackage="de.hyprnode.slimy">
+            <extra
+                android:name="slimy.open"
+                android:value="chat" />
+        </intent>
+    </shortcut>
+
+    <shortcut
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_summon"
+        android:shortcutId="summon"
+        android:shortcutLongLabel="@string/shortcut_summon_long"
+        android:shortcutShortLabel="@string/shortcut_summon_short">
+        <intent
+            android:action="de.hyprnode.slimy.action.SUMMON"
+            android:targetClass="de.hyprnode.slimy.platform.ShortcutActivity"
+            android:targetPackage="de.hyprnode.slimy" />
+    </shortcut>
+</shortcuts>

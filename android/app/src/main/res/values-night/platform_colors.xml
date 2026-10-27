@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Colours of the slime notification and the widgets, dark mode: Brand's
+     pixel colours as they are. -->
+<resources>
+    <color name="need_hunger">#F2A65A</color>
+    <color name="need_fun">#6CC4E8</color>
+    <color name="need_energy">#E8D55A</color>
+    <color name="need_clean">#7FD9B0</color>
+    <color name="need_love">#F07A9A</color>
+    <color name="need_track">#33FFFFFF</color>
+    <color name="slime_tile">#1FFFFFFF</color>
+    <color name="slime_tile_pressed">#33FFFFFF</color>
+    <color name="slime_icon">#4CC764</color>
+    <color name="widget_preview_background">#1C1C1E</color>
+    <color name="widget_preview_text">#FFFFFF</color>
+    <color name="widget_preview_secondary">#AEAEB2</color>
+</resources>

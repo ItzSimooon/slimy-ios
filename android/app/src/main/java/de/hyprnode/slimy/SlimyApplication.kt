@@ -13,18 +13,27 @@ import de.hyprnode.slimy.core.GameStore
 import de.hyprnode.slimy.model.SlimeSprites
 import de.hyprnode.slimy.online.ChatStore
 import de.hyprnode.slimy.online.FriendsStore
+import de.hyprnode.slimy.platform.BackgroundRefresh
 import de.hyprnode.slimy.platform.IslandController
 import de.hyprnode.slimy.platform.Notifier
 import de.hyprnode.slimy.platform.PhoneMonitor
+import de.hyprnode.slimy.platform.PlatformHooks
+import de.hyprnode.slimy.platform.SlimeWidgets
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 
 /**
  * Process-wide setup: the stores live here so the activity, widgets, workers
  * and notification actions all share one game.
  *
  * The clock follows the iPhone app: coming to the front greets you
- * (`arrive`), refreshes today's plan and starts the music; while in front
- * the world ticks once a minute; going to the background stops the music
- * and writes the save to disk.
+ * (`arrive`), refreshes today's plan, starts the music, plans reminders,
+ * watches the phone, brings the slime notification up and checks on
+ * friends; while in front the world ticks once a minute; going to the
+ * background stops the music, settles the notification, asks for a check
+ * while charging and writes the save to disk.
  */
 class SlimyApplication : Application() {
     /** The one game. Also reachable in Compose as `LocalGameStore.current`. */
@@ -52,6 +61,9 @@ class SlimyApplication : Application() {
     var isInForeground: Boolean = false
         private set
 
+    /** For work that outlives a screen (on the main thread). */
+    val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+
     private val main = Handler(Looper.getMainLooper())
 
     private val ticker = object : Runnable {
@@ -69,6 +81,9 @@ class SlimyApplication : Application() {
         dailyStore = DailyStore(this, store)
         Feedback.install(this) { store.state.value.settings }
         Notifier.install(this)
+        // The slime notification, reminders and widgets follow every change.
+        store.addHooks(PlatformHooks(this))
+        BackgroundRefresh.schedule(this)
         ProcessLifecycleOwner.get().lifecycle.addObserver(object : DefaultLifecycleObserver {
             override fun onStart(owner: LifecycleOwner) = becameActive()
             override fun onStop(owner: LifecycleOwner) = enteredBackground()
@@ -89,15 +104,33 @@ class SlimyApplication : Application() {
         store.arrive()
         dailyStore.refresh()
         Feedback.shared.updateMusic(active = true)
+        Notifier.reschedule(store.state.value)
         main.removeCallbacks(ticker)
         main.postDelayed(ticker, tickInterval)
+        phoneMonitor.start()
+        // While Slimy is on screen, a slime cared for together syncs with the partner's phone.
+        friends.startCarePolling()
+        SlimeWidgets.reloadAll(this)
+        scope.launch {
+            if (store.state.value.hatched) island.ensureRunning()
+            runCatching { friends.refresh() }.onFailure { Log.w("Slimy", "Friends refresh failed", it) }
+            dailyStore.refresh()
+            island.maybeMeetup()
+        }
     }
 
     private fun enteredBackground() {
         isInForeground = false
         main.removeCallbacks(ticker)
         Feedback.shared.updateMusic(active = false)
+        // Stops syncing the shared slime.
+        friends.stopCarePolling()
+        phoneMonitor.stop()
+        PhoneMonitor.schedulePowerCheck(this)
+        BackgroundRefresh.schedule(this)
         store.flush()
+        // The notification stops moving and settles on the slime's still pose.
+        scope.launch { island.settle() }
     }
 
     private companion object {
