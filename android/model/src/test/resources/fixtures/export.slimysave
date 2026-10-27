@@ -1,0 +1,184 @@
+{
+  "appVersion" : "1.1.0",
+  "exportedAt" : 1777888800,
+  "format" : "de.hyprnode.slimy.save",
+  "schema" : 1,
+  "state" : {
+    "care" : {
+      "ownBackup" : {
+        "birthday" : 1767225600,
+        "bond" : 20,
+        "colours" : [
+          "ocean"
+        ],
+        "emotions" : {
+          "anger" : 0,
+          "boredom" : 0,
+          "curiosity" : 0,
+          "excitement" : 0,
+          "fear" : 0,
+          "joy" : 0.3,
+          "love" : 0,
+          "sadness" : 0,
+          "sleepiness" : 0
+        },
+        "equipped" : {
+
+        },
+        "eventAt" : -62135769600,
+        "favorite" : "cake",
+        "favoriteGame" : "bubblePop",
+        "isAsleep" : false,
+        "lastNudgeAt" : -62135769600,
+        "lastUpdate" : 1777833000,
+        "name" : "Mochi",
+        "needs" : {
+          "clean" : 85,
+          "energy" : 90,
+          "fun" : 70,
+          "hunger" : 80,
+          "love" : 75
+        },
+        "personality" : {
+          "cuddly" : 0.5,
+          "curious" : 0.5,
+          "foodie" : 0.5,
+          "playful" : 0.5,
+          "sleepy" : 0.5
+        },
+        "reaction" : "none",
+        "reactionAt" : -62135769600,
+        "recentPets" : [
+
+        ],
+        "skin" : "lime",
+        "xp" : 200
+      },
+      "partnerID" : "dev_anna",
+      "partnerName" : "Anna",
+      "role" : "joiner",
+      "version" : 2
+    },
+    "careBook" : {
+      "changedAt" : 1777885200,
+      "coloursFound" : [
+        "grape"
+      ],
+      "me" : "9E8D7C6B-5A49-4837-A625-14F3E2D1C0B9",
+      "outbox" : [
+        {
+          "amount" : 12,
+          "at" : 1777885200,
+          "by" : "Ben",
+          "id" : "8A7B6C5D-0000-4000-8000-000000000003",
+          "kind" : "pet"
+        }
+      ],
+      "seen" : [
+
+      ]
+    },
+    "crates" : [
+      "wooden",
+      2
+    ],
+    "hatched" : true,
+    "inventory" : {
+      "favoriteFound" : false,
+      "foodsTasted" : [
+        "apple"
+      ],
+      "furniture" : [
+
+      ],
+      "habitat" : "room",
+      "habitats" : [
+        "room"
+      ],
+      "owned" : [
+        "hat.party"
+      ],
+      "pantry" : [
+
+      ]
+    },
+    "player" : {
+      "createdAt" : 1767225600,
+      "daysActive" : [
+        "2026-05-04"
+      ],
+      "lastSeen" : 1777885200,
+      "name" : "Ben",
+      "seasonsSeen" : [
+        "spring"
+      ],
+      "tips" : [
+        "onboarded"
+      ],
+      "xp" : 120
+    },
+    "slime" : {
+      "birthday" : 1766563200,
+      "bond" : 40,
+      "colours" : [
+
+      ],
+      "emotions" : {
+        "anger" : 0,
+        "boredom" : 0,
+        "curiosity" : 0.2,
+        "excitement" : 0.1,
+        "fear" : 0,
+        "joy" : 0.5,
+        "love" : 0.3,
+        "sadness" : 0,
+        "sleepiness" : 0
+      },
+      "equipped" : {
+        "hat" : "hat.crown"
+      },
+      "eventAt" : -62135769600,
+      "favorite" : "honey",
+      "favoriteGame" : "slimeStack",
+      "isAsleep" : false,
+      "lastNudgeAt" : -62135769600,
+      "lastUpdate" : 1777885200,
+      "name" : "Blob",
+      "needs" : {
+        "clean" : 60,
+        "energy" : 70,
+        "fun" : 55,
+        "hunger" : 66,
+        "love" : 90
+      },
+      "personality" : {
+        "cuddly" : 0.42,
+        "curious" : 0.88,
+        "foodie" : 0.65,
+        "playful" : 0.71,
+        "sleepy" : 0.2
+      },
+      "reaction" : "none",
+      "reactionAt" : -62135769600,
+      "recentPets" : [
+
+      ],
+      "skin" : "ocean",
+      "xp" : 620
+    },
+    "streak" : {
+      "best" : 3,
+      "count" : 2,
+      "lastDay" : "2026-05-04",
+      "opened" : 5
+    },
+    "version" : 4,
+    "wallet" : {
+      "coins" : 90,
+      "earnedTotal" : 400,
+      "ledger" : {
+        "level:2" : 1767225600
+      }
+    }
+  }
+}

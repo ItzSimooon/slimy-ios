@@ -1,0 +1,12 @@
+{"snapshot":{"name":"Blob","skin":"axolotl","level":5,"xp":620,
+  "needs":{"hunger":72.5,"fun":64,"energy":88.25,"clean":51,"love":93},
+  "bond":57.5,"personality":{"playful":0.71,"cuddly":0.42,"foodie":0.65,"sleepy":0.2,"curious":0.88},
+  "equipped":{"hat":"hat.crown","glasses":"glasses.round"},
+  "emotions":{"joy":0.45,"sadness":0,"anger":0.05,"fear":0,"love":0.3,"curiosity":0.2,"boredom":0,"excitement":0.15,"sleepiness":0.1},
+  "asleep":false,"favorite":"honey","favoriteGame":"slimeStack",
+  "hatchedAt":"2025-12-24T08:00:00Z","updatedAt":"2026-05-04T10:00:00Z","takenAt":"2026-05-04T09:55:00Z",
+  "colours":["axolotl","grape"],"author":"9E8D7C6B-5A49-4837-A625-14F3E2D1C0B9"},
+ "events":[
+  {"id":"8A7B6C5D-0000-4000-8000-000000000001","kind":"feed","food":"cookie","by":"Anna","at":"2026-05-04T09:00:00Z"},
+  {"id":"8A7B6C5D-0000-4000-8000-000000000002","kind":"play","game":"bubblePop","amount":75,"by":"Anna","at":"2026-05-04T09:55:00Z"},
+  {"id":"8A7B6C5D-0000-4000-8000-000000000003","kind":"pet","amount":11.5,"by":"","at":"2026-05-04T10:00:00Z"}]}

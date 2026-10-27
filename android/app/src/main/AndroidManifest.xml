@@ -40,5 +40,16 @@
                 <data android:scheme="https" android:host="slime.hyprnode.de" android:pathPrefix="/f/" />
             </intent-filter>
         </activity>
+
+        <!-- Shares exported saves (cache/exports) with other apps. -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.files"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
     </application>
 </manifest>
