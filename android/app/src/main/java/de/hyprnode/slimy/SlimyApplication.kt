@@ -123,8 +123,9 @@ class SlimyApplication : Application() {
         isInForeground = false
         main.removeCallbacks(ticker)
         Feedback.shared.updateMusic(active = false)
-        // Stops syncing the shared slime.
+        // Stops syncing the shared slime and sends what changed.
         friends.stopCarePolling()
+        friends.enterBackground()
         phoneMonitor.stop()
         PhoneMonitor.schedulePowerCheck(this)
         BackgroundRefresh.schedule(this)
