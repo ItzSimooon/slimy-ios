@@ -6,6 +6,8 @@ import de.hyprnode.slimy.model.CareKind
 import de.hyprnode.slimy.model.Food
 import de.hyprnode.slimy.model.GameID
 import de.hyprnode.slimy.model.JsonDate
+import de.hyprnode.slimy.model.JsonFields
+import de.hyprnode.slimy.model.LossyListSerializer
 import de.hyprnode.slimy.model.Mood
 import de.hyprnode.slimy.model.Needs
 import de.hyprnode.slimy.model.Reaction
@@ -13,13 +15,45 @@ import de.hyprnode.slimy.model.Skin
 import de.hyprnode.slimy.model.SlimeSnapshot
 import de.hyprnode.slimy.model.SlimyJson
 import de.hyprnode.slimy.model.Stage
+import de.hyprnode.slimy.model.TolerantSerializer
 import de.hyprnode.slimy.model.prefixChars
 import de.hyprnode.slimy.model.trimmedSwift
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.serialization.DeserializationStrategy
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.KeepGeneratedSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerializationException
+import kotlinx.serialization.SerializationStrategy
 import kotlinx.serialization.Transient
+import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.builtins.nullable
+import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.longOrNull
+import okhttp3.Call
+import okhttp3.Callback
+import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.Response
+import java.io.IOException
+import java.net.ConnectException
+import java.net.SocketTimeoutException
+import java.net.UnknownHostException
 import java.time.Instant
+import java.util.concurrent.TimeUnit
+import javax.net.ssl.SSLException
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 
 // Client for the slime.hyprnode.de backend (server/ in this repo). The full
 // contract is in server/README.md; keep the two in sync. The Android port of
@@ -28,9 +62,10 @@ import java.time.Instant
 //
 // Tolerant decoding: the Swift types decode leniently (unknown skins, moods,
 // stages, foods, presets and reactions fall back to a default or to none;
-// lists skip elements they can't read). The defaults below plus
-// `SlimyJson.api` (`coerceInputValues`, `ignoreUnknownKeys`) cover the simple
-// cases; lists that skip broken elements use `LossyListSerializer`.
+// lists skip elements they can't read). Types with a Swift `init(from:)` get
+// a `TolerantSerializer` here that reads field by field the same way; the
+// others rely on `SlimyJson.api` (`coerceInputValues`, `ignoreUnknownKeys`).
+// Lists that skip broken elements use `LossyListSerializer`.
 
 /** What went wrong talking to slime.hyprnode.de. Mirrors the Swift `APIError` enum. */
 sealed class APIError(description: String) : Exception(description) {
@@ -85,13 +120,23 @@ class NotOnlineError : Exception("Go online in Friends to use this.") {
     val errorDescription: String get() = message ?: ""
 }
 
+/** The text to show for any error, like Swift's `localizedDescription`. */
+internal val Throwable.shownText: String
+    get() = when (this) {
+        is APIError -> errorDescription
+        is NotOnlineError -> errorDescription
+        else -> message?.takeIf { it.isNotBlank() } ?: "Something went wrong. Please try again."
+    }
+
 // MARK: - Wire types
 
 /**
  * A slime as friends see it. Swift decodes leniently: unknown skin -> lime,
  * unknown mood -> idle, unknown stage / outfit -> none.
  */
-@Serializable
+@OptIn(ExperimentalSerializationApi::class)
+@KeepGeneratedSerializer
+@Serializable(with = SlimeProfile.Coding::class)
 data class SlimeProfile(
     val ownerName: String,
     val name: String,
@@ -103,9 +148,26 @@ data class SlimeProfile(
     val happiness: Int? = null,
     val equipped: Accessories? = null,
     val updatedAt: JsonDate,
-)
+) {
+    /** Looks from a newer app version fall back to defaults, so a friend never vanishes from the list because of them. */
+    internal object Coding : TolerantSerializer<SlimeProfile>(SlimeProfile.generatedSerializer()) {
+        override fun decode(fields: JsonFields): SlimeProfile = SlimeProfile(
+            ownerName = fields.require("ownerName", String.serializer()),
+            name = fields.require("name", String.serializer()),
+            level = fields.require("level", Int.serializer()),
+            updatedAt = fields.require("updatedAt", fields.dateSerializer),
+            skin = fields.value("skin", Skin.serializer(), Skin.lime),
+            stage = fields.value("stage", Stage.serializer().nullable, null),
+            mood = fields.value("mood", Mood.serializer(), Mood.idle),
+            happiness = fields.value("happiness", Int.serializer().nullable, null),
+            equipped = fields.value("equipped", Accessories.serializer().nullable, null),
+        )
+    }
+}
 
-@Serializable
+@OptIn(ExperimentalSerializationApi::class)
+@KeepGeneratedSerializer
+@Serializable(with = Friend.Coding::class)
 data class Friend(
     val id: String,
     val ownerName: String,
@@ -117,6 +179,18 @@ data class Friend(
     val since: JsonDate,
 ) {
     val stage: Stage get() = slime.stage ?: Stage.forLevel(slime.level)
+
+    /** The love fields are optional on the way in, so a server that stops sending them never hides a friend. */
+    internal object Coding : TolerantSerializer<Friend>(Friend.generatedSerializer()) {
+        override fun decode(fields: JsonFields): Friend = Friend(
+            id = fields.require("id", String.serializer()),
+            ownerName = fields.require("ownerName", String.serializer()),
+            slime = fields.require("slime", SlimeProfile.serializer()),
+            since = fields.require("since", fields.dateSerializer),
+            love = fields.int("love", 0),
+            inLove = fields.bool("inLove", false),
+        )
+    }
 }
 
 @Serializable
@@ -205,7 +279,9 @@ enum class MessagePreset {
     }
 }
 
-@Serializable
+@OptIn(ExperimentalSerializationApi::class)
+@KeepGeneratedSerializer
+@Serializable(with = InboxEvent.Coding::class)
 data class InboxEvent(
     val id: String,
     val friendId: String? = null,
@@ -222,7 +298,21 @@ data class InboxEvent(
     val challengeId: String? = null,
     val requestId: String? = null,
     val createdAt: JsonDate,
-)
+) {
+    internal object Coding : TolerantSerializer<InboxEvent>(InboxEvent.generatedSerializer()) {
+        override fun decode(fields: JsonFields): InboxEvent = InboxEvent(
+            id = fields.require("id", String.serializer()),
+            kind = fields.require("kind", String.serializer()),
+            createdAt = fields.require("createdAt", fields.dateSerializer),
+            friendId = fields.value("friendId", String.serializer().nullable, null),
+            friendName = fields.value("friendName", String.serializer().nullable, null),
+            food = fields.value("food", Food.serializer().nullable, null),
+            preset = fields.value("preset", MessagePreset.serializer().nullable, null),
+            challengeId = fields.value("challengeId", String.serializer().nullable, null),
+            requestId = fields.value("requestId", String.serializer().nullable, null),
+        )
+    }
+}
 
 @Serializable
 data class InboxPage(
@@ -326,7 +416,9 @@ enum class ReportReason {
 }
 
 /** One player's best score in a game, as the friends leaderboard shows it. Unknown skin -> lime, stage -> young. */
-@Serializable
+@OptIn(ExperimentalSerializationApi::class)
+@KeepGeneratedSerializer
+@Serializable(with = LeaderboardEntry.Coding::class)
 data class LeaderboardEntry(
     val deviceId: String,
     val ownerName: String,
@@ -338,10 +430,25 @@ data class LeaderboardEntry(
     val me: Boolean = false,
 ) {
     val id: String get() = deviceId
+
+    /** Skins and stages from a newer server fall back to defaults instead of hiding the whole board. */
+    internal object Coding : TolerantSerializer<LeaderboardEntry>(LeaderboardEntry.generatedSerializer()) {
+        override fun decode(fields: JsonFields): LeaderboardEntry = LeaderboardEntry(
+            deviceId = fields.require("deviceId", String.serializer()),
+            ownerName = fields.require("ownerName", String.serializer()),
+            slimeName = fields.require("slimeName", String.serializer()),
+            best = fields.require("best", Int.serializer()),
+            me = fields.bool("me", false),
+            skin = fields.value("skin", Skin.serializer(), Skin.lime),
+            stage = fields.value("stage", Stage.serializer(), Stage.young),
+        )
+    }
 }
 
 /** The best scores of you and your friends in one game, best first. */
-@Serializable
+@OptIn(ExperimentalSerializationApi::class)
+@KeepGeneratedSerializer
+@Serializable(with = LeaderboardGame.Coding::class)
 data class LeaderboardGame(
     val game: GameID,
     val entries: List<LeaderboardEntry> = emptyList(),
@@ -353,13 +460,31 @@ data class LeaderboardGame(
 
     /** 1-based place of an entry. Equal scores share a place. */
     fun rank(entry: LeaderboardEntry): Int = 1 + entries.count { it.best > entry.best }
+
+    /** Entries this version can't read are skipped; the rest best first. */
+    internal object Coding : TolerantSerializer<LeaderboardGame>(LeaderboardGame.generatedSerializer()) {
+        override fun decode(fields: JsonFields): LeaderboardGame = LeaderboardGame(
+            game = fields.require("game", GameID.serializer()),
+            entries = fields.require("entries", LossyListSerializer(LeaderboardEntry.serializer()))
+                .sortedByDescending { it.best },
+        )
+    }
 }
 
 /** `GET /friends/leaderboard`. Games this app version doesn't know are skipped, and so are `daily` and empty games. */
-@Serializable
+@OptIn(ExperimentalSerializationApi::class)
+@KeepGeneratedSerializer
+@Serializable(with = Leaderboard.Coding::class)
 data class Leaderboard(
     val games: List<LeaderboardGame> = emptyList(),
-)
+) {
+    internal object Coding : TolerantSerializer<Leaderboard>(Leaderboard.generatedSerializer()) {
+        override fun decode(fields: JsonFields): Leaderboard = Leaderboard(
+            games = fields.require("games", LossyListSerializer(LeaderboardGame.serializer()))
+                .filter { it.game != GameID.daily && it.entries.isNotEmpty() },
+        )
+    }
+}
 
 @Serializable
 data class ChatTurn(
@@ -388,21 +513,44 @@ data class ChatContext(
  * an `Emotion` raw value when the AI kept to the list. Swift trims and
  * lower-cases the name and clamps the intensity to 0...1 (missing or broken: 0.5).
  */
-@Serializable
+@OptIn(ExperimentalSerializationApi::class)
+@KeepGeneratedSerializer
+@Serializable(with = ChatEmotion.Coding::class)
 data class ChatEmotion(
     val name: String,
     /** 0...1. */
     val intensity: Double = 0.5,
-)
+) {
+    internal object Coding : TolerantSerializer<ChatEmotion>(ChatEmotion.generatedSerializer()) {
+        override fun decode(fields: JsonFields): ChatEmotion {
+            val raw = fields.value("intensity", Double.serializer().nullable, null) ?: 0.5
+            return ChatEmotion(
+                name = fields.require("name", String.serializer()).trimmedSwift().lowercase(),
+                intensity = if (raw.isFinite()) raw.coerceIn(0.0, 1.0) else 0.5,
+            )
+        }
+    }
+}
 
-@Serializable
+@OptIn(ExperimentalSerializationApi::class)
+@KeepGeneratedSerializer
+@Serializable(with = ChatReply.Coding::class)
 data class ChatReply(
     val reply: String,
     /** Optional animation the slime plays while saying it. */
     val reaction: Reaction? = null,
     /** The feeling the reply expresses. Missing from older servers, and when the AI gave none. */
     val emotion: ChatEmotion? = null,
-)
+) {
+    /** Only the reply is required: an unknown reaction or a broken emotion leaves that part out instead of losing the answer. */
+    internal object Coding : TolerantSerializer<ChatReply>(ChatReply.generatedSerializer()) {
+        override fun decode(fields: JsonFields): ChatReply = ChatReply(
+            reply = fields.require("reply", String.serializer()),
+            reaction = fields.value("reaction", Reaction.serializer().nullable, null),
+            emotion = fields.value("emotion", ChatEmotion.serializer().nullable, null),
+        )
+    }
+}
 
 // MARK: - Care together
 
@@ -429,12 +577,28 @@ object CareRole {
     const val joiner = "joiner"
 }
 
+/** A string the server may also send as a number (ids, cursors). Null when missing, null or neither. */
+private fun JsonFields.flexibleString(key: String): String? {
+    val primitive = obj[key] as? JsonPrimitive ?: return null
+    if (primitive is JsonNull) return null
+    if (primitive.isString) return primitive.content
+    return primitive.longOrNull?.toString()
+}
+
+/** Just the name inside a snapshot, whatever else it holds. */
+private fun JsonFields.snapshotName(key: String): String? {
+    val snapshot = obj[key] as? JsonObject ?: return null
+    return JsonFields(json, snapshot).stringOrNull("name")
+}
+
 /**
  * A care action the partner took, as `GET /care` lists it. Swift: the id may
  * come as a number; a missing owner name is "Your partner"; a non-finite
  * amount is none; a missing `createdAt` is `at`.
  */
-@Serializable
+@OptIn(ExperimentalSerializationApi::class)
+@KeepGeneratedSerializer
+@Serializable(with = CareEventWire.Coding::class)
 data class CareEventWire(
     val id: String,
     val deviceId: String,
@@ -449,6 +613,24 @@ data class CareEventWire(
     /** The event as the game applies it. */
     val event: CareEvent
         get() = CareEvent(id = id, kind = kind, food = food, game = game, amount = amount, by = ownerName, at = at)
+
+    /** The kind must be one this app knows (otherwise the event is skipped); food, game and amount from a newer app fall back to none. */
+    internal object Coding : TolerantSerializer<CareEventWire>(CareEventWire.generatedSerializer()) {
+        override fun decode(fields: JsonFields): CareEventWire {
+            val at = fields.require("at", fields.dateSerializer)
+            return CareEventWire(
+                id = fields.flexibleString("id") ?: throw SerializationException("Missing id"),
+                deviceId = fields.require("deviceId", String.serializer()),
+                ownerName = fields.value("ownerName", String.serializer(), "Your partner"),
+                kind = fields.require("kind", CareKind.serializer()),
+                food = fields.value("food", Food.serializer().nullable, null),
+                game = fields.value("game", GameID.serializer().nullable, null),
+                amount = fields.value("amount", Double.serializer().nullable, null)?.takeIf { it.isFinite() },
+                at = at,
+                createdAt = fields.date("createdAt", at),
+            )
+        }
+    }
 }
 
 /**
@@ -457,7 +639,9 @@ data class CareEventWire(
  * [snapshotName] is not a JSON key: it is the `name` inside the snapshot,
  * read even when the snapshot itself can't be.
  */
-@Serializable
+@OptIn(ExperimentalSerializationApi::class)
+@KeepGeneratedSerializer
+@Serializable(with = CareStatus.Coding::class)
 data class CareStatus(
     val partner: CarePartner? = null,
     val snapshot: SlimeSnapshot? = null,
@@ -465,16 +649,43 @@ data class CareStatus(
     val version: Int = 0,
     val events: List<CareEventWire> = emptyList(),
     val cursor: String? = null,
-)
+) {
+    /** A snapshot this app version can't read counts as none (the next one may be readable); events it doesn't know are skipped. */
+    internal object Coding : TolerantSerializer<CareStatus>(CareStatus.generatedSerializer()) {
+        override fun decode(fields: JsonFields): CareStatus = CareStatus(
+            partner = fields.value("partner", CarePartner.serializer().nullable, null),
+            snapshot = fields.value("snapshot", SlimeSnapshot.serializer().nullable, null),
+            snapshotName = fields.snapshotName("snapshot"),
+            version = fields.int("version", 0),
+            events = fields.value("events", LossyListSerializer(CareEventWire.serializer()), emptyList()),
+            cursor = fields.flexibleString("cursor"),
+        )
+    }
+}
 
 /** `POST /care/join`: who you now care with and their slime, if their phone already sent it. A missing partner role is "host". */
-@Serializable
+@OptIn(ExperimentalSerializationApi::class)
+@KeepGeneratedSerializer
+@Serializable(with = CareJoinResult.Coding::class)
 data class CareJoinResult(
     val partner: CarePartner,
     val snapshot: SlimeSnapshot? = null,
     @Transient val snapshotName: String? = null,
     val version: Int = 0,
-)
+) {
+    internal object Coding : TolerantSerializer<CareJoinResult>(CareJoinResult.generatedSerializer()) {
+        override fun decode(fields: JsonFields): CareJoinResult {
+            val partner = fields.require("partner", CarePartner.serializer())
+            return CareJoinResult(
+                // Whoever owns the code hosts.
+                partner = if (partner.role == null) partner.copy(role = CareRole.host) else partner,
+                snapshot = fields.value("snapshot", SlimeSnapshot.serializer().nullable, null),
+                snapshotName = fields.snapshotName("snapshot"),
+                version = fields.int("version", 0),
+            )
+        }
+    }
+}
 
 /** `POST /care/events`. Build it from a `CareEvent` so the amount is clamped like the Swift init. */
 @Serializable
@@ -494,6 +705,10 @@ data class CareEventBody(
         /** An amount as the server takes it: finite, 0...[amountLimit]; anything else is none. */
         fun clampedAmount(amount: Double?): Double? =
             amount?.takeIf { it.isFinite() }?.coerceIn(0.0, amountLimit)
+
+        /** Swift's memberwise init, which clamps the amount. */
+        fun of(kind: CareKind, food: Food?, game: GameID?, amount: Double?, at: Instant): CareEventBody =
+            CareEventBody(kind, food, game, clampedAmount(amount), at)
     }
 }
 
@@ -507,22 +722,38 @@ sealed class CareSnapshotResult {
 }
 
 /** The body of a 409 from `PUT /care/snapshot`. */
-@Serializable
+@OptIn(ExperimentalSerializationApi::class)
+@KeepGeneratedSerializer
+@Serializable(with = CareConflict.Coding::class)
 data class CareConflict(
     val error: String? = null,
     val version: Int? = null,
     val snapshot: SlimeSnapshot? = null,
-)
+) {
+    internal object Coding : TolerantSerializer<CareConflict>(CareConflict.generatedSerializer()) {
+        override fun decode(fields: JsonFields): CareConflict = CareConflict(
+            error = fields.value("error", String.serializer().nullable, null),
+            version = fields.value("version", Int.serializer().nullable, null),
+            snapshot = fields.value("snapshot", SlimeSnapshot.serializer().nullable, null),
+        )
+    }
+}
 
 // MARK: - Client
 
 /**
  * The slime.hyprnode.de client for one device token. Every endpoint is a
  * `suspend fun` that throws [APIError] (or a serialization exception for an
- * unreadable answer).
+ * unreadable answer). Requests run on OkHttp's own threads; cancelling the
+ * coroutine cancels the request.
  */
-// Implemented by the online/platform worker.
-class HyprnodeAPI(val token: String? = null) {
+class HyprnodeAPI internal constructor(
+    val token: String?,
+    private val http: OkHttpClient,
+    private val baseURL: String,
+) {
+    constructor(token: String? = null) : this(token, sharedClient, base)
+
     @Serializable
     data class Registration(val deviceId: String, val token: String)
 
@@ -540,84 +771,233 @@ class HyprnodeAPI(val token: String? = null) {
     @Serializable
     data class RecordsBody(val records: Map<String, Int>)
 
-    suspend fun register(ownerName: String): Registration = notConnected()
+    @Serializable
+    private data class ServerError(val error: String)
 
-    suspend fun upload(profile: SlimeProfile): Unit = notConnected()
+    @Serializable
+    private data class Accepted(val friend: Friend)
 
-    suspend fun me(): Me = notConnected()
+    @Serializable
+    private data class Sent(val sent: Boolean)
 
-    suspend fun setPrivacy(privacy: Privacy): Privacy = notConnected()
+    @Serializable
+    private data class InteractionBody(val kind: InteractionKind, val food: Food? = null)
 
-    suspend fun deleteAccount(): Unit = notConnected()
+    @Serializable
+    private data class ChallengeBody(val friendId: String, val game: GameID, val seed: String, val score: Int)
 
-    suspend fun newPairCode(): PairCode = notConnected()
+    @Serializable
+    private data class ChatBody(val message: String, val history: List<ChatTurn>, val slime: ChatContext)
 
-    suspend fun join(code: String): JoinResult = notConnected()
+    @Serializable
+    private data class SnapshotBody(val snapshot: SlimeSnapshot, val version: Int)
 
-    suspend fun requests(): RequestList = notConnected()
+    @Serializable
+    private data class Saved(val version: Int)
 
-    suspend fun accept(requestID: String): Friend = notConnected()
+    suspend fun register(ownerName: String): Registration =
+        send("POST", "devices", body("ownerName" to JsonPrimitive(ownerName)), Registration.serializer())
 
-    suspend fun decline(requestID: String): Unit = notConnected()
+    suspend fun upload(profile: SlimeProfile) {
+        sendNoContent("PUT", "me/slime", encode(SlimeProfile.serializer(), profile))
+    }
+
+    suspend fun me(): Me = send("GET", "me", null, Me.serializer())
+
+    suspend fun setPrivacy(privacy: Privacy): Privacy =
+        send("PUT", "me/privacy", encode(Privacy.serializer(), privacy), Privacy.serializer())
+
+    suspend fun deleteAccount() {
+        sendNoContent("DELETE", "me", null)
+    }
+
+    suspend fun newPairCode(): PairCode = send("POST", "pair-codes", empty, PairCode.serializer())
+
+    suspend fun join(code: String): JoinResult =
+        send("POST", "friend-requests", body("code" to JsonPrimitive(code.uppercase())), JoinResult.serializer())
+
+    suspend fun requests(): RequestList = send("GET", "friend-requests", null, RequestList.serializer())
+
+    suspend fun accept(requestID: String): Friend =
+        send("POST", "friend-requests/$requestID/accept", empty, Accepted.serializer()).friend
+
+    suspend fun decline(requestID: String) {
+        sendNoContent("POST", "friend-requests/$requestID/decline", empty)
+    }
 
     /** Friends this app version can't read are skipped, not the whole list. */
-    suspend fun friends(): List<Friend> = notConnected()
+    suspend fun friends(): List<Friend> = send("GET", "friends", null, LossyListSerializer(Friend.serializer()))
 
-    suspend fun friend(id: String): FriendDetail = notConnected()
+    suspend fun friend(id: String): FriendDetail = send("GET", "friends/$id", null, FriendDetail.serializer())
 
-    suspend fun removeFriend(id: String): Unit = notConnected()
+    suspend fun removeFriend(id: String) {
+        sendNoContent("DELETE", "friends/$id", null)
+    }
 
-    suspend fun block(deviceID: String): Unit = notConnected()
+    suspend fun block(deviceID: String) {
+        sendNoContent("POST", "blocks", body("deviceId" to JsonPrimitive(deviceID)))
+    }
 
-    suspend fun unblock(deviceID: String): Unit = notConnected()
+    suspend fun unblock(deviceID: String) {
+        sendNoContent("DELETE", "blocks/$deviceID", null)
+    }
 
-    suspend fun blocked(): List<BlockedDevice> = notConnected()
+    suspend fun blocked(): List<BlockedDevice> = send("GET", "blocks", null, ListSerializer(BlockedDevice.serializer()))
 
-    suspend fun interact(id: String, kind: InteractionKind, food: Food?, key: String): InteractionResult = notConnected()
+    suspend fun interact(id: String, kind: InteractionKind, food: Food?, key: String): InteractionResult =
+        send(
+            "POST", "friends/$id/interactions", encode(InteractionBody.serializer(), InteractionBody(kind, food)),
+            InteractionResult.serializer(), key = key,
+        )
 
-    suspend fun message(id: String, preset: MessagePreset, key: String): Unit = notConnected()
+    suspend fun message(id: String, preset: MessagePreset, key: String) {
+        send("POST", "friends/$id/messages", body("preset" to JsonPrimitive(preset.name)), Sent.serializer(), key = key)
+    }
 
-    suspend fun addCoop(id: String, points: Int, key: String): CoopStatus = notConnected()
+    suspend fun addCoop(id: String, points: Int, key: String): CoopStatus =
+        send("POST", "friends/$id/coop", body("points" to JsonPrimitive(points)), CoopStatus.serializer(), key = key)
 
     /** Challenges in games this app version doesn't have are skipped. */
-    suspend fun challenges(): List<Challenge> = notConnected()
+    suspend fun challenges(): List<Challenge> =
+        send("GET", "challenges", null, LossyListSerializer(Challenge.serializer()))
 
-    suspend fun challenge(friendID: String, game: GameID, seed: ULong, score: Int, key: String): Challenge = notConnected()
+    suspend fun challenge(friendID: String, game: GameID, seed: ULong, score: Int, key: String): Challenge =
+        send(
+            "POST", "challenges",
+            encode(ChallengeBody.serializer(), ChallengeBody(friendID, game, seed.toString(), score)),
+            Challenge.serializer(), key = key,
+        )
 
-    suspend fun answer(challengeID: String, score: Int, key: String): Challenge = notConnected()
+    suspend fun answer(challengeID: String, score: Int, key: String): Challenge =
+        send("POST", "challenges/$challengeID/answer", body("score" to JsonPrimitive(score)), Challenge.serializer(), key = key)
 
     /** Sends a report to the Slimy team. `deviceId` is required unless the reason is `chat`; then `text` is the slime's reply. */
-    suspend fun report(report: ReportBody, key: String): Unit = notConnected()
+    suspend fun report(report: ReportBody, key: String) {
+        sendNoContent("POST", "reports", encode(ReportBody.serializer(), report), key = key)
+    }
 
     /** Raises your best scores on the server; it never lowers them. */
-    suspend fun uploadRecords(records: Map<String, Int>): Unit = notConnected()
+    suspend fun uploadRecords(records: Map<String, Int>) {
+        sendNoContent("PUT", "me/records", encode(RecordsBody.serializer(), RecordsBody(records)))
+    }
 
-    suspend fun leaderboard(): List<LeaderboardGame> = notConnected()
+    suspend fun leaderboard(): List<LeaderboardGame> =
+        send("GET", "friends/leaderboard", null, Leaderboard.serializer()).games
 
-    suspend fun inbox(cursor: String?): InboxPage = notConnected()
+    suspend fun inbox(cursor: String?): InboxPage =
+        send("GET", afterPath("inbox", cursor), null, InboxPage.serializer())
 
     /** Waits up to [chatTimeout]; a timeout is a 504 with "Your slime took too long to answer. Try again in a moment." */
-    suspend fun chat(message: String, history: List<ChatTurn>, context: ChatContext): ChatReply = notConnected()
+    suspend fun chat(message: String, history: List<ChatTurn>, context: ChatContext): ChatReply =
+        send(
+            "POST", "chat", encode(ChatBody.serializer(), ChatBody(message, history, context)), ChatReply.serializer(),
+            timeout = chatTimeout, slowAnswer = "Your slime took too long to answer. Try again in a moment.",
+        )
 
     /** A code someone else enters to care for your slime with you (10 minutes, single use). 409 while you already care together. */
-    suspend fun newCareCode(): PairCode = notConnected()
+    suspend fun newCareCode(): PairCode = send("POST", "care/codes", empty, PairCode.serializer())
 
     /** Cares for the slime of the code's owner from now on. 404 unknown or used, 410 expired, 400 your own code, 409 already caring. */
-    suspend fun joinCare(code: String): CareJoinResult = notConnected()
+    suspend fun joinCare(code: String): CareJoinResult =
+        send("POST", "care/join", body("code" to JsonPrimitive(code.uppercase())), CareJoinResult.serializer())
 
     /** The pair, the newest snapshot and the partner's actions after [cursor]. */
-    suspend fun care(cursor: String?): CareStatus = notConnected()
+    suspend fun care(cursor: String?): CareStatus = send("GET", carePath(cursor), null, CareStatus.serializer())
 
     /** Sends one of your care actions to the partner's phone. The key makes a resend count once. */
-    suspend fun sendCare(body: CareEventBody, key: String): Unit = notConnected()
+    suspend fun sendCare(body: CareEventBody, key: String) {
+        sendNoContent("POST", "care/events", encode(CareEventBody.serializer(), body), key = key)
+    }
 
     /** Stores the shared slime. [version] must be the server's version + 1; otherwise the answer is the server's newest state. */
-    suspend fun putCareSnapshot(snapshot: SlimeSnapshot, version: Int): CareSnapshotResult = notConnected()
+    suspend fun putCareSnapshot(snapshot: SlimeSnapshot, version: Int): CareSnapshotResult {
+        val (data, status) = perform(
+            "PUT", "care/snapshot", encode(SnapshotBody.serializer(), SnapshotBody(snapshot, version)),
+            key = null, timeout = defaultTimeout, slowAnswer = slowServerAnswer,
+        )
+        if (status in 200..299) {
+            val saved = runCatching { decoder.decodeFromString(Saved.serializer(), data.decodeToString()) }.getOrNull()
+            return CareSnapshotResult.saved(saved?.version ?: version)
+        }
+        if (status == 409) {
+            val conflict = careConflict(data)
+            return CareSnapshotResult.conflict(conflict?.version, conflict?.snapshot)
+        }
+        throw failure(status, data)
+    }
 
     /** Stops caring together, for both of you. */
-    suspend fun leaveCare(): Unit = notConnected()
+    suspend fun leaveCare() {
+        sendNoContent("DELETE", "care", null)
+    }
 
-    private fun notConnected(): Nothing = throw APIError.offline()
+    // MARK: Plumbing
+
+    private suspend fun <T> send(
+        method: String,
+        path: String,
+        body: String?,
+        deserializer: DeserializationStrategy<T>,
+        key: String? = null,
+        timeout: Double = defaultTimeout,
+        slowAnswer: String = slowServerAnswer,
+    ): T {
+        val data = raw(method, path, body, key, timeout, slowAnswer)
+        return decoder.decodeFromString(deserializer, data.decodeToString())
+    }
+
+    private suspend fun sendNoContent(method: String, path: String, body: String?, key: String? = null) {
+        raw(method, path, body, key, defaultTimeout, slowServerAnswer)
+    }
+
+    /**
+     * A timeout becomes a 504 with [slowAnswer]: the connection worked but
+     * the answer didn't come in time. Like a 5xx it is worth trying again.
+     */
+    private suspend fun raw(
+        method: String,
+        path: String,
+        body: String?,
+        key: String?,
+        timeout: Double,
+        slowAnswer: String,
+    ): ByteArray {
+        val (data, status) = perform(method, path, body, key, timeout, slowAnswer)
+        if (status !in 200..299) throw failure(status, data)
+        return data
+    }
+
+    /** Sends the request and returns the answer with its status, whatever the status is. Only network problems throw. */
+    private suspend fun perform(
+        method: String,
+        path: String,
+        body: String?,
+        key: String?,
+        timeout: Double,
+        slowAnswer: String,
+    ): Pair<ByteArray, Int> {
+        val url = urlFor(baseURL, path) ?: throw APIError.notReady()
+        val builder = Request.Builder()
+            .url(url)
+            .header("Accept", "application/json")
+        token?.let { builder.header("Authorization", "Bearer $it") }
+        key?.let { builder.header("Idempotency-Key", it) }
+        if (body != null) builder.header("Content-Type", "application/json")
+        val requestBody = body?.toByteArray(Charsets.UTF_8)?.toRequestBody(jsonType)
+        builder.method(method, requestBody)
+        val client = if (timeout == defaultTimeout) http else http.withTimeout(timeout)
+        try {
+            return client.newCall(builder.build()).await()
+        } catch (e: SocketTimeoutException) {
+            throw APIError.server(504, slowAnswer)
+        } catch (e: IOException) {
+            if (hasNetwork?.invoke() == false) throw APIError.offline()
+            throw when (e) {
+                is UnknownHostException, is ConnectException, is SSLException -> APIError.notReady()
+                else -> APIError.offline()
+            }
+        }
+    }
 
     companion object {
         const val base = "https://slime.hyprnode.de/api/v1/"
@@ -651,6 +1031,56 @@ class HyprnodeAPI(val token: String? = null) {
 
         const val slowServerAnswer = "slime.hyprnode.de took too long to answer. Try again in a moment."
 
+        /**
+         * Whether the phone has a network at all, set by the app (from
+         * `ConnectivityManager`). A failed request without one is [APIError.offline]
+         * rather than [APIError.notReady]. Null (tests): decided by the error alone.
+         */
+        @Volatile
+        var hasNetwork: (() -> Boolean)? = null
+
+        private val jsonType = "application/json".toMediaType()
+
+        /** One connection pool for the app; per-request timeouts derive from it. */
+        private val sharedClient: OkHttpClient by lazy {
+            val seconds = defaultTimeout.toLong()
+            OkHttpClient.Builder()
+                .connectTimeout(seconds, TimeUnit.SECONDS)
+                .readTimeout(seconds, TimeUnit.SECONDS)
+                .writeTimeout(seconds, TimeUnit.SECONDS)
+                .build()
+        }
+
+        private fun OkHttpClient.withTimeout(seconds: Double): OkHttpClient {
+            val millis = (seconds * 1000).toLong()
+            return newBuilder()
+                .connectTimeout(millis, TimeUnit.MILLISECONDS)
+                .readTimeout(millis, TimeUnit.MILLISECONDS)
+                .writeTimeout(millis, TimeUnit.MILLISECONDS)
+                .build()
+        }
+
+        private val empty: String = "{}"
+
+        private fun body(vararg pairs: Pair<String, JsonElement>): String = JsonObject(mapOf(*pairs)).toString()
+
+        private fun <T> encode(serializer: SerializationStrategy<T>, value: T): String =
+            encoder.encodeToString(serializer, value)
+
+        /** The URL for a path relative to the API base, or null when it isn't one. */
+        internal fun urlFor(baseURL: String, path: String): HttpUrl? = baseURL.toHttpUrlOrNull()?.resolve(path)
+
+        /**
+         * The error for an answer outside 2xx. A bare 404 means the server
+         * isn't set up yet (the proxy answers without our JSON).
+         */
+        internal fun failure(status: Int, data: ByteArray): APIError {
+            val message = runCatching { decoder.decodeFromString(ServerError.serializer(), data.decodeToString()).error }
+                .getOrNull()
+            if (status == 404 && message == null) return APIError.notReady()
+            return APIError.server(status, message)
+        }
+
         /** A name as the server stores it: trimmed, single spaces, at most [nameLimit] characters. */
         fun cleanedName(name: String): String {
             val words = mutableListOf<String>()
@@ -678,8 +1108,11 @@ class HyprnodeAPI(val token: String? = null) {
         }
 
         /** `care` or `care?after=<cursor>`, the cursor percent-encoded except letters and digits. */
-        fun carePath(cursor: String?): String {
-            if (cursor.isNullOrEmpty()) return "care"
+        fun carePath(cursor: String?): String = afterPath("care", cursor)
+
+        /** `<path>` or `<path>?after=<cursor>`, the cursor percent-encoded except letters and digits. */
+        internal fun afterPath(path: String, cursor: String?): String {
+            if (cursor.isNullOrEmpty()) return path
             val encoded = StringBuilder()
             var i = 0
             while (i < cursor.length) {
@@ -694,11 +1127,34 @@ class HyprnodeAPI(val token: String? = null) {
                 }
                 i += chars
             }
-            return "care?after=$encoded"
+            return "$path?after=$encoded"
         }
 
         /** Reads a 409 from `PUT /care/snapshot`. */
         fun careConflict(data: ByteArray): CareConflict? =
             runCatching { decoder.decodeFromString(CareConflict.serializer(), data.toString(Charsets.UTF_8)) }.getOrNull()
     }
+}
+
+/** Runs the call on OkHttp's threads and returns the body with the status. Cancelling the coroutine cancels the call. */
+private suspend fun Call.await(): Pair<ByteArray, Int> = suspendCancellableCoroutine { continuation ->
+    continuation.invokeOnCancellation { cancel() }
+    enqueue(object : Callback {
+        override fun onFailure(call: Call, e: IOException) {
+            continuation.resumeWithException(e)
+        }
+
+        override fun onResponse(call: Call, response: Response) {
+            val result = try {
+                response.use { answer ->
+                    val status = answer.code
+                    (answer.body?.bytes() ?: ByteArray(0)) to status
+                }
+            } catch (e: IOException) {
+                continuation.resumeWithException(e)
+                return
+            }
+            continuation.resume(result)
+        }
+    })
 }
