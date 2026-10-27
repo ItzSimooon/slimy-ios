@@ -269,9 +269,9 @@ class IslandController(context: Context, private val store: GameStore, private v
         _isLive.value = isPosted() || _overlayRunning.value
     }
 
-    /** Lifecycle events go to logcat (debug), so the notification can be followed without any UI. */
+    /** Lifecycle events go to logcat (info, tag SlimyIsland), so the island can be followed without any UI. */
     fun note(line: String) {
-        Log.d("SlimyIsland", line)
+        Log.i("SlimyIsland", line)
     }
 
     // MARK: Lifecycle
@@ -283,6 +283,14 @@ class IslandController(context: Context, private val store: GameStore, private v
      */
     suspend fun start() = onMain {
         if (!store.state.value.hatched) return@onMain
+        if (!wantsOverlay) {
+            note("Island not started: " + when {
+                !showIsland.value -> "turned off in Settings"
+                !overlaySupported -> "this phone doesn't allow it"
+                !overlayPermitted -> "\"Display over other apps\" is off for Slimy"
+                else -> "not wanted right now"
+            })
+        }
         if (wantsOverlay && startOverlay()) {
             startedAt = Instant.now()
             problem.value = null

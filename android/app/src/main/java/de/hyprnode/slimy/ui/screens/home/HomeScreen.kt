@@ -42,6 +42,8 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -81,6 +83,8 @@ import de.hyprnode.slimy.core.GameStore
 import de.hyprnode.slimy.core.LocalDailyStore
 import de.hyprnode.slimy.core.LocalFriendsStore
 import de.hyprnode.slimy.core.LocalGameStore
+import de.hyprnode.slimy.core.LocalIsland
+import de.hyprnode.slimy.platform.island.IslandSystem
 import de.hyprnode.slimy.model.Accessories
 import de.hyprnode.slimy.model.CrateKind
 import de.hyprnode.slimy.model.GameState
@@ -441,8 +445,33 @@ private fun Pills(s: GameState, open: (Destination) -> Unit) {
     val canClaim = s.streakInfo(Instant.ofEpochMilli(clock)).canClaim
     val playedToday = daily.playedToday
     val crates = HomeLayout.crateCount(s)
-    if (!canClaim && playedToday && crates == 0) return
+    val island = LocalIsland.current
+    val context = LocalContext.current
+    val resumed = rememberIsResumed()
+    val islandAllowed by island.overlayAllowed.collectAsStateWithLifecycle()
+    val showIsland by island.showIsland.collectAsStateWithLifecycle()
+    // Set while Android's permission page is open; coming back with it starts the island.
+    var askedForIsland by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(resumed) {
+        if (!resumed) return@LaunchedEffect
+        island.refreshStatus()
+        if (askedForIsland && island.overlayPermitted) {
+            askedForIsland = false
+            island.setShowIsland(true)
+        }
+    }
+    // Slimes hatched before the island existed never saw the onboarding step that asks for it.
+    val inviteToIsland = showIsland && !islandAllowed && remember { island.overlaySupported }
+    if (!canClaim && playedToday && crates == 0 && !inviteToIsland) return
     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        if (inviteToIsland) {
+            Pill("Put Slimy in the island", "Put Slimy in the island", "Allow Slimy over other apps", {
+                askedForIsland = true
+                IslandSystem.openPermissionPage(context)
+            }) {
+                PixelItem("starJelly", Modifier.size(16.dp))
+            }
+        }
         if (canClaim) {
             Pill("Daily Gift", "Daily gift ready", "Open today's gift", { open(Destination.gift) }) {
                 ArtView("gift.closed", Modifier.size(18.dp))

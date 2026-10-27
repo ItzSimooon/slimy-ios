@@ -142,14 +142,29 @@ internal class IslandOverlay(private val base: Context, private val app: SlimyAp
             .map { it.isAtLeast(Lifecycle.State.STARTED) }
             .distinctUntilChanged()
         val hatched = app.store.state.map { it.hatched }.distinctUntilChanged()
+        // Why the island is hidden, in words for logcat; null when it may show.
         val device = combine(screen, statusBarShown, interactive, unlocked) { s, bar, on, open ->
-            s != null && s.isPortrait && bar && on && open
+            when {
+                s == null -> "screen not measured yet"
+                !s.isPortrait -> "landscape"
+                !bar -> "a full-screen app hides the status bar"
+                !on -> "screen off"
+                !open -> "phone locked"
+                else -> null
+            }
         }
         val wanted = combine(controller.showIsland, controller.previewing, appInFront, hatched) { show, preview, front, hatch ->
-            show && hatch && (!front || preview)
+            when {
+                !show -> "turned off in Settings"
+                !hatch -> "no slime yet"
+                front && !preview -> "Slimy is open (the island steps aside in its own app)"
+                else -> null
+            }
         }
         scope.launch {
-            combine(device, wanted) { a, b -> a && b }.distinctUntilChanged().collect { show ->
+            combine(device, wanted) { a, b -> b ?: a }.distinctUntilChanged().collect { hiddenBecause ->
+                val show = hiddenBecause == null
+                note(if (show) "Island shown" else "Island hidden: $hiddenBecause")
                 wantShown = show
                 if (show) showIsland() else hideIsland()
             }
@@ -259,6 +274,7 @@ internal class IslandOverlay(private val base: Context, private val app: SlimyAp
     private fun showIsland() {
         if (attached || placement == null) return
         if (!IslandSystem.canDrawOverlays(context)) {
+            note("Island not shown: \"Display over other apps\" is off for Slimy")
             controller.overlayFailed("Slimy isn't allowed over other apps anymore.")
             return
         }
@@ -319,14 +335,15 @@ internal class IslandOverlay(private val base: Context, private val app: SlimyAp
         root.setViewTreeViewModelStoreOwner(owner)
         root.clipChildren = false
         val compose = ComposeView(context).apply {
-            setContent { Content() }
+            // Not plain Content(): inside apply it would be ComposeView.Content() itself, an endless loop.
+            setContent { IslandContent() }
         }
         root.addView(compose, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT))
         return root
     }
 
     @Composable
-    private fun Content() {
+    private fun IslandContent() {
         val game by app.store.state.collectAsState()
         val moment by controller.moment.collectAsState()
         val animated by controller.animated.collectAsState()
@@ -479,7 +496,7 @@ internal class IslandOverlay(private val base: Context, private val app: SlimyAp
     }
 
     private fun note(line: String) {
-        Log.d("SlimyIsland", line)
+        Log.i("SlimyIsland", line)
     }
 
     /** A frame that sees every touch first, for ACTION_OUTSIDE and the auto-close timer. */

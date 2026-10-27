@@ -1,4 +1,4 @@
-A tiny pixel slime that lives on your phone.
+A tiny pixel slime pet for your phone.
 
 It lives in a little black island around your front camera, on top of every app. There it wobbles, naps, gets hungry, talks on its own and reacts to what your phone is doing. Tap the island to feed it, play with it, give it a bath or pet it, without opening the app.
 
