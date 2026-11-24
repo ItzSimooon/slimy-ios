@@ -115,7 +115,7 @@ def feature():
 
     title = ImageFont.truetype(BOLD, 150)
     d.text((64, 96), "slimy", font=title, fill=TEXT)
-    d.text((70, 270), "by hyprnode", font=ImageFont.truetype(BOLD, 36), fill=HYPR)
+    d.text((70, 270), "by gbits", font=ImageFont.truetype(BOLD, 36), fill=HYPR)
     tagline = ImageFont.truetype(REGULAR, 34)
     for i, line in enumerate(["A pixel pet that lives", "on your phone"]):
         d.text((70, 336 + i * 44), line, font=tagline, fill=MUTED)

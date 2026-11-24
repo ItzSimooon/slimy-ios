@@ -5,7 +5,7 @@ import UIKit
 enum CareInvite {
     /// What the share sheet sends with a care code.
     static func message(for code: String, slimeName: String) -> String {
-        "Care for my slime \(slimeName) with me in Slimy! Code: \(code) — get Slimy at https://slime.hyprnode.de"
+        "Care for my slime \(slimeName) with me in Slimy! Code: \(code) — get Slimy at https://slime.gbits.eu"
     }
 
     /// The code in a pasted invite ("… Code: ABC123 …"), or nil when the
@@ -165,7 +165,7 @@ struct CareTogetherView: View {
     private var goOnlineSection: some View {
         Section {
             VStack(alignment: .leading, spacing: 10) {
-                Text("Care Together needs slime.hyprnode.de")
+                Text("Care Together needs slime.gbits.eu")
                     .font(.headline)
                     .foregroundStyle(Theme.ink)
                 Text("Both iPhones talk through the server to share the slime. Going online asks you to agree to the Terms first.")

@@ -29,12 +29,12 @@ class OnlineModelTest {
 
     @Test
     fun inviteLinksGiveTheirCode() {
-        assertEquals("ABC234", FriendInvite.code("https://slime.hyprnode.de/f/abc234"))
+        assertEquals("ABC234", FriendInvite.code("https://slime.gbits.eu/f/abc234"))
         assertEquals("ABC234", FriendInvite.code("slimy://f/ABC234"))
         assertEquals("ABC234", FriendInvite.code("HTTPS://Slime.Hyprnode.DE/f/ABC234"))
         assertNull(FriendInvite.code("https://example.com/f/ABC234"))
-        assertNull(FriendInvite.code("https://slime.hyprnode.de/g/ABC234"))
-        assertNull(FriendInvite.code("https://slime.hyprnode.de/f/ABC234/x"))
+        assertNull(FriendInvite.code("https://slime.gbits.eu/g/ABC234"))
+        assertNull(FriendInvite.code("https://slime.gbits.eu/f/ABC234/x"))
         // 0, O, 1, I and L aren't in the alphabet.
         assertNull(FriendInvite.code("slimy://f/ABC10O"))
         assertNull(FriendInvite.code("slimy://f/ABC23"))
@@ -46,7 +46,7 @@ class OnlineModelTest {
         assertEquals("ABC234", FriendInvite.sanitize(" abc-234 xyz"))
         assertEquals("AB", FriendInvite.sanitize("äöüAB"))
         assertEquals(
-            "Be my slime friend in Slimy! Code: ABC234 https://slime.hyprnode.de/f/ABC234",
+            "Be my slime friend in Slimy! Code: ABC234 https://slime.gbits.eu/f/ABC234",
             FriendInvite.message("ABC234"),
         )
     }

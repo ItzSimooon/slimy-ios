@@ -235,7 +235,7 @@ object BoothCard {
         }
 
         val brand = "slimy"
-        val url = "slime.hyprnode.de"
+        val url = "slime.gbits.eu"
         val rightW = max(brandPaint.measureText(brand), urlPaint.measureText(url))
         val left = rect.left + 16 * u
         val right = rect.right - 16 * u

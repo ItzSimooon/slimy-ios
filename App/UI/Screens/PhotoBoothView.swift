@@ -234,7 +234,7 @@ struct PhotoBoothView: View {
             let image = Image(uiImage: photo)
             ShareLink(item: image,
                       subject: Text("\(name) in Slimy"),
-                      message: Text("Meet \(name), my slime in Slimy. https://slime.hyprnode.de"),
+                      message: Text("Meet \(name), my slime in Slimy. https://slime.gbits.eu"),
                       preview: SharePreview("\(name) in Slimy", image: image)) {
                 label
             }
@@ -591,7 +591,7 @@ private struct BoothCard: View {
                 Text(verbatim: "slimy")
                     .font(.custom("PixelifySans-Bold", fixedSize: 26))
                     .foregroundStyle(green)
-                Text(verbatim: "slime.hyprnode.de")
+                Text(verbatim: "slime.gbits.eu")
                     .font(.system(size: 11, weight: .semibold, design: .rounded))
                     .foregroundStyle(inkSoft)
             }

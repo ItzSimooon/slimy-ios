@@ -138,7 +138,7 @@ node --env-file=/etc/slimy/slimy.env src/admin-cli.js status
 - No restart needed: the server reads the file on every admin request. Running `passwd` again changes the passphrase and signs everyone out.
 - To switch the admin off, delete the file. Admin routes then answer 503.
 
-Open the admin at `http://192.168.1.234/admin` from the home network, or through Tailscale if the container (or a subnet router) is on your tailnet. Through `https://slime.hyprnode.de/admin` it is a 404 on purpose. On plain HTTP the passphrase crosses the home network unencrypted; Tailscale encrypts it.
+Open the admin at `http://192.168.1.234/admin` from the home network, or through Tailscale if the container (or a subnet router) is on your tailnet. Through `https://slime.gbits.eu/admin` it is a 404 on purpose. On plain HTTP the passphrase crosses the home network unencrypted; Tailscale encrypts it.
 
 ## 6. Caddyfile
 
@@ -230,8 +230,8 @@ Apply and test:
 caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile && systemctl reload caddy
 curl -s -o /dev/null -w '%{http_code}\n' -H 'Cf-Connecting-Ip: 203.0.113.9' http://127.0.0.1/api/v1/admin/session   # 404 (from the container itself)
 curl -s http://192.168.1.234/api/v1/admin/session   # from a PC at home: {"error":"Please sign in."}
-curl -s https://slime.hyprnode.de/api/v1/admin/session -o /dev/null -w '%{http_code}\n'   # 404
-curl -sI https://slime.hyprnode.de/ | grep -i -E 'content-security|referrer|permissions'
+curl -s https://slime.gbits.eu/api/v1/admin/session -o /dev/null -w '%{http_code}\n'   # 404
+curl -sI https://slime.gbits.eu/ | grep -i -E 'content-security|referrer|permissions'
 ```
 
 ## 7. The service
@@ -279,7 +279,7 @@ WantedBy=multi-user.target
 From any PC (needs `jq`). It registers a throwaway device, talks once, and deletes it again:
 
 ```sh
-API=https://slime.hyprnode.de/api/v1
+API=https://slime.gbits.eu/api/v1
 curl -s $API/health | jq                                   # "chat": true
 T=$(curl -s -X POST $API/devices -H 'Content-Type: application/json' -d '{"ownerName":"Smoke test"}' | jq -r .token)
 curl -s -X POST $API/chat -H "Authorization: Bearer $T" -H 'Content-Type: application/json' \

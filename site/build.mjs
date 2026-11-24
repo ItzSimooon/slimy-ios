@@ -46,7 +46,7 @@ import { Pix, drawText, textWidth, drawSlime, drawItem, drawIcon, SKINS } from "
 const SITE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.dirname(SITE);
 const DIST = path.join(SITE, "dist");
-const ORIGIN = "https://slime.hyprnode.de";
+const ORIGIN = "https://slime.gbits.eu";
 
 const SKIP_TOP = new Set(["partials", "tools", "dist", "node_modules", "build.mjs", "release.mjs", "contact.json"]);
 const SKIP_ANY = new Set(["dev-mock.mjs", ".DS_Store", "Thumbs.db"]);
@@ -315,10 +315,10 @@ function ogImage(sprites) {
   // Left: wordmark, maker, tagline, address.
   const x = 14;
   drawText(p, "slimy", x, 18, ink, 4);
-  drawText(p, "by hyprnode", x + 1, 60, "#9B7BFF", 1);
+  drawText(p, "by gbits", x + 1, 60, "#9B7BFF", 1);
   drawText(p, "A tiny slime that lives", x + 1, 79, "#3C3C43", 1);
   drawText(p, "in your Dynamic Island.", x + 1, 90, "#3C3C43", 1);
-  drawText(p, "slime.hyprnode.de", x + 1, 108, "#1E7F37", 1);
+  drawText(p, "slime.gbits.eu", x + 1, 108, "#1E7F37", 1);
   return p.scaled(5);
 }
 

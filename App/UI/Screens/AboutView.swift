@@ -6,7 +6,7 @@ struct AboutView: View {
     @EnvironmentObject private var store: GameStore
     @State private var showWhatsNew = false
 
-    private static let website = URL(string: "https://slime.hyprnode.de")!
+    private static let website = URL(string: "https://slime.gbits.eu")!
 
     private static var version: String {
         Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.1"
@@ -35,7 +35,7 @@ struct AboutView: View {
                         }
                     }
                 LabeledContent("Build", value: Self.build)
-                LabeledContent("Made by", value: "hyprnode")
+                LabeledContent("Made by", value: "gbits")
                 Button {
                     showWhatsNew = true
                 } label: {
@@ -82,7 +82,7 @@ struct AboutView: View {
             } header: {
                 Text("Acknowledgements")
             } footer: {
-                Text("© 2026 hyprnode")
+                Text("© 2026 gbits")
             }
         }
         .navigationTitle("About")
@@ -101,14 +101,14 @@ private struct AboutHeader: View {
                 Text("slimy")
                     .font(Brand.voice(34, relativeTo: .largeTitle)).fontDesign(nil)
                     .foregroundStyle(Theme.ink)
-                Text("by hyprnode")
+                Text("by gbits")
                     .font(Brand.voice(18, relativeTo: .headline)).fontDesign(nil)
                     .foregroundStyle(Brand.hypr)
             }
             .lineLimit(1)
             .minimumScaleFactor(0.5)
             .accessibilityElement(children: .ignore)
-            .accessibilityLabel("Slimy by hyprnode")
+            .accessibilityLabel("Slimy by gbits")
             .accessibilityAddTraits(.isHeader)
             Text("A tiny slime that lives in your Dynamic Island.")
                 .font(.subheadline)

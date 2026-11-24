@@ -14,7 +14,7 @@ object Brand {
     val muted: Long = argb(0x8D9D91)
     val slime: Long = argb(0x7DE67A)
 
-    /** hyprnode violet, wordmark only. */
+    /** gbits violet, wordmark only. */
     val hypr: Long = argb(0x9B7BFF)
 
     /** Hearts, blush. */

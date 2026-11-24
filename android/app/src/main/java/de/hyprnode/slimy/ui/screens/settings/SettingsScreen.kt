@@ -390,7 +390,7 @@ private fun OnlineSection(onGoOnline: () -> Unit) {
 
     GroupedSection(
         header = "Online",
-        footer = "Friends, the leaderboard, Care Together and talking with your slime need slime.hyprnode.de. Your slime, coins and things always stay on this phone; with Care Together, your slime is also shared with your partner.",
+        footer = "Friends, the leaderboard, Care Together and talking with your slime need slime.gbits.eu. Your slime, coins and things always stay on this phone; with Care Together, your slime is also shared with your partner.",
     ) {
         GroupedRow(
             title = "Status",
@@ -419,12 +419,12 @@ private fun OnlineSection(onGoOnline: () -> Unit) {
     if (confirmOffline) {
         ConfirmDialog(
             title = "Go offline?",
-            message = "Slimy stops talking to slime.hyprnode.de. Your friends stay saved on this phone and you can go online again any time.",
+            message = "Slimy stops talking to slime.gbits.eu. Your friends stay saved on this phone and you can go online again any time.",
             confirmLabel = "Go Offline",
             destructive = true,
             onConfirm = {
                 friends.goOffline()
-                store.showToast("You're offline. Nothing is sent to slime.hyprnode.de.", good = true)
+                store.showToast("You're offline. Nothing is sent to slime.gbits.eu.", good = true)
             },
             onDismiss = { confirmOffline = false },
         )
@@ -447,7 +447,7 @@ private fun PrivacySection() {
 
     GroupedSection(
         header = "Privacy",
-        footer = "With Talk with AI on, your message, the recent chat and a few facts about your slime, like how it feels, go to Cloudflare Workers AI and Groq, which write the reply. Your name and device ID are never passed on to them, and slime.hyprnode.de doesn't keep the messages.",
+        footer = "With Talk with AI on, your message, the recent chat and a few facts about your slime, like how it feels, go to Cloudflare Workers AI and Groq, which write the reply. Your name and device ID are never passed on to them, and slime.gbits.eu doesn't keep the messages.",
     ) {
         // Consent is only given in the chat's own consent screen, before the first message; here it can only be taken back.
         if (consent) {
@@ -476,7 +476,7 @@ private fun PrivacySection() {
 
     if (confirmDelete) {
         ConfirmDialog(
-            title = "Delete your data on slime.hyprnode.de?",
+            title = "Delete your data on slime.gbits.eu?",
             message = "Your friendships, scores, Care Together and everything friends sent you are deleted for good, and Slimy goes offline. Your slime on this phone stays. This can't be undone.",
             confirmLabel = "Delete Data",
             destructive = true,
@@ -486,10 +486,10 @@ private fun PrivacySection() {
                     val done = friends.deleteAccount()
                     deleting = false
                     if (done) {
-                        store.showToast("Your data on slime.hyprnode.de is deleted.", good = true)
+                        store.showToast("Your data on slime.gbits.eu is deleted.", good = true)
                     } else {
                         store.showToast(
-                            friends.lastError.value ?: "Couldn't reach slime.hyprnode.de. Check your connection and try again.",
+                            friends.lastError.value ?: "Couldn't reach slime.gbits.eu. Check your connection and try again.",
                             good = false,
                         )
                     }

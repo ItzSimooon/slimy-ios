@@ -26,10 +26,10 @@ Run the check after every text change. It fails on anything App Store Connect wo
 | Secondary category | Entertainment |
 | Price | Free, no in-app purchases |
 | Age rating | 13+ (see `age-rating.md`) |
-| Copyright | `2026 hyprnode` |
-| Support URL | https://slime.hyprnode.de/support |
-| Marketing URL | https://slime.hyprnode.de |
-| Privacy Policy URL | https://slime.hyprnode.de/privacy |
+| Copyright | `2026 gbits` |
+| Support URL | https://slime.gbits.eu/support |
+| Marketing URL | https://slime.gbits.eu |
+| Privacy Policy URL | https://slime.gbits.eu/privacy |
 | Content rights | Does not contain, show or access third-party content |
 | Encryption | Uses only standard HTTPS; `ITSAppUsesNonExemptEncryption` is already `NO` in `project.yml`, so no export compliance questions per build |
 | Availability | All territories except China mainland, where games and apps with generative AI need a government approval number; the app is English, the German store text says so |

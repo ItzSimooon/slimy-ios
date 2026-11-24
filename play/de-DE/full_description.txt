@@ -46,4 +46,4 @@ PRIVAT VON ANFANG AN
 
 Slimy braucht Android 8 oder neuer. Die App selbst ist auf Englisch.
 
-Von hyprnode. Fragen oder Ideen: slime.hyprnode.de/support
+Von gbits. Fragen oder Ideen: slime.gbits.eu/support

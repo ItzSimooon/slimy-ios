@@ -103,7 +103,7 @@ import java.time.Instant
 object CareInvite {
     /** What the share sheet sends with a care code. */
     fun message(code: String, slimeName: String): String =
-        "Care for my slime $slimeName with me in Slimy! Code: $code — get Slimy at https://slime.hyprnode.de"
+        "Care for my slime $slimeName with me in Slimy! Code: $code — get Slimy at https://slime.gbits.eu"
 
     /** The code in a pasted invite ("… Code: ABC123 …"), or null when the text isn't one. */
     fun code(text: String): String? {
@@ -455,7 +455,7 @@ private fun GoOnlineSection(ban: String?, goOnline: () -> Unit) {
     GroupedSection {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text(
-                "Care Together needs slime.hyprnode.de",
+                "Care Together needs slime.gbits.eu",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
                 color = Theme.ink,

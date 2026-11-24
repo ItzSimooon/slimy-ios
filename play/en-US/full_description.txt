@@ -46,4 +46,4 @@ PRIVATE BY DESIGN
 
 Slimy needs Android 8 or newer. The app is in English.
 
-Made by hyprnode. Questions or ideas: slime.hyprnode.de/support
+Made by gbits. Questions or ideas: slime.gbits.eu/support

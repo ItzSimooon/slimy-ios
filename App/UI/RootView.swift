@@ -46,7 +46,7 @@ struct RootView: View {
         }
         .onOpenURL { url in
             store.tick()
-            // Invite links (slimy://f/CODE, https://slime.hyprnode.de/f/CODE)
+            // Invite links (slimy://f/CODE, https://slime.gbits.eu/f/CODE)
             // fill in the friend code; widget taps (slimy://home) just open.
             friends.openInvite(url)
         }

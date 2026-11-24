@@ -11,7 +11,7 @@ What goes into App Store Connect → your app → the version → **App Review I
 
 ## Before you press Submit
 
-1. `https://slime.hyprnode.de/api/v1/health` answers `"ok": true` and `"chat": true` (at least one AI provider key is set, see `HANDOVER.md`), and the server is 1.1 (it answers `POST /care/codes`; the admin Overview shows the Caring together tile with a number, not a dash).
+1. `https://slime.gbits.eu/api/v1/health` answers `"ok": true` and `"chat": true` (at least one AI provider key is set, see `HANDOVER.md`), and the server is 1.1 (it answers `POST /care/codes`; the admin Overview shows the Caring together tile with a number, not a dash).
 2. The website pages that App Review opens all load: `/`, `/privacy`, `/terms`, `/support`, and an invite page such as `/f/ABC234` (shows "expired" for an unknown code, which is correct).
 3. Record a screen recording of 90 to 150 seconds with two iPhones side by side: Go Online on both, Get My Code, Connect with the code, accept, hug, send a gift; then Care Together on both, Get a Care Code, Join, feed the slime on one phone and show it arriving on the other, and Stop Sharing. Upload it as the **Attachment**. The notes below say it is attached.
 4. Install the exact build you submit from TestFlight and walk through the notes once, including opening a crate and the Drop rates sheet. Every button name in quotes below must match what the build shows; fix the notes if a label changed.
@@ -50,7 +50,7 @@ SAFETY (1.2)
 - Friends can't send free text; greetings are fixed presets.
 - People connect only through a short-lived code one of them shares. No directory, search or random matching.
 - Report and Block on a friend or a request. We review reports daily and can rename or ban a device.
-- Contact: https://slime.hyprnode.de/support
+- Contact: https://slime.gbits.eu/support
 
 TALK (AI CHAT, OPTIONAL)
 - Our server asks an AI model for a short in-character reply. Before the first message a consent screen names the AI services (Cloudflare Workers AI and Groq), says what is sent (the message, recent chat, facts about the slime including how it feels; never the user's name or a device ID) and links to the privacy policy. Consent can be withdrawn.
@@ -85,7 +85,7 @@ Point to the attached recording and offer a call. If needed, explain that pairin
 Check `/api/v1/health` (`chat: true`) and the admin dashboard's chat panel for provider failures, then reply with the time it was fixed. The app shows a friendly message instead of failing when no AI capacity is left.
 
 **"Where can users report content or get help?"**
-In the app: Report on a friend, a request, or a chat reply; Block on a friend or a request. On the web: https://slime.hyprnode.de/support. Reports land in the moderation queue of the admin area.
+In the app: Report on a friend, a request, or a chat reply; Block on a friend or a request. On the web: https://slime.gbits.eu/support. Reports land in the moderation queue of the admin area.
 
 **"What data leaves the device?"**
 See `appstore/privacy-labels.md`. In short: nothing until the user goes online; then a random device id, the names they chose, their slime's profile, friendships and game records, and while two people care for one slime together, a copy of that slime and their care actions (30 days). Chat text and how the slime feels pass through to the AI provider and are not stored.

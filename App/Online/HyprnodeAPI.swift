@@ -1,6 +1,6 @@
 import Foundation
 
-// Client for the slime.hyprnode.de backend (server/ in this repo). The full
+// Client for the slime.gbits.eu backend (server/ in this repo). The full
 // contract is in server/README.md; keep the two in sync.
 
 enum APIError: LocalizedError {
@@ -10,9 +10,9 @@ enum APIError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .offline: "Can't reach slime.hyprnode.de. Check your internet and try again."
+        case .offline: "Can't reach slime.gbits.eu. Check your internet and try again."
         case .server(let status, let message): message ?? "The server reported error \(status)."
-        case .notReady: "slime.hyprnode.de isn't reachable right now. Please try again later."
+        case .notReady: "slime.gbits.eu isn't reachable right now. Please try again later."
         }
     }
 
@@ -54,7 +54,7 @@ enum APIError: LocalizedError {
 }
 
 /// Thrown instead of calling the server while the player hasn't gone online
-/// (or went offline). Nothing reaches slime.hyprnode.de in that state.
+/// (or went offline). Nothing reaches slime.gbits.eu in that state.
 struct NotOnlineError: LocalizedError {
     var errorDescription: String? { "Go online in Friends to use this." }
 }
@@ -684,7 +684,7 @@ extension KeyedDecodingContainer {
 // MARK: - Client
 
 struct HyprnodeAPI {
-    static let base = URL(string: "https://slime.hyprnode.de/api/v1/")!
+    static let base = URL(string: "https://slime.gbits.eu/api/v1/")!
 
     var token: String?
 
@@ -954,7 +954,7 @@ struct HyprnodeAPI {
 
     /// How long a request may wait for the server's next bytes.
     static let defaultTimeout: TimeInterval = 20
-    static let slowServerAnswer = "slime.hyprnode.de took too long to answer. Try again in a moment."
+    static let slowServerAnswer = "slime.gbits.eu took too long to answer. Try again in a moment."
 
     private func send<T: Decodable>(_ method: String, _ path: String) async throws -> T {
         try await send(method, path, body: Optional<Empty>.none)

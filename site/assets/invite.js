@@ -1,5 +1,5 @@
 // The invite page, /f/<CODE>. Share text from the app:
-//   "Be my slime friend in Slimy! Code: ABC123 https://slime.hyprnode.de/f/ABC123"
+//   "Be my slime friend in Slimy! Code: ABC123 https://slime.gbits.eu/f/ABC123"
 // Looks the code up with GET /api/v1/invites/<CODE> (doesn't use it up) and
 // shows who sent it, their slime, the code to type and the next steps.
 // Everything from the server is written with textContent, never as HTML.

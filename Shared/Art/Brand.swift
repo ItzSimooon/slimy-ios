@@ -14,7 +14,7 @@ enum Brand {
     static let text = Color(hex: 0xE9F1E4)
     static let muted = Color(hex: 0x8D9D91)
     static let slime = Color(hex: 0x7DE67A)
-    static let hypr = Color(hex: 0x9B7BFF)       // hyprnode violet, wordmark only
+    static let hypr = Color(hex: 0x9B7BFF)       // gbits violet, wordmark only
     static let warm = Color(hex: 0xF07A9A)       // hearts, blush
     static let cool = Color(hex: 0x7FD6F0)       // zzz, bubbles, sparks
     static let gold = Color(hex: 0xFFD166)       // coins

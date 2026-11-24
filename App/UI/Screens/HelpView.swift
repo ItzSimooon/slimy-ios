@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Answers to common questions, the same as on slime.hyprnode.de/support,
+/// Answers to common questions, the same as on slime.gbits.eu/support,
 /// with notes that depend on how Slimy was installed on this iPhone.
 struct HelpView: View {
     @State private var query = ""
@@ -34,7 +34,7 @@ struct HelpView: View {
                 Section {
                     SettingsLinkRow(title: "Contact Support", systemImage: "envelope", url: FriendsStore.supportURL)
                 } footer: {
-                    Text("More help and ways to reach us are on slime.hyprnode.de/support.")
+                    Text("More help and ways to reach us are on slime.gbits.eu/support.")
                 }
             }
         }
@@ -192,7 +192,7 @@ private struct HelpTopic: Identifiable {
             items.append(HelpItem(
                 id: "install.update",
                 question: "How do I update Slimy?",
-                answer: "New versions are on slime.hyprnode.de. Install the new Slimy.ipa over the current app the same way you installed it, with the same Apple ID, and your slime stays."))
+                answer: "New versions are on slime.gbits.eu. Install the new Slimy.ipa over the current app the same way you installed it, with the same Apple ID, and your slime stays."))
         }
         items.append(HelpItem(id: "install.widgets", question: "My widgets stay empty.", answer: widgets))
         return HelpTopic(id: "install", title: sideloaded ? "Install and widgets" : "Widgets", items: items)
@@ -221,7 +221,7 @@ private struct HelpTopic: Identifiable {
         HelpItem(
             id: "chat.data",
             question: "What happens to my chat messages?",
-            answer: "Nothing is sent until you agree in the chat before your first message. Then your message, the recent chat and a few facts about your slime, like its name, how it feels and its needs, go to Cloudflare Workers AI and Groq, which write the reply. Your name and device ID are never passed on to them, and slime.hyprnode.de doesn't keep the messages. The chat itself stays on this iPhone. You can turn Talk with AI off any time in Settings under Privacy, or under About AI Chat in the chat menu."),
+            answer: "Nothing is sent until you agree in the chat before your first message. Then your message, the recent chat and a few facts about your slime, like its name, how it feels and its needs, go to Cloudflare Workers AI and Groq, which write the reply. Your name and device ID are never passed on to them, and slime.gbits.eu doesn't keep the messages. The chat itself stays on this iPhone. You can turn Talk with AI off any time in Settings under Privacy, or under About AI Chat in the chat menu."),
         HelpItem(
             id: "chat.mood",
             question: "Does the chat change how my slime feels?",
@@ -236,7 +236,7 @@ private struct HelpTopic: Identifiable {
         HelpItem(
             id: "data.delete",
             question: "How do I delete my data?",
-            answer: "Your slime, coins and things live on this iPhone. If you went online, slime.hyprnode.de stores your online profile, your friends and what they sent you, and while you use Care Together, the shared slime and what you both did for it. To delete that, go to Settings, then Privacy, and tap Delete My Data on the Server. You'll find the same button in Friends under Privacy & blocked. To remove your slime from this iPhone, use Start over in Settings."),
+            answer: "Your slime, coins and things live on this iPhone. If you went online, slime.gbits.eu stores your online profile, your friends and what they sent you, and while you use Care Together, the shared slime and what you both did for it. To delete that, go to Settings, then Privacy, and tap Delete My Data on the Server. You'll find the same button in Friends under Privacy & blocked. To remove your slime from this iPhone, use Start over in Settings."),
         HelpItem(
             id: "data.move",
             question: "How do I move my slime to a new iPhone?",

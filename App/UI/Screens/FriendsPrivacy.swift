@@ -43,14 +43,14 @@ struct FriendPrivacyView: View {
         .confirmationDialog("Go offline?", isPresented: $confirmOffline, titleVisibility: .visible) {
             Button("Go Offline", role: .destructive) {
                 friends.goOffline()
-                toast = Toast(text: "You're offline. Nothing is sent to slime.hyprnode.de.", good: true)
+                toast = Toast(text: "You're offline. Nothing is sent to slime.gbits.eu.", good: true)
             }
         } message: {
             Text(store.state.care == nil
-                 ? "Slimy stops talking to slime.hyprnode.de. Your friends stay saved on this iPhone and you can go online again any time."
-                 : "Slimy stops talking to slime.hyprnode.de. Your friends stay saved on this iPhone. What you do for \(store.state.slime.name) reaches \(store.state.care?.partnerName ?? "your partner") once you go online again.")
+                 ? "Slimy stops talking to slime.gbits.eu. Your friends stay saved on this iPhone and you can go online again any time."
+                 : "Slimy stops talking to slime.gbits.eu. Your friends stay saved on this iPhone. What you do for \(store.state.slime.name) reaches \(store.state.care?.partnerName ?? "your partner") once you go online again.")
         }
-        .confirmationDialog("Delete your data on slime.hyprnode.de?", isPresented: $confirmDelete, titleVisibility: .visible) {
+        .confirmationDialog("Delete your data on slime.gbits.eu?", isPresented: $confirmDelete, titleVisibility: .visible) {
             Button("Delete Data", role: .destructive) { deleteData() }
         } message: {
             Text(deleteMessage)
@@ -255,7 +255,7 @@ struct FriendPrivacyView: View {
         Section {
             if friends.isOnline {
                 LabeledContent {
-                    Text("slime.hyprnode.de")
+                    Text("slime.gbits.eu")
                 } label: {
                     Label("Online", systemImage: "checkmark.circle.fill")
                 }
@@ -273,7 +273,7 @@ struct FriendPrivacyView: View {
         } footer: {
             Text(friends.isOnline
                  ? "Going offline stops all syncing, Care Together included. Your friends stay saved on this iPhone, and your data stays on the server until you delete it."
-                 : "Friends, the leaderboard, Care Together and chat need slime.hyprnode.de. Going online asks you to agree to the Terms first.")
+                 : "Friends, the leaderboard, Care Together and chat need slime.gbits.eu. Going online asks you to agree to the Terms first.")
         }
     }
 
@@ -295,7 +295,7 @@ struct FriendPrivacyView: View {
         } header: {
             Text("Your data")
         } footer: {
-            Text("Deletes your device, name, friendships, memories, scores, Care Together and everything friends sent you from slime.hyprnode.de, and takes Slimy offline. Your slime on this iPhone stays.")
+            Text("Deletes your device, name, friendships, memories, scores, Care Together and everything friends sent you from slime.gbits.eu, and takes Slimy offline. Your slime on this iPhone stays.")
         }
     }
 
@@ -333,7 +333,7 @@ struct FriendPrivacyView: View {
             deleting = false
             if ok {
                 ownerDraft = ""
-                toast = Toast(text: "Your data on slime.hyprnode.de is deleted.", good: true)
+                toast = Toast(text: "Your data on slime.gbits.eu is deleted.", good: true)
             } else {
                 showStoreError()
             }

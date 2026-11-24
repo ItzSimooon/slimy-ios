@@ -55,7 +55,7 @@ import javax.net.ssl.SSLException
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
-// Client for the slime.hyprnode.de backend (server/ in this repo). The full
+// Client for the slime.gbits.eu backend (server/ in this repo). The full
 // contract is in server/README.md; keep the two in sync. The Android port of
 // App/Online/HyprnodeAPI.swift: same wire types, same JSON field names, ISO
 // 8601 dates (`SlimyJson.api`).
@@ -67,10 +67,10 @@ import kotlin.coroutines.resumeWithException
 // others rely on `SlimyJson.api` (`coerceInputValues`, `ignoreUnknownKeys`).
 // Lists that skip broken elements use `LossyListSerializer`.
 
-/** What went wrong talking to slime.hyprnode.de. Mirrors the Swift `APIError` enum. */
+/** What went wrong talking to slime.gbits.eu. Mirrors the Swift `APIError` enum. */
 sealed class APIError(description: String) : Exception(description) {
     /** The network is gone. */
-    class offline : APIError("Can't reach slime.hyprnode.de. Check your internet and try again.")
+    class offline : APIError("Can't reach slime.gbits.eu. Check your internet and try again.")
 
     /**
      * The server answered outside 2xx. [serverMessage] is the server's own
@@ -81,7 +81,7 @@ sealed class APIError(description: String) : Exception(description) {
         APIError(serverMessage ?: "The server reported error $status.")
 
     /** The server isn't set up or reachable yet (DNS, TLS, a bare 404). */
-    class notReady : APIError("slime.hyprnode.de isn't reachable right now. Please try again later.")
+    class notReady : APIError("slime.gbits.eu isn't reachable right now. Please try again later.")
 
     /** The text to show (Swift's `errorDescription`). */
     val errorDescription: String get() = message ?: ""
@@ -114,7 +114,7 @@ sealed class APIError(description: String) : Exception(description) {
 
 /**
  * Thrown instead of calling the server while the player hasn't gone online
- * (or went offline). Nothing reaches slime.hyprnode.de in that state.
+ * (or went offline). Nothing reaches slime.gbits.eu in that state.
  */
 class NotOnlineError : Exception("Go online in Friends to use this.") {
     val errorDescription: String get() = message ?: ""
@@ -742,7 +742,7 @@ data class CareConflict(
 // MARK: - Client
 
 /**
- * The slime.hyprnode.de client for one device token. Every endpoint is a
+ * The slime.gbits.eu client for one device token. Every endpoint is a
  * `suspend fun` that throws [APIError] (or a serialization exception for an
  * unreadable answer). Requests run on OkHttp's own threads; cancelling the
  * coroutine cancels the request.
@@ -1000,7 +1000,7 @@ class HyprnodeAPI internal constructor(
     }
 
     companion object {
-        const val base = "https://slime.hyprnode.de/api/v1/"
+        const val base = "https://slime.gbits.eu/api/v1/"
 
         /** Swift's `HyprnodeAPI.encoder`: ISO 8601 dates, nil fields left out. */
         val encoder: Json get() = SlimyJson.api
@@ -1029,7 +1029,7 @@ class HyprnodeAPI internal constructor(
         /** Seconds a request may wait for the server's next bytes. */
         const val defaultTimeout = 20.0
 
-        const val slowServerAnswer = "slime.hyprnode.de took too long to answer. Try again in a moment."
+        const val slowServerAnswer = "slime.gbits.eu took too long to answer. Try again in a moment."
 
         /**
          * Whether the phone has a network at all, set by the app (from

@@ -43,7 +43,7 @@ const root = h("div", { id: "root" });
 function wordmark() {
   return h("span", { class: "wordmark" },
     h("span", { class: "wordmark-name" }, "slimy"),
-    h("span", { class: "wordmark-by" }, "by hyprnode"));
+    h("span", { class: "wordmark-by" }, "by gbits"));
 }
 
 function badge() {

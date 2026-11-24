@@ -111,7 +111,7 @@ The island is always dark, so it keeps its own palette (`Shared/Art/Brand.swift`
 | text / muted | `#E9F1E4` / `#8D9D91` | text |
 | slime | `#7DE67A` | the default lime slime |
 | warm / cool / gold | `#F07A9A` / `#7FD6F0` / `#FFD166` | hearts, sleep and bubbles, coins |
-| hypr | `#9B7BFF` | the "by hyprnode" wordmark only |
+| hypr | `#9B7BFF` | the "by gbits" wordmark only |
 
 - Compact: the slime on the leading side, a pixel emote for mood or need on the trailing side. Nothing else.
 - Expanded: the slime, up to two friends' slimes, the speech line in SF Rounded, and the five needs as ring buttons that act without opening the app (Feed, Play, Sleep or Wake, Bath, Pet).
@@ -187,7 +187,7 @@ Same tokens and type as the public site, but denser: navigation with Overview, R
 - App Store screenshots: a flat background from the website palette, a short caption in a bold rounded sans at the top, the real screen below. No gradients, no fake reviews, no awards, no prices. Details in `appstore/screenshots.md`.
 - App icon: the slime on its own (`Resources/Assets.xcassets/AppIcon.appiconset/icon.png`), no text.
 - Videos: real footage of the app and the island. Close-ups of the island are the signature shot. A crate opening is the second: the wobble, the taps, the burst. Never show or name the legendary reward.
-- Wordmark: "slimy" in Pixelify Sans Bold, followed by "by hyprnode" in `#9B7BFF`. On dark backgrounds the "slimy" part is white, on light backgrounds black.
+- Wordmark: "slimy" in Pixelify Sans Bold, followed by "by gbits" in `#9B7BFF`. On dark backgrounds the "slimy" part is white, on light backgrounds black.
 
 ## 7. Do and don't
 

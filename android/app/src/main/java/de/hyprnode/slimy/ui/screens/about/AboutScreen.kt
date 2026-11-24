@@ -63,7 +63,7 @@ import de.hyprnode.slimy.ui.screens.common.ScreenColumn
 import de.hyprnode.slimy.ui.screens.common.openLink
 import de.hyprnode.slimy.ui.screens.common.shareText
 
-private const val website = "https://slime.hyprnode.de"
+private const val website = "https://slime.gbits.eu"
 
 /** Version, who makes Slimy, links, licenses and acknowledgements (App/UI/Screens/AboutView.swift). */
 @OptIn(ExperimentalFoundationApi::class)
@@ -91,7 +91,7 @@ fun AboutScreen(onBack: () -> Unit, onWhatsNew: () -> Unit, onLicense: () -> Uni
                 GroupedDivider()
                 GroupedRow(title = "Build", modifier = Modifier.semantics(mergeDescendants = true) { }, trailing = { Value(build) })
                 GroupedDivider()
-                GroupedRow(title = "Made by", modifier = Modifier.semantics(mergeDescendants = true) { }, trailing = { Value("hyprnode") })
+                GroupedRow(title = "Made by", modifier = Modifier.semantics(mergeDescendants = true) { }, trailing = { Value("gbits") })
                 GroupedDivider()
                 GroupedRow(
                     title = "What's New in Slimy ${WhatsNew.version}",
@@ -119,7 +119,7 @@ fun AboutScreen(onBack: () -> Unit, onWhatsNew: () -> Unit, onLicense: () -> Uni
             GroupedSection(header = "Open-source licenses") {
                 GroupedRow(title = "Pixelify Sans", subtitle = "SIL Open Font License 1.1", onClick = onLicense)
             }
-            GroupedSection(header = "Acknowledgements", footer = "© 2026 hyprnode") {
+            GroupedSection(header = "Acknowledgements", footer = "© 2026 gbits") {
                 Credit("Pixelify Sans", "By the Pixelify Sans Project Authors. The slime's voice and the wordmark.")
                 GroupedDivider()
                 Credit("AI replies", "Talking with your slime uses Cloudflare Workers AI and Groq.")
@@ -170,14 +170,14 @@ private fun AboutHeader() {
         AboutAppIcon(96.dp)
         Row(
             Modifier.clearAndSetSemantics {
-                contentDescription = "Slimy by hyprnode"
+                contentDescription = "Slimy by gbits"
                 heading()
             },
             verticalAlignment = Alignment.Bottom,
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Text("slimy", style = Theme.voice(34.sp), color = Theme.ink, maxLines = 1)
-            Text("by hyprnode", style = Theme.voice(18.sp), color = Color(Brand.hypr), maxLines = 1,
+            Text("by gbits", style = Theme.voice(18.sp), color = Color(Brand.hypr), maxLines = 1,
                 modifier = Modifier.padding(bottom = 4.dp))
         }
         Text(

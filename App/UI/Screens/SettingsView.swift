@@ -325,10 +325,10 @@ private struct SettingsOnlineSection: View {
                     .confirmationDialog("Go offline?", isPresented: $confirmOffline, titleVisibility: .visible) {
                         Button("Go Offline", role: .destructive) {
                             friends.goOffline()
-                            store.toast = Toast(text: "You're offline. Nothing is sent to slime.hyprnode.de.", good: true)
+                            store.toast = Toast(text: "You're offline. Nothing is sent to slime.gbits.eu.", good: true)
                         }
                     } message: {
-                        Text("Slimy stops talking to slime.hyprnode.de. Your friends stay saved on this iPhone and you can go online again any time.")
+                        Text("Slimy stops talking to slime.gbits.eu. Your friends stay saved on this iPhone and you can go online again any time.")
                     }
             } else {
                 Button("Go Online…") { showGoOnline = true }
@@ -336,7 +336,7 @@ private struct SettingsOnlineSection: View {
         } header: {
             Text("Online")
         } footer: {
-            Text("Friends, the leaderboard, Care Together and talking with your slime need slime.hyprnode.de. Your slime, coins and things always stay on this iPhone; with Care Together, your slime is also shared with your partner.")
+            Text("Friends, the leaderboard, Care Together and talking with your slime need slime.gbits.eu. Your slime, coins and things always stay on this iPhone; with Care Together, your slime is also shared with your partner.")
         }
     }
 }
@@ -377,7 +377,7 @@ private struct SettingsPrivacySection: View {
                     SettingsBusyLabel(title: "Delete My Data on the Server", systemImage: "trash", busy: deleting)
                 }
                 .disabled(deleting)
-                .confirmationDialog("Delete your data on slime.hyprnode.de?", isPresented: $confirmDelete,
+                .confirmationDialog("Delete your data on slime.gbits.eu?", isPresented: $confirmDelete,
                                     titleVisibility: .visible) {
                     Button("Delete Data", role: .destructive) {
                         Task { await deleteServerData() }
@@ -391,7 +391,7 @@ private struct SettingsPrivacySection: View {
         } header: {
             Text("Privacy")
         } footer: {
-            Text("With Talk with AI on, your message, the recent chat and a few facts about your slime, like how it feels, go to Cloudflare Workers AI and Groq, which write the reply. Your name and device ID are never passed on to them, and slime.hyprnode.de doesn't keep the messages.")
+            Text("With Talk with AI on, your message, the recent chat and a few facts about your slime, like how it feels, go to Cloudflare Workers AI and Groq, which write the reply. Your name and device ID are never passed on to them, and slime.gbits.eu doesn't keep the messages.")
         }
     }
 
@@ -400,8 +400,8 @@ private struct SettingsPrivacySection: View {
         let done = await friends.deleteAccount()
         deleting = false
         store.toast = done
-            ? Toast(text: "Your data on slime.hyprnode.de is deleted.", good: true)
-            : Toast(text: friends.lastError ?? "Couldn't reach slime.hyprnode.de. Check your connection and try again.",
+            ? Toast(text: "Your data on slime.gbits.eu is deleted.", good: true)
+            : Toast(text: friends.lastError ?? "Couldn't reach slime.gbits.eu. Check your connection and try again.",
                     good: false)
         friends.lastError = nil
     }

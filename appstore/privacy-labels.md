@@ -10,7 +10,7 @@ The rules behind these answers: Apple counts data as "collected" when it leaves 
 |---|---|
 | Do you or your third-party partners collect data from this app? | **Yes** |
 | Is any data used to track users? | **No** (no advertising, no data brokers, no SDKs, no IDFA, no App Tracking Transparency prompt) |
-| Privacy Policy URL | `https://slime.hyprnode.de/privacy` |
+| Privacy Policy URL | `https://slime.gbits.eu/privacy` |
 
 ## Data types
 
@@ -59,7 +59,7 @@ Notes on single choices:
 The same facts appear in three more places. Change all of them together:
 
 1. `App/PrivacyInfo.xcprivacy` (`NSPrivacyCollectedDataTypes`): `NSPrivacyCollectedDataTypeName`, `NSPrivacyCollectedDataTypeUserID`, `NSPrivacyCollectedDataTypeGameplayContent`, `NSPrivacyCollectedDataTypeOtherUserContent` (linked, App Functionality) and `NSPrivacyCollectedDataTypeProductInteraction` (linked, Analytics and App Functionality); `NSPrivacyTracking` false, no tracking domains.
-2. The privacy policy at `https://slime.hyprnode.de/privacy` (`site/privacy.html`).
+2. The privacy policy at `https://slime.gbits.eu/privacy` (`site/privacy.html`).
 3. The in-app texts: "Go Online" (Terms), the chat consent sheet (`App/UI/Screens/ChatConsentView.swift`) and the Privacy footer in Settings (`App/UI/Screens/SettingsView.swift`), which both name Cloudflare Workers AI and Groq.
 
 If a new AI provider is added through `CHAT_BASE_URL` and it is run by a third party, add it to the chat consent text and the privacy policy before turning it on. A model on your own hardware is not a third party. The policy promises to ask again before a change that needs consent applies, so also change `ChatStore.consentKey` (for example to `slimy.chat.aiConsent.v2`) in the same release: everyone then sees the consent sheet with the new provider before their next message. Add the provider, its country and its transfer safeguard to the "Service providers" and "Where data is processed" sections too.

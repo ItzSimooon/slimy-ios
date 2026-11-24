@@ -150,7 +150,7 @@ internal fun FriendPrivacyPage(onBack: () -> Unit, onClose: () -> Unit) {
             deleting = false
             if (ok) {
                 ownerDraft = ""
-                toast = Toast("Your data on slime.hyprnode.de is deleted.", good = true)
+                toast = Toast("Your data on slime.gbits.eu is deleted.", good = true)
             } else {
                 showStoreError()
             }
@@ -288,7 +288,7 @@ internal fun FriendPrivacyPage(onBack: () -> Unit, onClose: () -> Unit) {
                         footer = if (isOnline) {
                             "Going offline stops all syncing, Care Together included. Your friends stay saved on this phone, and your data stays on the server until you delete it."
                         } else {
-                            "Friends, the leaderboard, Care Together and chat need slime.hyprnode.de. Going online asks you to agree to the Terms first."
+                            "Friends, the leaderboard, Care Together and chat need slime.gbits.eu. Going online asks you to agree to the Terms first."
                         },
                     ) {
                         if (isOnline) {
@@ -314,7 +314,7 @@ internal fun FriendPrivacyPage(onBack: () -> Unit, onClose: () -> Unit) {
                     item {
                         GroupedSection(
                             header = "Your data",
-                            footer = "Deletes your device, name, friendships, memories, scores, Care Together and everything friends sent you from slime.hyprnode.de, and takes Slimy offline. Your slime on this phone stays.",
+                            footer = "Deletes your device, name, friendships, memories, scores, Care Together and everything friends sent you from slime.gbits.eu, and takes Slimy offline. Your slime on this phone stays.",
                         ) {
                             if (deleting) {
                                 WaitingLine("Deleting…", Modifier.padding(16.dp))
@@ -362,14 +362,14 @@ internal fun FriendPrivacyPage(onBack: () -> Unit, onClose: () -> Unit) {
         ConfirmDialog(
             title = "Go offline?",
             message = if (link == null) {
-                "Slimy stops talking to slime.hyprnode.de. Your friends stay saved on this phone and you can go online again any time."
+                "Slimy stops talking to slime.gbits.eu. Your friends stay saved on this phone and you can go online again any time."
             } else {
-                "Slimy stops talking to slime.hyprnode.de. Your friends stay saved on this phone. What you do for ${state.slime.name} reaches ${link.partnerName} once you go online again."
+                "Slimy stops talking to slime.gbits.eu. Your friends stay saved on this phone. What you do for ${state.slime.name} reaches ${link.partnerName} once you go online again."
             },
             confirm = "Go Offline",
             onConfirm = {
                 friends.goOffline()
-                toast = Toast("You're offline. Nothing is sent to slime.hyprnode.de.", good = true)
+                toast = Toast("You're offline. Nothing is sent to slime.gbits.eu.", good = true)
             },
             onDismiss = { confirmOffline = false },
         )
@@ -385,7 +385,7 @@ internal fun FriendPrivacyPage(onBack: () -> Unit, onClose: () -> Unit) {
                 "$base ${link.partnerName} stops caring for ${state.slime.name} with you; it stays on this phone. This can't be undone."
         }
         ConfirmDialog(
-            title = "Delete your data on slime.hyprnode.de?",
+            title = "Delete your data on slime.gbits.eu?",
             message = message,
             confirm = "Delete Data",
             onConfirm = { deleteData() },

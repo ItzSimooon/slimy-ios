@@ -66,7 +66,7 @@ struct ChatMessage: Codable, Identifiable, Hashable {
     }
 }
 
-/// Talking to the slime. Replies come from slime.hyprnode.de/api/v1/chat,
+/// Talking to the slime. Replies come from slime.gbits.eu/api/v1/chat,
 /// which has an AI service answer in character. Nothing is sent before the
 /// player agreed to that (`aiConsent`) and went online (`FriendsStore.isOnline`).
 /// The conversation itself is kept only on this phone.
@@ -75,7 +75,7 @@ final class ChatStore: ObservableObject {
     static let shared = ChatStore()
 
     static let consentKey = "slimy.chat.aiConsent"
-    static let privacyURL = URL(string: "https://slime.hyprnode.de/privacy")!
+    static let privacyURL = URL(string: "https://slime.gbits.eu/privacy")!
     /// The longest message the server accepts.
     static let maxLength = 500
     /// The longest reply the server sends.

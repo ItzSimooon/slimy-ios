@@ -22,7 +22,7 @@ data class SeenRequest(
 }
 
 /**
- * slime.hyprnode.de for tests: an OkHttp interceptor that answers every
+ * slime.gbits.eu for tests: an OkHttp interceptor that answers every
  * request from [answers] (or throws what it is told to), so the real client
  * code runs without a network.
  */

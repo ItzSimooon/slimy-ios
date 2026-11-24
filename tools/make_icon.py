@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Draws the 1024px app icon: the slime glowing on a hyprnode night."""
+"""Draws the 1024px app icon: the slime glowing on a gbits night."""
 import json
 import os
 import sys

@@ -1,4 +1,4 @@
-# Slimy API (slime.hyprnode.de)
+# Slimy API (slime.gbits.eu)
 
 The backend for the Slimy iOS app: friends, gifts, visits, greetings, async challenges, the co-op garden, the friends leaderboard, caring for one slime together, reports, and the chat proxy to hosted AI models. Everything about the slime itself (needs, coins, levels, items, emotions) stays on the phone; when two people care for one slime, the server passes their care actions and the shared snapshot between the two phones. A small admin API behind the home network handles reports and bans.
 

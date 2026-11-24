@@ -39,5 +39,5 @@ Answer every question in App Store Connect → your app → **Age Rating** hones
 ## Why 13+ fits
 
 - The AI chat is the only part of the app that produces open text. Even with filters on both sides, a model can say unexpected things, so the app should not be presented to younger children.
-- The Terms for going online (`https://slime.hyprnode.de/terms`) should name the same minimum age, 13. It is also the age at which most of the platforms used for marketing (TikTok, Instagram, Discord) allow accounts.
+- The Terms for going online (`https://slime.gbits.eu/terms`) should name the same minimum age, 13. It is also the age at which most of the platforms used for marketing (TikTok, Instagram, Discord) allow accounts.
 - Store screenshots, the preview video and the icon must still be suitable for everyone (Guideline 2.3.8): no chat replies with edgy content in marketing material.

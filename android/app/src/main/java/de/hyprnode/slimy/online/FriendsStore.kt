@@ -67,7 +67,7 @@ import kotlin.math.min
 /**
  * Friends, greetings, challenges, the co-op garden, the friends leaderboard
  * and caring for one slime together. All of it is opt-in: nothing reaches
- * slime.hyprnode.de until the player taps "Go online" and agrees to the Terms
+ * slime.gbits.eu until the player taps "Go online" and agrees to the Terms
  * ([goOnline]), and nothing syncs after they go offline again. The server
  * decides who is friends and who cares together. Writes that fail because
  * the network is gone wait in a queue and are sent later with the same
@@ -92,7 +92,7 @@ class FriendsStore internal constructor(
     private val store: GameStore,
     /** Where the device token is kept (the Android Keystore in the app). */
     private val vault: TokenVault,
-    /** A client for slime.hyprnode.de with this token. Tests and screenshots pass a fake server. */
+    /** A client for slime.gbits.eu with this token. Tests and screenshots pass a fake server. */
     private val makeAPI: (token: String?) -> HyprnodeAPI,
 ) {
     constructor(context: Context, store: GameStore) : this(
@@ -1148,7 +1148,7 @@ class FriendsStore internal constructor(
                         e is APIError && e.isBanned -> {
                             handleBanned(e)
                             lastError.value =
-                                "${e.errorDescription} To have its data deleted, contact us at slime.hyprnode.de/support."
+                                "${e.errorDescription} To have its data deleted, contact us at slime.gbits.eu/support."
                             return@onMain false
                         }
                         else -> {
@@ -1275,7 +1275,7 @@ class FriendsStore internal constructor(
     // MARK: Invites
 
     /**
-     * Takes a friend code from an invite link (https://slime.hyprnode.de/f/CODE
+     * Takes a friend code from an invite link (https://slime.gbits.eu/f/CODE
      * or slimy://f/CODE). Returns false for other links.
      */
     fun openInvite(url: String): Boolean {
@@ -1619,7 +1619,7 @@ class FriendsStore internal constructor(
             val refused = refusedSnapshotName ?: return null
             if (!isSharing || refused != store.state.value.slime.name) return null
             val reason = refusedSnapshotMessage ?: "Please choose a different name."
-            return "slime.hyprnode.de didn't accept the name $refused, so your partner doesn't see changes to it. $reason"
+            return "slime.gbits.eu didn't accept the name $refused, so your partner doesn't see changes to it. $reason"
         }
 
     private fun careSyncFailed(error: Throwable) {
@@ -2110,9 +2110,9 @@ class FriendsStore internal constructor(
         withContext(Dispatchers.Main.immediate) { block() }
 
     companion object {
-        const val termsURL = "https://slime.hyprnode.de/terms"
-        const val privacyURL = "https://slime.hyprnode.de/privacy"
-        const val supportURL = "https://slime.hyprnode.de/support"
+        const val termsURL = "https://slime.gbits.eu/terms"
+        const val privacyURL = "https://slime.gbits.eu/privacy"
+        const val supportURL = "https://slime.gbits.eu/support"
 
         /** The server's limit. */
         const val maxFriends = 20
@@ -2136,7 +2136,7 @@ class FriendsStore internal constructor(
         const val prefsName = "slimy.online"
 
         private const val refusedNotice =
-            "slime.hyprnode.de didn't accept your name or your slime's name, so friends don't see them. Please choose a different one."
+            "slime.gbits.eu didn't accept your name or your slime's name, so friends don't see them. Please choose a different one."
 
         private val recordsSerializer = MapSerializer(String.serializer(), Int.serializer())
         private val namesSerializer = ListSerializer(String.serializer())
@@ -2285,7 +2285,7 @@ data class CareActivity(
     }
 }
 
-/** Friend codes and invite links. https://slime.hyprnode.de/f/CODE opens the website's invite page, slimy://f/CODE opens the app. */
+/** Friend codes and invite links. https://slime.gbits.eu/f/CODE opens the website's invite page, slimy://f/CODE opens the app. */
 object FriendInvite {
     const val length = 6
 
@@ -2296,7 +2296,7 @@ object FriendInvite {
     fun sanitize(text: String): String =
         text.uppercase().filter { it.code < 128 && it.isLetterOrDigit() }.take(length)
 
-    fun url(code: String): String = "https://slime.hyprnode.de/f/$code"
+    fun url(code: String): String = "https://slime.gbits.eu/f/$code"
 
     /** What the share sheet sends. */
     fun message(code: String): String = "Be my slime friend in Slimy! Code: $code ${url(code)}"
@@ -2307,7 +2307,7 @@ object FriendInvite {
         val parts = (uri.path ?: "").split("/").filter { it.isNotEmpty() }
         val host = uri.host?.lowercase()
         val candidate = when (uri.scheme?.lowercase()) {
-            "https" -> if (host == "slime.hyprnode.de" && parts.size == 2 && parts[0] == "f") parts[1] else return null
+            "https" -> if ((host == "slime.gbits.eu" || host == "slime.hyprnode.de") && parts.size == 2 && parts[0] == "f") parts[1] else return null
             "slimy" -> if (host == "f" && parts.size == 1) parts[0] else return null
             else -> return null
         }

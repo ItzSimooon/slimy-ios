@@ -254,17 +254,17 @@ final class APIDecodingTests: XCTestCase {
 
     func testInviteMessage() {
         XCTAssertEqual(FriendInvite.message(for: "ABC234"),
-                       "Be my slime friend in Slimy! Code: ABC234 https://slime.hyprnode.de/f/ABC234")
-        XCTAssertEqual(FriendInvite.url(for: "ABC234").absoluteString, "https://slime.hyprnode.de/f/ABC234")
+                       "Be my slime friend in Slimy! Code: ABC234 https://slime.gbits.eu/f/ABC234")
+        XCTAssertEqual(FriendInvite.url(for: "ABC234").absoluteString, "https://slime.gbits.eu/f/ABC234")
     }
 
     func testInviteLinks() throws {
-        XCTAssertEqual(FriendInvite.code(from: try XCTUnwrap(URL(string: "https://slime.hyprnode.de/f/ABC234"))), "ABC234")
-        XCTAssertEqual(FriendInvite.code(from: try XCTUnwrap(URL(string: "https://slime.hyprnode.de/f/abc234"))), "ABC234")
+        XCTAssertEqual(FriendInvite.code(from: try XCTUnwrap(URL(string: "https://slime.gbits.eu/f/ABC234"))), "ABC234")
+        XCTAssertEqual(FriendInvite.code(from: try XCTUnwrap(URL(string: "https://slime.gbits.eu/f/abc234"))), "ABC234")
         XCTAssertEqual(FriendInvite.code(from: try XCTUnwrap(URL(string: "slimy://f/XYZ789"))), "XYZ789")
         XCTAssertNil(FriendInvite.code(from: try XCTUnwrap(URL(string: "https://example.com/f/ABC234"))))
-        XCTAssertNil(FriendInvite.code(from: try XCTUnwrap(URL(string: "https://slime.hyprnode.de/f/ABC"))))
-        XCTAssertNil(FriendInvite.code(from: try XCTUnwrap(URL(string: "https://slime.hyprnode.de/f/ABC0I1"))))
+        XCTAssertNil(FriendInvite.code(from: try XCTUnwrap(URL(string: "https://slime.gbits.eu/f/ABC"))))
+        XCTAssertNil(FriendInvite.code(from: try XCTUnwrap(URL(string: "https://slime.gbits.eu/f/ABC0I1"))))
         XCTAssertNil(FriendInvite.code(from: try XCTUnwrap(URL(string: "slimy://home"))))
     }
 
@@ -524,7 +524,7 @@ final class CareAPITests: XCTestCase {
 
     func testShareMessage() {
         XCTAssertEqual(CareInvite.message(for: "ABC234", slimeName: "Blob"),
-                       "Care for my slime Blob with me in Slimy! Code: ABC234 — get Slimy at https://slime.hyprnode.de")
+                       "Care for my slime Blob with me in Slimy! Code: ABC234 — get Slimy at https://slime.gbits.eu")
     }
 
     func testPastedInvitesGiveTheirCode() {

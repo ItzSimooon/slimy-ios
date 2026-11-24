@@ -67,7 +67,7 @@ import kotlinx.coroutines.delay
  * Allowed values ([EXTRA_OPEN_VALUES]): "home", "arcade", "bath", "chat",
  * "friends", "care", "kitchen", "shop", "crates", "journal", "settings".
  * `slimy://<value>` links open the same places; invite links
- * (slimy://f/CODE, https://slime.hyprnode.de/f/CODE) open "friends".
+ * (slimy://f/CODE, https://slime.gbits.eu/f/CODE) open "friends".
  */
 const val EXTRA_OPEN = "slimy.open"
 
@@ -284,7 +284,7 @@ private fun AppNavigation(openRequest: String?, onOpenHandled: () -> Unit) {
         handled()
     }
 
-    // An invite link (slime.hyprnode.de/f/CODE) opens Friends, which fills in
+    // An invite link (slime.gbits.eu/f/CODE) opens Friends, which fills in
     // the code. A game or the bath in progress isn't interrupted: Friends
     // opens once it closes. The same code doesn't open Friends twice.
     val pendingInvite by friends.pendingInviteCode.collectAsStateWithLifecycle()

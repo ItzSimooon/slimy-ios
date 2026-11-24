@@ -207,7 +207,7 @@ private class MemoryKey : TokenKey {
     }
 }
 
-/** slime.hyprnode.de for screenshots: answers each path with the demo's friends, nothing leaves the test. */
+/** slime.gbits.eu for screenshots: answers each path with the demo's friends, nothing leaves the test. */
 private class DemoServer(now: Instant) {
     private val api = HyprnodeAPI.encoder
     private val routes: Map<String, String> = mapOf(

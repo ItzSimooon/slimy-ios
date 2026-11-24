@@ -3,12 +3,12 @@
 <h1 align="center">Slimy</h1>
 
 <p align="center"><b>A tiny slime that lives in your Dynamic Island.</b><br>
-An iPhone app by hyprnode · <a href="https://slime.hyprnode.de">slime.hyprnode.de</a></p>
+An iPhone app by gbits · <a href="https://slime.gbits.eu">slime.gbits.eu</a></p>
 
 <p align="center">
-<a href="https://slime.hyprnode.de/install">Install the beta</a> ·
-<a href="https://slime.hyprnode.de/support">Support</a> ·
-<a href="https://slime.hyprnode.de/privacy">Privacy</a>
+<a href="https://slime.gbits.eu/install">Install the beta</a> ·
+<a href="https://slime.gbits.eu/support">Support</a> ·
+<a href="https://slime.gbits.eu/privacy">Privacy</a>
 </p>
 
 ---
@@ -61,7 +61,7 @@ Slimy has no account, no ads, no tracking and nothing to buy. The slime lives on
 
 **Friends** (optional, online)
 - Opt-in: nothing is registered until you tap **Go Online** (in Friends, Care Together or Talk) and accept the Terms. The device token is kept in the iPhone's Keychain for this device only; it is never synced or restored to another phone. Going offline stops all syncing and keeps your friends on the phone.
-- Invite with a code or a link (`slime.hyprnode.de/f/CODE`), accept requests, then hug, visit, send food and preset greetings. There are no demo friends: everyone in the list is someone you connected with.
+- Invite with a code or a link (`slime.gbits.eu/f/CODE`), accept requests, then hug, visit, send food and preset greetings. There are no demo friends: everyone in the list is someone you connected with.
 - Challenges on the same board, a shared garden every week, and a friends leaderboard for every game. Your best scores are uploaded after a round while you're online.
 - Privacy controls, block, report (a name, harassment, spam or something else), and deleting your server data from the app. Names are filtered on the server.
 - Without a connection, actions wait and are sent exactly once later.
@@ -83,7 +83,7 @@ Slimy is heading to the App Store. Until then you can sideload the beta:
 3. On the iPhone, trust your Apple ID under Settings → General → VPN & Device Management, and turn on Developer Mode under Privacy & Security if asked.
 4. Open Slimy, hatch the egg and tap **Bring It to the Island**.
 
-With a free Apple ID the app has to be re-signed every 7 days. Step-by-step instructions: [slime.hyprnode.de/install](https://slime.hyprnode.de/install).
+With a free Apple ID the app has to be re-signed every 7 days. Step-by-step instructions: [slime.gbits.eu/install](https://slime.gbits.eu/install).
 
 **Requirements:** iOS 18 or later. The island needs an iPhone with a Dynamic Island; every other iPhone on iOS 18 gets the Lock Screen and widgets.
 
@@ -94,13 +94,13 @@ iOS ends every Live Activity after about 8 hours. Opening Slimy brings the slime
 ## Privacy
 
 - **Offline first.** No account and no sign-in. Until you tap **Go Online** in Friends, Care Together or Talk and accept the Terms, Slimy sends nothing anywhere. Crates are opened on the phone.
-- **Online** means a random device id, the names you choose, your slime's profile, your friendships and your best scores are stored on `slime.hyprnode.de`, run by hyprnode in Germany. Delete it all in the app at any time (Settings → Privacy → Delete My Data on the Server); your slime on the phone stays.
+- **Online** means a random device id, the names you choose, your slime's profile, your friendships and your best scores are stored on `slime.gbits.eu`, run by gbits in Germany. Delete it all in the app at any time (Settings → Privacy → Delete My Data on the Server); your slime on the phone stays.
 - **Care Together** keeps a copy of the shared slime and both people's care actions (30 days) on the server while you share. Stopping, or either person deleting their data, deletes both at once.
 - **Talk** sends your message, the recent chat and a few facts about your slime, including how it feels, to an AI provider to write the reply. It is not stored on our server.
 - **Never collected:** location, contacts, photos, advertising identifiers, or anything about your phone's battery, charger or network. Those are read on the device to animate the slime.
 - No analytics SDKs, no ads, no tracking, and no cookies on the public website.
 
-Full policy: [slime.hyprnode.de/privacy](https://slime.hyprnode.de/privacy).
+Full policy: [slime.gbits.eu/privacy](https://slime.gbits.eu/privacy).
 
 ## How the island animation works
 
@@ -130,7 +130,7 @@ Shared/           code and assets shared by app and widgets: Model, Art, Activit
 Widget/           Live Activity, Home and Lock Screen widgets, Control Center, animation fonts
 Tests/            XCTest: needs, time, levels, rewards, crates, feelings, caring together, challenges, games, daily plan, API
 Resources/        app icon, colours, sounds
-server/           Node API for slime.hyprnode.de, with tests (server/README.md)
+server/           Node API for slime.gbits.eu, with tests (server/README.md)
 site/             the website and the admin area (static, built by site/build.mjs)
 appstore/         App Store listing in English and German, review notes, privacy and age rating
 tools/            pixel art and font builders and checks, CI helpers
@@ -140,4 +140,4 @@ HANDOVER.md       how everything runs today and what is still open
 
 ## Credits
 
-Made by hyprnode. Pixel font: [Pixelify Sans](https://github.com/eifetx/Pixelify-Sans), SIL Open Font License, license in `Shared/Fonts/PixelifySans-OFL.txt`.
+Made by gbits. Pixel font: [Pixelify Sans](https://github.com/eifetx/Pixelify-Sans), SIL Open Font License, license in `Shared/Fonts/PixelifySans-OFL.txt`.

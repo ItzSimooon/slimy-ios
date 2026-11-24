@@ -495,7 +495,7 @@ struct FriendsView: View {
             }
         } footer: {
             if friends.hasServerAccount {
-                Text("You can delete what slime.hyprnode.de keeps about you at any time.")
+                Text("You can delete what slime.gbits.eu keeps about you at any time.")
             }
         }
     }

@@ -53,7 +53,7 @@ import de.hyprnode.slimy.ui.screens.common.ScreenColumn
 import de.hyprnode.slimy.ui.screens.common.openLink
 
 /**
- * Answers to common questions, the same as on slime.hyprnode.de/support,
+ * Answers to common questions, the same as on slime.gbits.eu/support,
  * told for Android (App/UI/Screens/HelpView.swift).
  */
 @Composable
@@ -115,7 +115,7 @@ fun HelpScreen(onBack: () -> Unit) {
                         }
                     }
                 }
-                GroupedSection(footer = "More help and ways to reach us are on slime.hyprnode.de/support.") {
+                GroupedSection(footer = "More help and ways to reach us are on slime.gbits.eu/support.") {
                     GroupedRow(
                         title = "Contact Support",
                         titleColor = Theme.accent,
@@ -316,7 +316,7 @@ data class HelpTopic(val id: String, val title: String, val items: List<HelpItem
             HelpItem(
                 "chat.data",
                 "What happens to my chat messages?",
-                "Nothing is sent until you agree in the chat before your first message. Then your message, the recent chat and a few facts about your slime, like its name, how it feels and its needs, go to Cloudflare Workers AI and Groq, which write the reply. Your name and device ID are never passed on to them, and slime.hyprnode.de doesn't keep the messages. The chat itself stays on this phone. You can turn Talk with AI off any time in Settings under Privacy, or under About AI Chat in the chat menu.",
+                "Nothing is sent until you agree in the chat before your first message. Then your message, the recent chat and a few facts about your slime, like its name, how it feels and its needs, go to Cloudflare Workers AI and Groq, which write the reply. Your name and device ID are never passed on to them, and slime.gbits.eu doesn't keep the messages. The chat itself stays on this phone. You can turn Talk with AI off any time in Settings under Privacy, or under About AI Chat in the chat menu.",
             ),
             HelpItem(
                 "chat.mood",
@@ -334,7 +334,7 @@ data class HelpTopic(val id: String, val title: String, val items: List<HelpItem
             HelpItem(
                 "data.delete",
                 "How do I delete my data?",
-                "Your slime, coins and things live on this phone. If you went online, slime.hyprnode.de stores your online profile, your friends and what they sent you, and while you use Care Together, the shared slime and what you both did for it. To delete that, go to Settings, then Privacy, and tap Delete My Data on the Server. You'll find the same button in Friends under Privacy & blocked. To remove your slime from this phone, use Start over in Settings.",
+                "Your slime, coins and things live on this phone. If you went online, slime.gbits.eu stores your online profile, your friends and what they sent you, and while you use Care Together, the shared slime and what you both did for it. To delete that, go to Settings, then Privacy, and tap Delete My Data on the Server. You'll find the same button in Friends under Privacy & blocked. To remove your slime from this phone, use Start over in Settings.",
             ),
             HelpItem(
                 "data.move",

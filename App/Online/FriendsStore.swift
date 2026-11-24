@@ -5,7 +5,7 @@ import UIKit
 
 /// Friends, greetings, challenges, the co-op garden, the friends leaderboard
 /// and caring for one slime together. All of it is opt-in: nothing reaches
-/// slime.hyprnode.de until the player taps "Go online" and agrees to the
+/// slime.gbits.eu until the player taps "Go online" and agrees to the
 /// Terms (`goOnline()`), and nothing syncs after they go offline again. The
 /// server decides who is friends and who cares together. Writes that fail
 /// because the network is gone wait in a queue and are sent later with the
@@ -14,9 +14,9 @@ import UIKit
 final class FriendsStore: ObservableObject {
     static let shared = FriendsStore()
 
-    static let termsURL = URL(string: "https://slime.hyprnode.de/terms")!
-    static let privacyURL = URL(string: "https://slime.hyprnode.de/privacy")!
-    static let supportURL = URL(string: "https://slime.hyprnode.de/support")!
+    static let termsURL = URL(string: "https://slime.gbits.eu/terms")!
+    static let privacyURL = URL(string: "https://slime.gbits.eu/privacy")!
+    static let supportURL = URL(string: "https://slime.gbits.eu/support")!
     /// The server's limit.
     static let maxFriends = 20
 
@@ -159,7 +159,7 @@ final class FriendsStore: ObservableObject {
     }
 
     private static let refusedNotice =
-        "slime.hyprnode.de didn't accept your name or your slime's name, so friends don't see them. Please choose a different one."
+        "slime.gbits.eu didn't accept your name or your slime's name, so friends don't see them. Please choose a different one."
 
     private enum Keys {
         static let owner = "slimy.friends.owner"
@@ -953,7 +953,7 @@ final class FriendsStore: ObservableObject {
                 // Already gone on the server.
             } catch let error as APIError where error.isBanned {
                 handleBanned(error)
-                lastError = "\(error.localizedDescription) To have its data deleted, contact us at slime.hyprnode.de/support."
+                lastError = "\(error.localizedDescription) To have its data deleted, contact us at slime.gbits.eu/support."
                 return false
             } catch {
                 optedIn = wasOptedIn
@@ -1068,7 +1068,7 @@ final class FriendsStore: ObservableObject {
 
     // MARK: Invites
 
-    /// Takes a friend code from an invite link (https://slime.hyprnode.de/f/CODE
+    /// Takes a friend code from an invite link (https://slime.gbits.eu/f/CODE
     /// or slimy://f/CODE). Returns false for other links.
     @discardableResult
     func openInvite(_ url: URL) -> Bool {
@@ -1403,7 +1403,7 @@ final class FriendsStore: ObservableObject {
     private var refusedSnapshotProblem: String? {
         guard isSharing, let refusedSnapshotName, refusedSnapshotName == GameStore.shared.state.slime.name else { return nil }
         let reason = refusedSnapshotMessage ?? "Please choose a different name."
-        return "slime.hyprnode.de didn't accept the name \(refusedSnapshotName), so your partner doesn't see changes to it. \(reason)"
+        return "slime.gbits.eu didn't accept the name \(refusedSnapshotName), so your partner doesn't see changes to it. \(reason)"
     }
 
     /// The shared slime's name was refused and it still has it. Shown where
@@ -2021,7 +2021,7 @@ private struct SharedLook: Equatable {
     }
 }
 
-/// Friend codes and invite links. https://slime.hyprnode.de/f/CODE opens the
+/// Friend codes and invite links. https://slime.gbits.eu/f/CODE opens the
 /// website's invite page, slimy://f/CODE opens the app.
 enum FriendInvite {
     static let length = 6
@@ -2036,7 +2036,7 @@ enum FriendInvite {
     }
 
     static func url(for code: String) -> URL {
-        URL(string: "https://slime.hyprnode.de/f/\(code)")!
+        URL(string: "https://slime.gbits.eu/f/\(code)")!
     }
 
     /// What the share sheet sends.
@@ -2050,7 +2050,7 @@ enum FriendInvite {
         let candidate: String
         switch (url.scheme ?? "").lowercased() {
         case "https":
-            guard url.host?.lowercased() == "slime.hyprnode.de", parts.count == 2, parts[0] == "f" else { return nil }
+            guard ["slime.gbits.eu", "slime.hyprnode.de"].contains(url.host?.lowercased() ?? ""), parts.count == 2, parts[0] == "f" else { return nil }
             candidate = parts[1]
         case "slimy":
             guard url.host?.lowercased() == "f", parts.count == 1 else { return nil }

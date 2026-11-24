@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Consent before anything goes to slime.hyprnode.de: what friends see, what
+/// Consent before anything goes to slime.gbits.eu: what friends see, what
 /// the server keeps, the names, and the Terms. Nothing is sent before the
 /// player agrees and taps Go Online. Dismisses itself once the device is
 /// online. Shown from Friends, Chat, Care Together and the leaderboard.
@@ -76,7 +76,7 @@ struct GoOnlineView: View {
                 FriendPortrait(skin: slime.skin, stage: slime.stage, mood: .idle, accessories: slime.equipped)
                     .frame(width: 96, height: 80)
                     .accessibilityHidden(true)
-                Text("Friends and chat use slime.hyprnode.de")
+                Text("Friends and chat use slime.gbits.eu")
                     .font(.title3.bold())
                     .foregroundStyle(Theme.ink)
                     .multilineTextAlignment(.center)
@@ -107,7 +107,7 @@ struct GoOnlineView: View {
 
     private var serverKeeps: some View {
         Section {
-            GoOnlineInfoRow(symbol: "server.rack", title: "Stored on slime.hyprnode.de",
+            GoOnlineInfoRow(symbol: "server.rack", title: "Stored on slime.gbits.eu",
                     detail: "A random device ID, the names and slime details above, your friendships, best scores and reports you send, and what friends sent you for 30 days. While you care for a slime together, also that slime and your care actions for 30 days.")
             GoOnlineInfoRow(symbol: "eye.slash", title: "Never collected",
                     detail: "No Apple ID, phone number, email, contacts, location, advertising ID or tracking.")

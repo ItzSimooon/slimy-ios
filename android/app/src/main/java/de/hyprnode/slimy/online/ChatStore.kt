@@ -81,7 +81,7 @@ data class ChatMessage(
 }
 
 /**
- * Talking to the slime. Replies come from slime.hyprnode.de/api/v1/chat,
+ * Talking to the slime. Replies come from slime.gbits.eu/api/v1/chat,
  * which has an AI service answer in character. Nothing is sent before the
  * player agreed to that ([aiConsent]) and went online
  * (`FriendsStore.isOnline`). The conversation itself is kept only on this
@@ -288,7 +288,7 @@ class ChatStore(context: Context, private val store: GameStore, private val frie
 
     companion object {
         const val consentKey = "slimy.chat.aiConsent"
-        const val privacyURL = "https://slime.hyprnode.de/privacy"
+        const val privacyURL = "https://slime.gbits.eu/privacy"
 
         /** The longest message the server accepts. */
         const val maxLength = 500

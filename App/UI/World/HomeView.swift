@@ -198,7 +198,7 @@ struct HomeView: View {
         return windows.first(where: { $0.isKeyWindow })?.rootViewController?.presentedViewController != nil
     }
 
-    /// An invite link (slime.hyprnode.de/f/CODE) opens Friends, which fills
+    /// An invite link (slime.gbits.eu/f/CODE) opens Friends, which fills
     /// in the code. A game or the bath in progress isn't interrupted.
     private func openFriends(forInvite code: String) {
         guard !ScreenshotMode.isActive, code != inviteShown else { return }

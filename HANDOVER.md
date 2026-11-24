@@ -1,13 +1,13 @@
 # Handover
 
-How Slimy runs today, how to change and deploy each part, and what is still open. For whoever operates **slime.hyprnode.de** next, including future you.
+How Slimy runs today, how to change and deploy each part, and what is still open. For whoever operates **slime.gbits.eu** next, including future you.
 
 State: **26 October 2026**, Slimy **1.1** on branch `release-1.0` (1.0 is released as a sideloaded beta; 1.1 is not merged into `main` yet).
 
 | Part | Where | Status |
 |---|---|---|
 | iOS app 1.1 | `App/`, `Shared/`, `Widget/` | Crates, Care Together, feelings, a slime that talks on its own; love between slimes removed. Built by CI. App Store submission is next (`appstore/`). |
-| API server | `server/` → CT 108 | Live at `https://slime.hyprnode.de/api/v1`. Deploy 1.1 **before** the 1.1 app reaches anyone: Care Together and chat feelings need it (sections 2 and 4). |
+| API server | `server/` → CT 108 | Live at `https://slime.gbits.eu/api/v1`. Deploy 1.1 **before** the 1.1 app reaches anyone: Care Together and chat feelings need it (sections 2 and 4). |
 | Website | `site/` → CT 108 | Built from this repo, served by Caddy on CT 108. 1.1 adds the "New in 1.1" section, crate, feelings and Care Together demos, support answers and the privacy policy for Care Together. |
 | Admin area | `site/admin/` + `/api/v1/admin/*` | Needs the passphrase and the LAN-only Caddyfile (section 3). 1.1 shows care pairs and a device's care partner. |
 | Store listing | `appstore/` | 1.1 texts, review notes, privacy and age rating ready. |
@@ -38,12 +38,12 @@ Everything for Slimy runs in its own LXC container on the Proxmox host `pve`, be
 | Database | `/var/lib/slimy/slimy.db` (SQLite, WAL) |
 | Backups | `/etc/cron.daily/slimy-backup`: `sqlite3 .backup` to `/var/backups/slimy/slimy-YYYY-MM-DD.db`, kept 14 days |
 | Web server | Caddy on `:80`: `/api/*` → `127.0.0.1:8080`, everything else from `/srv/slimy-site` |
-| Tunnel | `cloudflared.service`, tunnel `slimy`, hostname `slime.hyprnode.de` → `http://localhost:80` |
+| Tunnel | `cloudflared.service`, tunnel `slimy`, hostname `slime.gbits.eu` → `http://localhost:80` |
 | TLS | Terminated by Cloudflare. The tunnel carries traffic to the container; Caddy speaks plain HTTP locally. |
 
 Logs: `journalctl -u slimy -f` (the server logs only startup and errors, never request contents), `journalctl -u caddy`, `journalctl -u cloudflared`. Caddy has no access log on purpose.
 
-Health: `curl -s https://slime.hyprnode.de/api/v1/health` → `{"ok":true,…,"chat":true}`.
+Health: `curl -s https://slime.gbits.eu/api/v1/health` → `{"ok":true,…,"chat":true}`.
 
 Secrets are never in this repo: AI keys live only in `/etc/slimy/slimy.env`, the admin passphrase only as a hash in `/etc/slimy/admin.hash`, the tunnel token only in cloudflared's service config.
 
@@ -76,7 +76,7 @@ The admin pages (`/admin`) and the admin API (`/api/v1/admin/*`) are never reach
 
 How the Caddy lock is built matters. The Caddyfile defines one matcher, `@admin_outside` (admin paths and not a home or Tailscale address), and puts `error @admin_outside 404` **inside each** `handle` block: the one for `/api/*` and the one for the site. Don't replace it with a separate `handle @admin { … }` block. CT 108 runs Caddy 2.6.2, which sorts `handle /api/*` (a single path) ahead of a named matcher with several paths, so admin API requests from the tunnel would go to the `/api/*` block and skip the admin block, leaving only `ADMIN_NETWORKS` to stop them.
 
-After any Caddy change, check from mobile data (outside the home network) that `https://slime.hyprnode.de/admin` and `https://slime.hyprnode.de/api/v1/admin/session` both answer 404.
+After any Caddy change, check from mobile data (outside the home network) that `https://slime.gbits.eu/admin` and `https://slime.gbits.eu/api/v1/admin/session` both answer 404.
 
 Open the admin at `http://192.168.1.234/admin` from the home network, or through Tailscale if the container or a subnet router is on the tailnet. On plain HTTP the passphrase crosses the home network unencrypted; Tailscale encrypts it.
 
@@ -150,7 +150,7 @@ Everything is prepared in `appstore/`: listing texts in English and German (`nod
 Needs `jq`. Creates two throwaway devices and deletes them again:
 
 ```sh
-B=https://slime.hyprnode.de/api/v1
+B=https://slime.gbits.eu/api/v1
 curl -s $B/health
 TA=$(curl -s -XPOST $B/devices -H 'content-type: application/json' -d '{"ownerName":"Ana"}' | jq -r .token)
 TB=$(curl -s -XPOST $B/devices -H 'content-type: application/json' -d '{"ownerName":"Ben"}' | jq -r .token)
@@ -208,5 +208,5 @@ Known limits:
 
 - iOS ends Live Activities after about 8 hours. Slimy starts or renews one only when the app is opened or Summon Slime runs; background refresh can only update a running activity, and nothing uses push.
 - A `.slimysave` backup moves the slime, not the online identity: the device token never leaves the phone's Keychain and friends live outside the save. On a new iPhone the user restores the save, goes online again as a new device and reconnects with friends by code.
-- `https://slime.hyprnode.de/f/CODE` opens the website's invite page, which shows the code to type in. The app also understands `slimy://f/CODE` (`FriendsStore.openInvite`) and fills in the code. Opening the app straight from the https link needs Associated Domains, which needs the paid developer account.
+- `https://slime.gbits.eu/f/CODE` opens the website's invite page, which shows the code to type in. The app also understands `slimy://f/CODE` (`FriendsStore.openInvite`) and fills in the code. Opening the app straight from the https link needs Associated Domains, which needs the paid developer account.
 - The server is a single container at home: if power or internet at home fail, friends and chat pause and the app keeps working offline. The offline queue sends everything once the server is back.

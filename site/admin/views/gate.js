@@ -10,7 +10,7 @@ const SETUP_COMMAND = "node src/admin-cli.js passwd";
 function wordmark() {
   return h("p", { class: "wordmark wordmark-large" },
     h("span", { class: "wordmark-name" }, "slimy"),
-    h("span", { class: "wordmark-by" }, "by hyprnode"));
+    h("span", { class: "wordmark-by" }, "by gbits"));
 }
 
 function speech(text) {

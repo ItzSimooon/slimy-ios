@@ -21,7 +21,7 @@ android {
         targetSdk = 36
         // CI builds count up with the run number, so every release installs as an update.
         versionCode = System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 1
-        versionName = "1.1.0"
+        versionName = "1.1.1"
     }
 
     signingConfigs {

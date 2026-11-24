@@ -31,7 +31,7 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-            <!-- Invite links: slimy://f/CODE and https://slime.hyprnode.de/f/CODE -->
+            <!-- Invite links: slimy://f/CODE and https://slime.gbits.eu/f/CODE (old links on slime.hyprnode.de keep working) -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -42,6 +42,7 @@
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="slime.gbits.eu" android:pathPrefix="/f/" />
                 <data android:scheme="https" android:host="slime.hyprnode.de" android:pathPrefix="/f/" />
             </intent-filter>
             <!-- Launcher shortcuts: Feed, Play, Talk, Summon Slime. -->

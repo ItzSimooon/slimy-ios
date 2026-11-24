@@ -598,7 +598,7 @@ private fun LazyListScope.offlineSections(friends: FriendsStore, push: (FriendsR
     }
     item(key = "offlineMore") {
         val hasAccount by friends.hasServerAccount.collectAsStateWithLifecycle()
-        GroupedSection(footer = if (hasAccount) "You can delete what slime.hyprnode.de keeps about you at any time." else null) {
+        GroupedSection(footer = if (hasAccount) "You can delete what slime.gbits.eu keeps about you at any time." else null) {
             CareRow(push)
             if (hasAccount) {
                 GroupedDivider()
@@ -667,7 +667,7 @@ internal fun BanLine(text: String) {
 // MARK: - Going online
 
 /**
- * Consent before anything goes to slime.hyprnode.de: what friends see, what
+ * Consent before anything goes to slime.gbits.eu: what friends see, what
  * the server keeps, the names, and the Terms. Nothing is sent before the
  * player agrees and taps Go Online; it closes itself once the device is
  * online (App/UI/Screens/GoOnlineView.swift). [onDone] closes it, online or not.
@@ -767,7 +767,7 @@ fun GoOnlineScreen(onDone: () -> Unit) {
                     ) {
                         FriendPortrait(slime.skin, slime.stage, Mood.idle, Modifier.size(width = 96.dp, height = 80.dp), slime.equipped)
                         Text(
-                            "Friends and chat use slime.hyprnode.de",
+                            "Friends and chat use slime.gbits.eu",
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                             color = Theme.ink,
@@ -802,7 +802,7 @@ fun GoOnlineScreen(onDone: () -> Unit) {
             item {
                 GroupedSection(header = "What goes to the server") {
                     InfoRow(
-                        Icons.Filled.Storage, "Stored on slime.hyprnode.de",
+                        Icons.Filled.Storage, "Stored on slime.gbits.eu",
                         "A random device ID, the names and slime details above, your friendships, best scores and reports you send, and what friends sent you for 30 days. While you care for a slime together, also that slime and your care actions for 30 days.",
                     )
                     GroupedDivider()

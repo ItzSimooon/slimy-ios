@@ -210,7 +210,7 @@ fun PhotoBoothScreen(onClose: () -> Unit) {
                 type = "image/png"
                 putExtra(Intent.EXTRA_STREAM, uri)
                 putExtra(Intent.EXTRA_SUBJECT, "$name in Slimy")
-                putExtra(Intent.EXTRA_TEXT, "Meet $name, my slime in Slimy. https://slime.hyprnode.de")
+                putExtra(Intent.EXTRA_TEXT, "Meet $name, my slime in Slimy. https://slime.gbits.eu")
                 clipData = ClipData.newRawUri("$name in Slimy", uri)
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }

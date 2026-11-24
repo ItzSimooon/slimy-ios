@@ -14,7 +14,7 @@ import { writeFile, rename } from "node:fs/promises";
 
 const out = process.argv[2] ?? "release.json";
 const res = await fetch("https://api.github.com/repos/ItzSimooon/slimy-ios/releases?per_page=30", {
-  headers: { accept: "application/vnd.github+json", "user-agent": "slime.hyprnode.de" },
+  headers: { accept: "application/vnd.github+json", "user-agent": "slime.gbits.eu" },
   signal: AbortSignal.timeout(20_000),
 });
 if (!res.ok) throw new Error(`GitHub answered ${res.status}`);
